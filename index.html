@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редактор Механики: PRO Сопоставление Пар</title>
+    <style>
+        :root { --primary: #00ffcc; --bg-dark: #121212; --panel-bg: rgba(20, 20, 25, 0.98); }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Segoe UI', sans-serif; 
+                     background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 50% / 20px 20px; color: #fff; overflow: hidden; }
+        
+        #workspace { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; 
+                     background-color: transparent; background-size: cover; background-position: center; overflow: hidden; }
+
+        #settings-btn { position: absolute; top: 15px; left: 15px; z-index: 10000; background: var(--primary); color: #000; 
+                        border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        #settings-btn:hover { transform: scale(1.05); }
+
+        #settings-panel { position: absolute; top: 0; left: 0; width: 350px; height: 100%; background: var(--panel-bg); 
+                          backdrop-filter: blur(10px); z-index: 9999; padding: 60px 20px 20px; box-sizing: border-box; 
+                          transform: translateX(-100%); transition: transform 0.3s ease; overflow-y: auto; border-right: 1px solid #333; }
+        #settings-panel.open { transform: translateX(0); }
+        #settings-panel::-webkit-scrollbar { width: 6px; }
+        #settings-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+        
+        .control-group { margin-bottom: 12px; }
+        .control-group label { display: block; font-size: 11px; margin-bottom: 4px; color: #bbb; text-transform: uppercase; }
+        input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 8px; box-sizing: border-box; 
+                                                                    background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff; border-radius: 4px; }
+        input[type="color"] { width: 100%; height: 35px; padding: 2px; border: 1px solid #444; border-radius: 4px; cursor: pointer; background: #000;}
+        textarea { resize: vertical; min-height: 60px; font-family: monospace; font-size: 12px;}
+        .row { display: flex; gap: 10px; }
+        button.action-btn { width: 100%; padding: 10px; margin-top: 5px; background: #444; border: 1px solid #666; color: #fff; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.action-btn.publish { background: var(--primary); color: #000; font-size: 16px; padding: 15px; margin-top: 20px; }
+        
+        #elements-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        .drag-item { position: absolute; padding: 10px; border-radius: 8px; cursor: grab; user-select: none; 
+                     display: flex; justify-content: center; align-items: center; text-align: center; box-sizing: border-box; 
+                     pointer-events: auto; z-index: 50; resize: both; overflow: hidden; 
+                     transform-origin: center center; }
+        .drag-item:active { cursor: grabbing; z-index: 1000; }
+        .drag-item.editor-selected { outline: 2px dashed var(--primary); outline-offset: 4px; }
+        .drag-item img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+
+        #item-toolbar { display: none; position: absolute; background: #222; border: 1px solid #555; border-radius: 6px; 
+                        padding: 10px; z-index: 10001; box-shadow: 0 5px 15px rgba(0,0,0,0.5); gap: 10px; align-items: center; }
+        #item-toolbar input { width: 60px; }
+
+        #output-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); 
+                        z-index: 100000; justify-content: center; align-items: center; flex-direction: column; }
+        .modal-content { background: #1a1a1a; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; border: 1px solid #333; text-align: left;}
+        .modal-content textarea { width: 100%; height: 150px; margin-top: 10px; background: #000; color: #00ffcc; font-family: monospace; border: 1px solid #444; border-radius: 4px; padding: 10px; box-sizing: border-box;}
+    </style>
+</head>
+<body>
+
+<div id="workspace">
+    <button id="settings-btn">⚙ Настройки</button>
+    
+    <div id="settings-panel" class="open">
+        <div class="control-group"><label>Фон (URL или пусто):</label><input type="text" id="bg-input" class="global-style" placeholder="https://..."></div>
+        <div class="row">
+            <div class="control-group" style="flex: 1;"><label>Столбец 1:</label><textarea id="list-left">Apple&#10;Sun</textarea></div>
+            <div class="control-group" style="flex: 1;"><label>Столбец 2:</label><textarea id="list-right">Яблоко&#10;Солнце</textarea></div>
+        </div>
+        <button id="btn-generate" class="action-btn">Сгенерировать элементы</button>
+
+        <h4 style="color:var(--primary); margin:20px 0 10px; border-bottom:1px solid #333;">Общий дизайн карточек</h4>
+        <p style="font-size: 10px; color: #888; margin-top:0;">(Размер меняется потянув за правый нижний угол карточки на экране)</p>
+        <div class="row">
+            <div class="control-group" style="flex:1;"><label>Фон (цвет):</label><input type="color" id="card-bg-color" value="#000000" class="global-style"></div>
+            <div class="control-group" style="flex:1;"><label>Прозрачность:</label><input type="range" id="card-bg-opacity" min="0" max="1" step="0.05" value="0.6" class="global-style"></div>
+        </div>
+        <div class="row">
+            <div class="control-group" style="flex:1;"><label>Цвет рамки:</label><input type="color" id="border-color" value="#ffffff" class="global-style"></div>
+            <div class="control-group" style="flex:1;"><label>Толщина (px):</label><input type="number" id="border-width" value="2" min="0" class="global-style"></div>
+        </div>
+        <div class="control-group"><label>Цвет текста:</label><input type="color" id="text-color" value="#ffffff" class="global-style"></div>
+
+        <h4 style="color:var(--primary); margin:20px 0 10px; border-bottom:1px solid #333;">Магия и Линии</h4>
+        <div class="row">
+            <div class="control-group" style="flex:1;"><label>Цвет связи:</label><input type="color" id="line-color" value="#00ffcc"></div>
+            <div class="control-group" style="flex:1;"><label>Толщина линии:</label><input type="number" id="line-thickness" value="4" min="1"></div>
+        </div>
+        <div class="control-group">
+            <label>Стиль взаимодействия (Частицы):</label>
+            <select id="line-style">
+                <option value="neon">Неоновая нить (Классика)</option>
+                <option value="magic">Магическая (Звезды ⭐)</option>
+                <option value="nature">Лесная (Бабочки 🦋)</option>
+            </select>
+        </div>
+
+        <button id="btn-publish" class="action-btn publish">🚀 ОПУБЛИКОВАТЬ КОД</button>
+    </div>
+
+    <div id="item-toolbar">
+        <div><label style="font-size:10px; color:#aaa; display:block;">Шрифт (px)</label><input type="number" id="tool-font" value="20"></div>
+        <div><label style="font-size:10px; color:#aaa; display:block;">Угол (°)</label><input type="number" id="tool-rot" value="0"></div>
+    </div>
+
+    <div id="elements-container"></div>
+</div>
+
+<div id="output-modal">
+    <div class="modal-content">
+        <h3 style="color:var(--primary); margin-top:0;">Готовый код для Genially</h3>
+        <p style="font-size: 13px; color: #ccc;">
+            Скопируй код ниже и вставь его в Genially строго через:<br>
+            <b>Insert -> Others -> Iframe</b>
+        </p>
+        <textarea id="code-iframe" readonly onclick="this.select()"></textarea>
+        <button class="action-btn" style="margin-top:15px;" onclick="document.getElementById('output-modal').style.display='none'">Вернуться в редактор</button>
+    </div>
+</div>
+
+<script>
+    document.getElementById('settings-btn').addEventListener('click', () => document.getElementById('settings-panel').classList.toggle('open'));
+    
+    const bgInput = document.getElementById('bg-input');
+    const workspace = document.getElementById('workspace');
+    bgInput.addEventListener('input', e => {
+        let v = e.target.value.trim();
+        workspace.style.background = v.startsWith('http') ? `url('${v}') center/cover` : (v || 'transparent');
+    });
+
+    document.querySelectorAll('.global-style').forEach(el => el.addEventListener('input', applyGlobalStyles));
+    document.getElementById('btn-generate').addEventListener('click', generateElements);
+    document.getElementById('btn-publish').addEventListener('click', publish);
+
+    let activeItem = null;
+    const toolbar = document.getElementById('item-toolbar');
+    const toolFont = document.getElementById('tool-font');
+    const toolRot = document.getElementById('tool-rot');
+
+    toolFont.addEventListener('input', e => { if(activeItem) activeItem.style.fontSize = e.target.value + 'px'; });
+    toolRot.addEventListener('input', e => { 
+        if(activeItem) {
+            activeItem.dataset.rot = e.target.value;
+            updateTransform(activeItem);
+        }
+    });
+
+    workspace.addEventListener('mousedown', e => {
+        if(e.target === workspace || e.target.id === 'elements-container') {
+            if(activeItem) activeItem.classList.remove('editor-selected');
+            activeItem = null;
+            toolbar.style.display = 'none';
+        }
+    });
+
+    function updateTransform(el) {
+        let rot = el.dataset.rot || '0';
+        el.style.transform = `translate(-50%, -50%) rotate(${rot}deg)`;
+    }
+
+    let itemsData = [];
+    function isUrl(str) { return str.trim().startsWith('http') || str.trim().startsWith('data:image'); }
+
+    function generateElements() {
+        document.getElementById('elements-container').innerHTML = '';
+        itemsData = [];
+        let leftRaw = document.getElementById('list-left').value.split('\n').filter(s=>s.trim()!=='');
+        let rightRaw = document.getElementById('list-right').value.split('\n').filter(s=>s.trim()!=='');
+        let count = Math.min(leftRaw.length, rightRaw.length);
+        
+        for(let i=0; i<count; i++) {
+            createDOMElement(i, 'left', leftRaw[i], 20, 15 + (70/count)*i);
+            createDOMElement(i, 'right', rightRaw[i], 80, 15 + (70/count)*i);
+        }
+        applyGlobalStyles();
+    }
+
+    function createDOMElement(pairId, side, content, startX, startY) {
+        let el = document.createElement('div');
+        el.className = 'drag-item';
+        el.dataset.id = pairId; el.dataset.side = side; el.dataset.rot = '0';
+        
+        if(isUrl(content)) { el.innerHTML = `<img src="${content.trim()}">`; } 
+        else { el.innerText = content; }
+
+        el.style.left = startX + '%'; el.style.top = startY + '%';
+        el.style.width = '140px'; el.style.height = '60px'; 
+        el.style.fontSize = '20px';
+        
+        document.getElementById('elements-container').appendChild(el);
+        itemsData.push({ id: pairId, side: side, content: content, el: el });
+        
+        updateTransform(el);
+        makeDraggableAndSelectable(el);
+    }
+
+    function makeDraggableAndSelectable(el) {
+        let isDragging = false;
+        el.addEventListener('mousedown', startDrag);
+        
+        function startDrag(e) {
+            let rect = el.getBoundingClientRect();
+            if (e.clientX > rect.right - 15 && e.clientY > rect.bottom - 15) return;
+            if (e.target.tagName.toLowerCase() === 'img') e.preventDefault();
+            
+            if(activeItem) activeItem.classList.remove('editor-selected');
+            activeItem = el;
+            activeItem.classList.add('editor-selected');
+            toolbar.style.display = 'flex';
+            toolFont.value = parseInt(window.getComputedStyle(el).fontSize) || 20;
+            toolRot.value = el.dataset.rot || 0;
+            
+            isDragging = true;
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+
+        function onDrag(e) {
+            if(!isDragging) return;
+            let rect = workspace.getBoundingClientRect();
+            let x = ((e.clientX - rect.left) / rect.width) * 100;
+            let y = ((e.clientY - rect.top) / rect.height) * 100;
+            el.style.left = Math.max(0, Math.min(100, x)) + '%';
+            el.style.top = Math.max(0, Math.min(100, y)) + '%';
+            toolbar.style.left = (e.clientX + 20) + 'px';
+            toolbar.style.top = (e.clientY - 40) + 'px';
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', stopDrag);
+            let rect = el.getBoundingClientRect();
+            toolbar.style.left = (rect.right + 10) + 'px';
+            toolbar.style.top = (rect.top) + 'px';
+        }
+    }
+
+    function applyGlobalStyles() {
+        let hex = document.getElementById('card-bg-color').value.replace('#', '');
+        let op = document.getElementById('card-bg-opacity').value;
+        let r = parseInt(hex.substring(0,2),16), g = parseInt(hex.substring(2,4),16), b = parseInt(hex.substring(4,6),16);
+        let rgbaBg = `rgba(${r},${g},${b},${op})`;
+        
+        let brdColor = document.getElementById('border-color').value;
+        let brdWidth = document.getElementById('border-width').value + 'px';
+        let txtColor = document.getElementById('text-color').value;
+
+        document.querySelectorAll('.drag-item').forEach(el => {
+            el.style.color = txtColor;
+            el.style.backgroundColor = rgbaBg;
+            el.style.border = `${brdWidth} solid ${brdColor}`;
+        });
+    }
+
+    function publish() {
+        applyGlobalStyles();
+        
+        let bgVal = bgInput.value.trim();
+        let bgCSS = bgVal.startsWith('http') ? `background: url('${bgVal}') center/cover;` : `background: ${bgVal || 'transparent'};`;
+        
+        let lineColor = document.getElementById('line-color').value;
+        let lineThick = document.getElementById('line-thickness').value;
+        let lineStyle = document.getElementById('line-style').value;
+        let themeChar = lineStyle === 'magic' ? '⭐' : (lineStyle === 'nature' ? '🦋' : '');
+
+        let itemsHTML = '';
+        itemsData.forEach(data => {
+            let el = data.el;
+            let inner = isUrl(data.content) ? `<img src="${data.content.trim()}" style="width:100%;height:100%;object-fit:contain;pointer-events:none;">` : data.content;
+            let cssText = `left:${el.style.left}; top:${el.style.top}; width:${el.style.width}; height:${el.style.height}; font-size:${el.style.fontSize}; color:${el.style.color}; background-color:${el.style.backgroundColor}; border:${el.style.border}; transform:${el.style.transform};`;
+            itemsHTML += `<div class="game-item" data-id="${data.id}" data-side="${data.side}" style="${cssText}">${inner}</div>\n`;
+        });
+
+        let engineParts = [];
+        
+        engineParts.push(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Game</title><style>`);
+        engineParts.push(`body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; ${bgCSS} font-family: sans-serif; user-select: none; }`);
+        engineParts.push(`#svg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }`);
+        engineParts.push(`.game-item { position: absolute; z-index: 10; border-radius: 8px; display: flex; justify-content: center; align-items: center; text-align: center; padding: 10px; box-sizing: border-box; cursor: pointer; transition: box-shadow 0.2s, border-color 0.2s; backdrop-filter: blur(4px); transform-origin: center center; }`);
+        engineParts.push(`.game-item.selected { box-shadow: 0 0 20px ${lineColor}; border-color: ${lineColor} !important; z-index: 20; }`);
+        engineParts.push(`.game-item.matched { opacity: 0.8; pointer-events: none; border-color: ${lineColor} !important; }`);
+        engineParts.push(`.game-item.wrong { animation: shake 0.4s; border-color: #ff3333 !important; }`);
+        engineParts.push(`@keyframes shake { 0%, 100% { margin-left: 0; } 25% { margin-left: -10px; } 75% { margin-left: 10px; } }`);
+        engineParts.push(`.particle { font-size: 24px; position: absolute; pointer-events: none; opacity: 0; animation: float 2s ease-out forwards; }`);
+        engineParts.push(`@keyframes float { 0% { opacity: 1; transform: scale(0) rotate(0deg); } 50% { opacity: 1; transform: scale(1.5) rotate(180deg); } 100% { opacity: 0; transform: scale(0) rotate(360deg) translateY(-50px); } }`);
+        engineParts.push(`</style></head><body>`);
+        
+        engineParts.push(`<svg id="svg-canvas"><defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5" result="blur" /><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g id="lines-group"></g></svg>`);
+        engineParts.push(`<div id="particles-container"></div>`);
+        engineParts.push(itemsHTML);
+        
+        engineParts.push(`<script>`);
+        engineParts.push(`var selectedLeft=null, selectedRight=null, linesGroup=document.getElementById("lines-group"), pCont=document.getElementById("particles-container");`);
+        engineParts.push(`var items=document.querySelectorAll(".game-item"), matchedPairs=0, totalPairs=${itemsData.length/2};`);
+        engineParts.push(`var ropes = []; var mouseX=0, mouseY=0;`);
+        
+        engineParts.push(`document.addEventListener('mousemove', function(e){ mouseX=e.clientX; mouseY=e.clientY; });`);
+        engineParts.push(`function getCenter(el) { var r = el.getBoundingClientRect(); return { x: r.left+r.width/2, y: r.top+r.height/2 }; }`);
+        
+        engineParts.push(`function createRope(el1, el2) {`);
+        engineParts.push(`  var path = document.createElementNS("http://www.w3.org/2000/svg", "path");`);
+        engineParts.push(`  path.setAttribute("stroke", "${lineColor}"); path.setAttribute("stroke-width", "${lineThick}");`);
+        engineParts.push(`  path.setAttribute("fill", "none"); path.setAttribute("stroke-linecap", "round");`);
+        if(lineStyle === 'neon') engineParts.push(`  path.setAttribute("filter", "url(#glow)");`);
+        engineParts.push(`  linesGroup.appendChild(path);`);
+        engineParts.push(`  ropes.push({ el1:el1, el2:el2, path:path, cpX:0, cpY:0, vx:0, vy:0, init:true });`);
+        
+        if(themeChar) {
+            engineParts.push(`  for(var p=0; p<8; p++) { setTimeout(function(){`);
+            engineParts.push(`    var c = getCenter(el1); var part = document.createElement('div'); part.className='particle'; part.innerText='${themeChar}';`);
+            engineParts.push(`    part.style.left = (c.x + (Math.random()-0.5)*100) + 'px'; part.style.top = (c.y + (Math.random()-0.5)*100) + 'px';`);
+            engineParts.push(`    pCont.appendChild(part); setTimeout(function(){ part.remove(); }, 2000);`);
+            engineParts.push(`  }, p*100); }`);
+        }
+        engineParts.push(`}`);
+
+        engineParts.push(`function tick() {`);
+        engineParts.push(`  ropes.forEach(function(r) {`);
+        engineParts.push(`    var p1 = getCenter(r.el1), p2 = getCenter(r.el2);`);
+        engineParts.push(`    var midX = (p1.x+p2.x)/2, midY = (p1.y+p2.y)/2;`);
+        engineParts.push(`    if(r.init) { r.cpX = midX; r.cpY = midY; r.init = false; }`);
+        engineParts.push(`    var targetX = midX, targetY = midY;`);
+        engineParts.push(`    var dx = mouseX - r.cpX, dy = mouseY - r.cpY; var dist = Math.sqrt(dx*dx + dy*dy);`);
+        engineParts.push(`    if(dist < 150) { var force = (150-dist)/150; targetX -= (dx/dist)*force*100; targetY -= (dy/dist)*force*100; }`);
+        engineParts.push(`    r.vx += (targetX - r.cpX) * 0.1; r.vy += (targetY - r.cpY) * 0.1;`);
+        engineParts.push(`    r.vx *= 0.75; r.vy *= 0.75;`);
+        engineParts.push(`    r.cpX += r.vx; r.cpY += r.vy;`);
+        engineParts.push(`    r.path.setAttribute("d", "M "+p1.x+","+p1.y+" Q "+r.cpX+","+r.cpY+" "+p2.x+","+p2.y);`);
+        engineParts.push(`  });`);
+        engineParts.push(`  requestAnimationFrame(tick);`);
+        engineParts.push(`}`);
+        engineParts.push(`requestAnimationFrame(tick);`);
+
+        engineParts.push(`items.forEach(function(item){ item.addEventListener("click", function(){`);
+        engineParts.push(`  if(item.classList.contains("matched")) return;`);
+        engineParts.push(`  var side = item.dataset.side;`);
+        engineParts.push(`  if(side === "left") { if(selectedLeft) selectedLeft.classList.remove("selected"); selectedLeft = item; }`);
+        engineParts.push(`  else { if(selectedRight) selectedRight.classList.remove("selected"); selectedRight = item; }`);
+        engineParts.push(`  item.classList.add("selected");`);
+        engineParts.push(`  if(selectedLeft && selectedRight) {`);
+        engineParts.push(`    if(selectedLeft.dataset.id === selectedRight.dataset.id) {`);
+        engineParts.push(`      createRope(selectedLeft, selectedRight);`);
+        engineParts.push(`      selectedLeft.classList.remove("selected"); selectedRight.classList.remove("selected");`);
+        engineParts.push(`      selectedLeft.classList.add("matched"); selectedRight.classList.add("matched");`);
+        engineParts.push(`      selectedLeft = null; selectedRight = null; matchedPairs++;`);
+        engineParts.push(`      if(matchedPairs === totalPairs) setTimeout(function(){ alert("Победа!"); }, 1000);`);
+        engineParts.push(`    } else {`);
+        engineParts.push(`      selectedLeft.classList.add("wrong"); selectedRight.classList.add("wrong");`);
+        engineParts.push(`      setTimeout(function(){ if(selectedLeft) selectedLeft.classList.remove("selected","wrong"); if(selectedRight) selectedRight.classList.remove("selected","wrong"); selectedLeft=null; selectedRight=null; }, 400);`);
+        engineParts.push(`    }`);
+        engineParts.push(`  }`);
+        engineParts.push(`});});`);
+        
+        engineParts.push(`</script></body></html>`);
+
+        let finalRawCode = engineParts.join('\n');
+        
+        // Кодируем в Base64 с правильной поддержкой кириллицы
+        let encodedHTML = window.btoa(unescape(encodeURIComponent(finalRawCode)));
+        
+        // Формируем чистый iframe
+        let finalIframe = `<div style="width: 100%; position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="data:text/html;base64,${encodedHTML}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen></iframe></div>`;
+        
+        document.getElementById('code-iframe').value = finalIframe;
+        document.getElementById('output-modal').style.display = 'flex';
+    }
+
+    window.addEventListener('DOMContentLoaded', generateElements);
+</script>
+
+</body>
+</html>
