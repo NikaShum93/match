@@ -1,64 +1,756 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Игра</title>
-  <script>
-    window.MathJax = {
-      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
-    };
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
-  <style>
-    /* Тут стили из примера движка, можно взять из ранее присланного */
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Сопоставление Пар</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\$','\$']] },
+  startup: { typeset: false }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body, html {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  overflow: hidden; background: #111;
+  font-family: sans-serif;
+}
+#bg-layer {
+  position: fixed; inset: 0;
+  background-size: cover; background-position: center;
+  z-index: 0;
+}
+#canvas-layer {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 10;
+}
+#items-layer {
+  position: fixed; inset: 0;
+  z-index: 20;
+}
+
+/* ---- Карточка ---- */
+.card {
+  position: absolute;
+  display: flex; justify-content: center; align-items: center;
+  text-align: center; cursor: pointer;
+  border-radius: 8px; padding: 6px;
+  word-break: break-word;
+  transition: opacity 0.5s ease, transform 0.15s ease;
+  user-select: none;
+}
+.card.selected {
+  z-index: 100;
+}
+.card.matched {
+  pointer-events: none;
+  cursor: default;
+}
+
+/* ---- Tooltip ---- */
+#tooltip-box {
+  position: fixed; z-index: 9999;
+  padding: 10px 14px; border-radius: 8px;
+  font-size: 14px; font-weight: bold;
+  pointer-events: none; display: none;
+  max-width: 260px; text-align: center;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+}
+#tooltip-box img { max-width: 220px; border-radius: 6px; margin-top: 6px; display: block; }
+
+/* ---- Фидбек ---- */
+#feedback-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.82);
+  z-index: 50000;
+  display: none; justify-content: center; align-items: center;
+  flex-direction: column; gap: 20px;
+  backdrop-filter: blur(6px);
+}
+#feedback-overlay.show { display: flex; }
+
+#feedback-box {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 16px;
+  padding: 30px 36px;
+  border-radius: 16px;
+  max-width: 90vw;
+}
+#feedback-img { display: block; border-radius: 12px; }
+#feedback-text {
+  font-weight: 900; text-align: center;
+  line-height: 1.4;
+}
+
+/* ---- Анимации появления фидбека ---- */
+@keyframes popUp {
+  0%   { transform: scale(0.3); opacity: 0; }
+  70%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { transform: translateY(80px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes zoomIn {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ---- Анимации карточек ---- */
+@keyframes pulse {
+  0%,100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+@keyframes wobble {
+  0%,100% { transform: rotate(0deg); }
+  25%     { transform: rotate(-6deg); }
+  75%     { transform: rotate(6deg); }
+}
+@keyframes glitch {
+  0%,100% { clip-path: none; transform: translate(0); }
+  20%     { clip-path: polygon(0 20%,100% 20%,100% 40%,0 40%); transform: translate(-4px,2px); }
+  40%     { clip-path: polygon(0 60%,100% 60%,100% 80%,0 80%); transform: translate(4px,-2px); }
+  60%     { clip-path: none; transform: translate(2px,4px); }
+}
+@keyframes distort {
+  0%,100% { transform: skew(0deg,0deg); }
+  25%     { transform: skew(6deg,2deg); }
+  75%     { transform: skew(-6deg,-2deg); }
+}
+@keyframes scaleUp {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.18); }
+}
+@keyframes scaleDown {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(0.88); }
+}
+
+/* ---- Неон-линия (SVG) ---- */
+.line-neon { filter: drop-shadow(0 0 6px var(--lc,#00ffcc)); }
+
+/* ---- Частицы ---- */
+.particle {
+  position: fixed; pointer-events: none; z-index: 30;
+  font-size: 18px; animation: particleFly 0.9s ease-out forwards;
+}
+@keyframes particleFly {
+  0%   { opacity: 1; transform: translate(0,0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx),var(--dy)) scale(0.3); }
+}
+</style>
 </head>
 <body>
-  <div id="game-root"></div>
-  <script>
-    (function(){
-      const root = document.getElementById('game-root');
-      const urlParams = new URLSearchParams(window.location.search);
 
-      // Замените адрес на ваш репозиторий с данными
-      const JSON_BASE = "https://NikaShum93.github.io/match/game/data/";
-      const cfgId = urlParams.get('id');
+<div id="bg-layer"></div>
+<canvas id="canvas-layer"></canvas>
+<div id="items-layer"></div>
+<div id="tooltip-box"></div>
 
-      let config = null;
+<div id="feedback-overlay">
+  <div id="feedback-box">
+    <img id="feedback-img" src="" alt="">
+    <div id="feedback-text"></div>
+  </div>
+</div>
 
-      async function fetchConfig(id){
-        try{
-          const res = await fetch(`${JSON_BASE}${encodeURIComponent(id)}.json?v=${Date.now()}`, {cache:'no-store'});
-          if(!res.ok) throw new Error("Ошибка загрузки");
-          return await res.json();
-        }catch(e){
-          console.error("Не удалось загрузить конфигурацию", e);
-          return null;
-        }
+<script>
+/* ============================================================
+   КОНСТАНТЫ
+   ============================================================ */
+const JSON_BASE = "https://server-kjnn.onrender.com/data/";
+
+/* ============================================================
+   ЗАГРУЗКА КОНФИГА
+   ============================================================ */
+let CONFIG = null;
+
+async function init() {
+  const params = new URLSearchParams(location.search);
+  const id      = params.get('id');
+  const preview = params.get('preview');
+
+  if (preview) {
+    /* Режим теста — ждём postMessage от редактора */
+    window.parent.postMessage('GAME_READY', '*');
+    window.addEventListener('message', e => {
+      if (e.data?.type === 'LOAD_CONFIG') {
+                CONFIG = e.data.config;
+        startGame();
       }
+    });
+    return;
+  }
 
-      async function init(){
-        if(!cfgId){
-          root.innerHTML = "<p style='color:#f44;'>Ошибка: не указан id конфигурации</p>";
-          return;
+  if (id) {
+    try {
+      const res = await fetch(`${JSON_BASE}${encodeURIComponent(id)}.json`);
+      if (!res.ok) throw new Error('Файл не найден: ' + id);
+      CONFIG = await res.json();
+      startGame();
+    } catch(e) {
+      document.body.innerHTML = `<div style="color:#ff4444;padding:40px;font-size:18px;">
+        ❌ Ошибка загрузки: ${e.message}</div>`;
+    }
+    return;
+  }
+
+  document.body.innerHTML = `<div style="color:#aaa;padding:40px;font-size:16px;">
+    ⚠️ Не передан параметр <code>?id=</code></div>`;
+}
+
+/* ============================================================
+   ИГРОВОЕ СОСТОЯНИЕ
+   ============================================================ */
+let selectedCard = null;   // DOM-элемент выбранной карточки
+let matchedPairs = 0;
+let totalPairs   = 0;
+let sounds       = {};
+let gfLink       = null;
+
+/* ============================================================
+   СТАРТ ИГРЫ
+   ============================================================ */
+function startGame() {
+  if (!CONFIG) return;
+
+  applyBackground();
+  loadFont();
+  loadSounds();
+  renderCards();
+  initCanvas();
+
+  /* Считаем пары */
+  const pairSet = new Set(CONFIG.items.map(i => i.pairIndex));
+  totalPairs = pairSet.size;
+}
+
+/* ============================================================
+   ФОН
+   ============================================================ */
+function applyBackground() {
+  const bg = document.getElementById('bg-layer');
+  if (CONFIG.bg) {
+    bg.style.backgroundImage = `url(${CONFIG.bg})`;
+  }
+}
+
+/* ============================================================
+   ШРИФТ
+   ============================================================ */
+function loadFont() {
+  if (!CONFIG.font) return;
+  gfLink = document.createElement('link');
+  gfLink.rel  = 'stylesheet';
+  gfLink.href = `https://fonts.googleapis.com/css2?family=${CONFIG.font.replace(/ /g,'+')}:wght@400;700&display=swap`;
+  document.head.appendChild(gfLink);
+}
+
+/* ============================================================
+   ЗВУКИ
+   ============================================================ */
+function loadSounds() {
+  const s = CONFIG.sounds || {};
+  ['correct','wrong','win'].forEach(key => {
+    if (s[key]) {
+      const a = new Audio(s[key]);
+      a.preload = 'auto';
+      sounds[key] = a;
+    }
+  });
+}
+
+function playSound(key) {
+  try {
+    if (sounds[key]) {
+      sounds[key].currentTime = 0;
+      sounds[key].play().catch(() => {});
+    }
+  } catch(_) {}
+}
+
+/* ============================================================
+   КАРТОЧКИ
+   ============================================================ */
+function renderCards() {
+  const layer = document.getElementById('items-layer');
+  layer.innerHTML = '';
+
+  const st    = CONFIG.style || {};
+  const font  = CONFIG.font  || 'sans-serif';
+
+  CONFIG.items.forEach(item => {
+    const side = item.side === 'left' ? st.left : st.right;
+    if (!side) return;
+
+    const card = document.createElement('div');
+    card.className  = 'card';
+    card.dataset.id         = item.id;
+    card.dataset.pairIndex  = item.pairIndex;
+    card.dataset.side       = item.side;
+
+    /* Позиция и размер */
+    card.style.left      = item.x + 'px';
+    card.style.top       = item.y + 'px';
+    card.style.width     = item.w + 'px';
+    card.style.height    = item.h + 'px';
+    card.style.transform = `rotate(${item.rot || 0}deg)`;
+
+    /* Стиль */
+    card.style.background  = hexToRgba(side.bgColor, side.bgOpacity);
+    card.style.border      = `${side.borderWidth}px solid ${side.borderColor}`;
+    card.style.color       = side.textColor;
+    card.style.fontSize    = (item.fontSize || 18) + 'px';
+    card.style.fontFamily  = `"${font}", sans-serif`;
+    card.style.fontWeight  = '700';
+
+    /* Контент */
+    if (item.img) {
+      const img = document.createElement('img');
+      img.src   = item.img;
+      img.style.cssText = 'width:100%;height:100%;object-fit:contain;pointer-events:none;';
+      card.appendChild(img);
+    } else {
+      const needsMath = /\$|\\\(/.test(item.text);
+      if (needsMath) {
+        card.innerHTML = item.text;
+        if (window.MathJax?.typesetPromise) {
+          MathJax.typesetPromise([card]).catch(() => {});
         }
-        config = await fetchConfig(cfgId);
-        if(!config){
-          root.innerHTML = "<p style='color:#f44;'>Не удалось загрузить конфигурацию</p>";
-          return;
-        }
-
-        // Отсюда запускать вашу логику игры используя данные config
-        root.innerHTML = "<p>Игра загружена, конфигурация успешно получена.</p>";
-
-        // TODO: Добавить ваш игровой движок и интерфейс
-        // Можно взять код вашей игры из присланных примеров,
-        // реализовав взаимодействия и UI согласно config
+      } else {
+        card.textContent = item.text;
       }
+    }
 
-      init();
+    /* Анимация при наведении */
+    const animHover = st.animHover || 'none';
+    const glowColor = st.glowColor || '#00ffcc';
 
-    })();
-  </script>
+    card.addEventListener('mouseenter', () => {
+      if (card.classList.contains('matched')) return;
+      applyAnim(card, animHover, glowColor);
+    });
+    card.addEventListener('mouseleave', () => {
+      if (card.classList.contains('matched')) return;
+      clearAnim(card);
+    });
+
+    /* Клик */
+    card.addEventListener('click', () => onCardClick(card));
+
+    /* Tooltip */
+    if (item.tooltip && (item.tooltip.text || item.tooltip.img)) {
+      card.dataset.ttText = item.tooltip.text || '';
+      card.dataset.ttImg  = item.tooltip.img  || '';
+      card.addEventListener('mouseenter', e => showTooltip(e, card));
+      card.addEventListener('mousemove',  e => moveTooltip(e));
+      card.addEventListener('mouseleave', hideTooltip);
+    }
+
+    layer.appendChild(card);
+  });
+}
+
+/* ============================================================
+   АНИМАЦИИ КАРТОЧЕК
+   ============================================================ */
+function applyAnim(card, anim, glowColor) {
+  card.style.removeProperty('animation');
+  void card.offsetWidth; /* reflow */
+
+  switch (anim) {
+    case 'glow':
+      card.style.boxShadow = `0 0 18px 4px ${glowColor}, 0 0 40px 8px ${glowColor}55`;
+      break;
+    case 'scaleUp':
+      card.style.animation = 'scaleUp 0.4s ease infinite';
+      break;
+    case 'scaleDown':
+      card.style.animation = 'scaleDown 0.4s ease infinite';
+      break;
+    case 'pulse':
+      card.style.animation = 'pulse 0.6s ease infinite';
+      break;
+    case 'wobble':
+      card.style.animation = 'wobble 0.5s ease infinite';
+      break;
+    case 'glitch':
+      card.style.animation = 'glitch 0.4s steps(1) infinite';
+      break;
+    case 'distort':
+      card.style.animation = 'distort 0.5s ease infinite';
+      break;
+    default:
+      break;
+  }
+}
+
+function clearAnim(card) {
+  card.style.animation  = '';
+  card.style.boxShadow  = '';
+}
+
+/* ============================================================
+   КЛИК ПО КАРТОЧКЕ
+   ============================================================ */
+function onCardClick(card) {
+  if (card.classList.contains('matched')) return;
+
+  const st        = CONFIG.style || {};
+  const animClick = st.animClick || 'glow';
+  const glowColor = st.glowColor || '#00ffcc';
+
+  /* Если кликнули по уже выбранной — снять выбор */
+  if (selectedCard === card) {
+    card.classList.remove('selected');
+    clearAnim(card);
+    selectedCard = null;
+    return;
+  }
+
+  /* Анимация клика */
+  applyAnim(card, animClick, glowColor);
+  card.classList.add('selected');
+
+  if (!selectedCard) {
+    /* Первый выбор */
+    selectedCard = card;
+    return;
+  }
+
+  /* Второй выбор — проверяем пару */
+  const first  = selectedCard;
+  const second = card;
+
+  const sameIndex = first.dataset.pairIndex === second.dataset.pairIndex;
+  const sameSide  = first.dataset.side      === second.dataset.side;
+
+  if (sameIndex && !sameSide) {
+    /* ✅ Верная пара */
+    onMatch(first, second);
+  } else {
+    /* ❌ Ошибка */
+    onMismatch(first, second);
+  }
+
+  selectedCard = null;
+}
+
+/* ============================================================
+   ВЕРНАЯ ПАРА
+   ============================================================ */
+function onMatch(a, b) {
+  playSound('correct');
+
+  const st             = CONFIG.style || {};
+  const matchedOpacity = st.matchedOpacity !== undefined ? st.matchedOpacity : 0.35;
+  const glowColor      = st.glowColor || '#00ffcc';
+
+  /* Рисуем линию */
+  drawLine(a, b);
+
+  /* Частицы */
+  spawnParticles(a, '⭐');
+  spawnParticles(b, '✨');
+
+  /* Пометить как совпавшие */
+  [a, b].forEach(card => {
+    card.classList.remove('selected');
+    card.classList.add('matched');
+    clearAnim(card);
+    card.style.opacity   = matchedOpacity;
+    card.style.boxShadow = `0 0 14px 3px ${glowColor}88`;
+  });
+
+  matchedPairs++;
+  if (matchedPairs >= totalPairs) {
+    setTimeout(showFeedback, 600);
+  }
+}
+
+/* ============================================================
+   ОШИБКА
+   ============================================================ */
+function onMismatch(a, b) {
+  playSound('wrong');
+
+  /* Тряска */
+  [a, b].forEach(card => {
+    card.style.animation = 'wobble 0.4s ease';
+    setTimeout(() => {
+      card.style.animation = '';
+      card.classList.remove('selected');
+      clearAnim(card);
+    }, 420);
+  });
+}
+
+/* ============================================================
+   CANVAS — ЛИНИИ
+   ============================================================ */
+let canvas, ctx;
+
+function initCanvas() {
+  canvas = document.getElementById('canvas-layer');
+  ctx    = canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+}
+
+function resizeCanvas() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function drawLine(cardA, cardB) {
+  if (!ctx) return;
+
+  const st   = CONFIG.style || {};
+  const line = st.line || {};
+  const color     = line.color     || '#00ffcc';
+  const thickness = line.thickness || 4;
+  const style     = line.style     || 'neon';
+
+  const ra = cardA.getBoundingClientRect();
+  const rb = cardB.getBoundingClientRect();
+
+  /* Точки соединения — середины ближних краёв */
+  const ax = cardA.dataset.side === 'left' ? ra.right  : ra.left;
+  const ay = ra.top + ra.height / 2;
+  const bx = cardB.dataset.side === 'left' ? rb.right  : rb.left;
+  const by = rb.top + rb.height / 2;
+
+  if (style === 'neon') {
+    drawNeonLine(ax, ay, bx, by, color, thickness);
+  } else if (style === 'magic') {
+    drawMagicLine(ax, ay, bx, by, color, thickness);
+  } else if (style === 'nature') {
+    drawNatureLine(ax, ay, bx, by, color, thickness);
+  }
+}
+
+function drawNeonLine(x1, y1, x2, y2, color, thickness) {
+  /* Внешнее свечение */
+  ctx.save();
+  ctx.strokeStyle = color + '55';
+  ctx.lineWidth   = thickness * 3;
+  ctx.lineCap     = 'round';
+  ctx.shadowColor = color;
+  ctx.shadowBlur  = 18;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.bezierCurveTo(
+    (x1 + x2) / 2, y1,
+    (x1 + x2) / 2, y2,
+    x2, y2
+  );
+  ctx.stroke();
+
+  /* Основная линия */
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = thickness;
+  ctx.shadowBlur  = 8;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.bezierCurveTo(
+    (x1 + x2) / 2, y1,
+    (x1 + x2) / 2, y2,
+    x2, y2
+  );
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawMagicLine(x1, y1, x2, y2, color, thickness) {
+  drawNeonLine(x1, y1, x2, y2, color, thickness);
+
+  /* Звёздочки вдоль линии */
+  const steps = 6;
+  for (let i = 0; i <= steps; i++) {
+    const t  = i / steps;
+    const mx = x1 + (x2 - x1) * t;
+    const my = y1 + (y2 - y1) * t;
+    ctx.save();
+    ctx.font      = `${thickness * 3 + 8}px serif`;
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = color;
+    ctx.shadowBlur  = 10;
+    ctx.fillText('⭐', mx - 8, my + 6);
+    ctx.restore();
+  }
+}
+
+function drawNatureLine(x1, y1, x2, y2, color, thickness) {
+  /* Зелёная нить */
+  drawNeonLine(x1, y1, x2, y2, '#44cc44', thickness);
+
+  /* Бабочки */
+  const steps = 4;
+  for (let i = 1; i < steps; i++) {
+    const t  = i / steps;
+    const mx = x1 + (x2 - x1) * t;
+    const my = y1 + (y2 - y1) * t;
+    ctx.save();
+    ctx.font = `${thickness * 3 + 6}px serif`;
+    ctx.fillText('🦋', mx - 8, my + 6);
+    ctx.restore();
+  }
+}
+
+/* ============================================================
+   ЧАСТИЦЫ
+   ============================================================ */
+function spawnParticles(card, emoji) {
+  const rect = card.getBoundingClientRect();
+  const cx   = rect.left + rect.width  / 2;
+  const cy   = rect.top  + rect.height / 2;
+
+  for (let i = 0; i < 8; i++) {
+    const p  = document.createElement('div');
+    p.className   = 'particle';
+    p.textContent = emoji;
+    const angle = (i / 8) * Math.PI * 2;
+    const dist  = 50 + Math.random() * 50;
+    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    p.style.left = cx + 'px';
+    p.style.top  = cy + 'px';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 950);
+  }
+}
+
+/* ============================================================
+   TOOLTIP
+   ============================================================ */
+const tooltipBox = document.getElementById('tooltip-box');
+
+function showTooltip(e, card) {
+  const tt  = CONFIG.style?.tooltip || {};
+  const txt = card.dataset.ttText || '';
+  const img = card.dataset.ttImg  || '';
+  if (!txt && !img) return;
+
+  tooltipBox.innerHTML = '';
+  tooltipBox.style.background   = tt.bg     || '#222';
+  tooltipBox.style.color        = tt.color  || '#00ffcc';
+  tooltipBox.style.borderRadius = (tt.radius || 8) + 'px';
+  tooltipBox.style.boxShadow    = `0 0 16px ${tt.glow || '#00ffcc'}`;
+  tooltipBox.style.border       = `1px solid ${tt.glow || '#00ffcc'}55`;
+
+  if (txt) {
+    const span = document.createElement('div');
+    span.textContent = txt;
+    tooltipBox.appendChild(span);
+  }
+  if (img) {
+    const i = document.createElement('img');
+    i.src = img;
+    tooltipBox.appendChild(i);
+  }
+
+  tooltipBox.style.display = 'block';
+  moveTooltip(e);
+}
+
+function moveTooltip(e) {
+  let x = e.clientX + 14;
+  let y = e.clientY + 14;
+  if (x + 270 > window.innerWidth)  x = e.clientX - 280;
+  if (y + 200 > window.innerHeight) y = e.clientY - 210;
+  tooltipBox.style.left = x + 'px';
+  tooltipBox.style.top  = y + 'px';
+}
+
+function hideTooltip() {
+  tooltipBox.style.display = 'none';
+}
+
+/* ============================================================
+   ФИНАЛЬНЫЙ ФИДБЕК
+   ============================================================ */
+function showFeedback() {
+  playSound('win');
+
+  const fb = CONFIG.feedback || {};
+  if (!fb.mode || fb.mode === 'none') return;
+
+  const overlay  = document.getElementById('feedback-overlay');
+  const box      = document.getElementById('feedback-box');
+  const imgEl    = document.getElementById('feedback-img');
+  const textEl   = document.getElementById('feedback-text');
+
+  /* Стили блока */
+  box.style.background   = fb.bgColor     || '#0a0a0f';
+  box.style.border       = `${fb.borderWidth || 2}px solid ${fb.borderColor || '#00ffcc'}`;
+  box.style.borderRadius = (fb.radius || 16) + 'px';
+  box.style.boxShadow    = `0 0 30px ${fb.glowColor || '#00ffcc'}`;
+
+  /* Картинка */
+  if ((fb.mode === 'both' || fb.mode === 'image') && fb.img) {
+    imgEl.src           = fb.img;
+    imgEl.style.width   = (fb.imgWidth || 320) + 'px';
+    imgEl.style.display = 'block';
+  } else {
+    imgEl.style.display = 'none';
+  }
+
+  /* Текст */
+  if (fb.mode === 'both' || fb.mode === 'text') {
+    textEl.textContent  = fb.text || '🎉 Отлично!';
+    textEl.style.color  = fb.textColor  || '#fff';
+    textEl.style.fontSize = (fb.fontSize || 28) + 'px';
+    textEl.style.fontFamily = fb.font
+      ? `"${fb.font}", sans-serif`
+      : (CONFIG.font ? `"${CONFIG.font}", sans-serif` : 'sans-serif');
+    textEl.style.display = 'block';
+
+    /* MathJax в тексте фидбека */
+    if (/\$|\\\(/.test(textEl.textContent) && window.MathJax?.typesetPromise) {
+      MathJax.typesetPromise([textEl]).catch(() => {});
+    }
+  } else {
+    textEl.style.display = 'none';
+  }
+
+  /* Анимация */
+  const anim = fb.anim || 'popUp';
+  if (anim !== 'none') {
+    box.style.animation = `${anim} 0.55s cubic-bezier(0.34,1.56,0.64,1) both`;
+  } else {
+    box.style.animation = 'none';
+  }
+
+  overlay.classList.add('show');
+
+  /* Клик по оверлею — закрыть */
+  overlay.addEventListener('click', () => overlay.classList.remove('show'), { once: true });
+}
+
+/* ============================================================
+   УТИЛИТЫ
+   ============================================================ */
+function hexToRgba(hex, alpha) {
+  if (!hex) return `rgba(0,0,0,${alpha})`;
+  const h = hex.replace('#','');
+  const r = parseInt(h.slice(0,2), 16);
+  const g = parseInt(h.slice(2,4), 16);
+  const b = parseInt(h.slice(4,6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/* ============================================================
+   ЗАПУСК
+   ============================================================ */
+init();
+</script>
 </body>
 </html>
