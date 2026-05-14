@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Игра</title>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <style>
+    /* Тут стили из примера движка, можно взять из ранее присланного */
+  </style>
+</head>
+<body>
+  <div id="game-root"></div>
+  <script>
+    (function(){
+      const root = document.getElementById('game-root');
+      const urlParams = new URLSearchParams(window.location.search);
+
+      // Замените адрес на ваш репозиторий с данными
+      const JSON_BASE = "https://NikaShum93.github.io/match/game/data/";
+      const cfgId = urlParams.get('id');
+
+      let config = null;
+
+      async function fetchConfig(id){
+        try{
+          const res = await fetch(`${JSON_BASE}${encodeURIComponent(id)}.json?v=${Date.now()}`, {cache:'no-store'});
+          if(!res.ok) throw new Error("Ошибка загрузки");
+          return await res.json();
+        }catch(e){
+          console.error("Не удалось загрузить конфигурацию", e);
+          return null;
+        }
+      }
+
+      async function init(){
+        if(!cfgId){
+          root.innerHTML = "<p style='color:#f44;'>Ошибка: не указан id конфигурации</p>";
+          return;
+        }
+        config = await fetchConfig(cfgId);
+        if(!config){
+          root.innerHTML = "<p style='color:#f44;'>Не удалось загрузить конфигурацию</p>";
+          return;
+        }
+
+        // Отсюда запускать вашу логику игры используя данные config
+        root.innerHTML = "<p>Игра загружена, конфигурация успешно получена.</p>";
+
+        // TODO: Добавить ваш игровой движок и интерфейс
+        // Можно взять код вашей игры из присланных примеров,
+        // реализовав взаимодействия и UI согласно config
+      }
+
+      init();
+
+    })();
+  </script>
+</body>
+</html>
