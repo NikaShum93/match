@@ -349,14 +349,11 @@
         engineParts.push(`  }`);
         engineParts.push(`});});`);
         
-        engineParts.push(`</script></body></html>`);
+        engineParts.push(`<\/script></body></html>`);
 
         let finalRawCode = engineParts.join('\n');
         
-        // Кодируем в Base64 с правильной поддержкой кириллицы
         let encodedHTML = window.btoa(unescape(encodeURIComponent(finalRawCode)));
-        
-        // Формируем чистый iframe
         let finalIframe = `<div style="width: 100%; position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="data:text/html;base64,${encodedHTML}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen></iframe></div>`;
         
         document.getElementById('code-iframe').value = finalIframe;
