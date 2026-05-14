@@ -1,367 +1,1077 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Редактор Механики: PRO Сопоставление Пар</title>
-    <style>
-        :root { --primary: #00ffcc; --bg-dark: #121212; --panel-bg: rgba(20, 20, 25, 0.98); }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Segoe UI', sans-serif; 
-                     background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 50% / 20px 20px; color: #fff; overflow: hidden; }
-        
-        #workspace { position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; 
-                     background-color: transparent; background-size: cover; background-position: center; overflow: hidden; }
-
-        #settings-btn { position: absolute; top: 15px; left: 15px; z-index: 10000; background: var(--primary); color: #000; 
-                        border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        #settings-btn:hover { transform: scale(1.05); }
-
-        #settings-panel { position: absolute; top: 0; left: 0; width: 350px; height: 100%; background: var(--panel-bg); 
-                          backdrop-filter: blur(10px); z-index: 9999; padding: 60px 20px 20px; box-sizing: border-box; 
-                          transform: translateX(-100%); transition: transform 0.3s ease; overflow-y: auto; border-right: 1px solid #333; }
-        #settings-panel.open { transform: translateX(0); }
-        #settings-panel::-webkit-scrollbar { width: 6px; }
-        #settings-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-        
-        .control-group { margin-bottom: 12px; }
-        .control-group label { display: block; font-size: 11px; margin-bottom: 4px; color: #bbb; text-transform: uppercase; }
-        input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 8px; box-sizing: border-box; 
-                                                                    background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff; border-radius: 4px; }
-        input[type="color"] { width: 100%; height: 35px; padding: 2px; border: 1px solid #444; border-radius: 4px; cursor: pointer; background: #000;}
-        textarea { resize: vertical; min-height: 60px; font-family: monospace; font-size: 12px;}
-        .row { display: flex; gap: 10px; }
-        button.action-btn { width: 100%; padding: 10px; margin-top: 5px; background: #444; border: 1px solid #666; color: #fff; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button.action-btn.publish { background: var(--primary); color: #000; font-size: 16px; padding: 15px; margin-top: 20px; }
-        
-        #elements-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        
-        .drag-item { position: absolute; padding: 10px; border-radius: 8px; cursor: grab; user-select: none; 
-                     display: flex; justify-content: center; align-items: center; text-align: center; box-sizing: border-box; 
-                     pointer-events: auto; z-index: 50; resize: both; overflow: hidden; 
-                     transform-origin: center center; }
-        .drag-item:active { cursor: grabbing; z-index: 1000; }
-        .drag-item.editor-selected { outline: 2px dashed var(--primary); outline-offset: 4px; }
-        .drag-item img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-
-        #item-toolbar { display: none; position: absolute; background: #222; border: 1px solid #555; border-radius: 6px; 
-                        padding: 10px; z-index: 10001; box-shadow: 0 5px 15px rgba(0,0,0,0.5); gap: 10px; align-items: center; }
-        #item-toolbar input { width: 60px; }
-
-        #output-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); 
-                        z-index: 100000; justify-content: center; align-items: center; flex-direction: column; }
-        .modal-content { background: #1a1a1a; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; border: 1px solid #333; text-align: left;}
-        .modal-content textarea { width: 100%; height: 150px; margin-top: 10px; background: #000; color: #00ffcc; font-family: monospace; border: 1px solid #444; border-radius: 4px; padding: 10px; box-sizing: border-box;}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Сопоставление Пар — Редактор</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link id="gf" rel="stylesheet" href="">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\$','\$']] },
+  startup: { typeset: false }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script"></script>
+<style>
+:root { --primary: #00ffcc; --panel-bg: rgba(20,20,25,0.98); }
+*, *::before, *::after { box-sizing: border-box; }
+body, html {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  font-family: 'Segoe UI', sans-serif;
+  background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 50%/20px 20px;
+  color: #fff; overflow: hidden;
+}
+#workspace {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
+  background-size: cover; background-position: center; overflow: hidden;
+}
+#settings-btn {
+  position: absolute; top: 15px; left: 15px; z-index: 10000;
+  background: var(--primary); color: #000; border: none;
+  padding: 10px 15px; border-radius: 8px; cursor: pointer;
+  font-weight: bold; transition: 0.2s;
+  box-shadow: 0 0 15px rgba(0,255,204,0.3);
+}
+#settings-btn:hover { transform: scale(1.05); }
+#top-right-btns {
+  position: absolute; top: 15px; right: 15px; z-index: 10000;
+  display: flex; gap: 10px;
+}
+.top-btn {
+  border: none; padding: 10px 16px; border-radius: 8px;
+  cursor: pointer; font-weight: bold; font-size: 14px;
+  transition: 0.2s; white-space: nowrap;
+}
+.top-btn.test { background: #ff9944; color: #000; box-shadow: 0 0 15px rgba(255,153,68,0.4); }
+.top-btn.test:hover { background: #ffbb77; transform: scale(1.05); }
+.top-btn.pub  { background: var(--primary); color: #000; box-shadow: 0 0 15px rgba(0,255,204,0.4); }
+.top-btn.pub:hover  { background: #fff; transform: scale(1.05); }
+#settings-panel {
+  position: absolute; top: 0; left: 0; width: 370px; height: 100%;
+  background: var(--panel-bg); backdrop-filter: blur(10px); z-index: 9999;
+  padding: 60px 20px 20px; box-sizing: border-box;
+  transform: translateX(-100%); transition: transform 0.3s ease;
+  overflow-y: auto; border-right: 1px solid #333;
+}
+#settings-panel.open { transform: translateX(0); }
+#settings-panel::-webkit-scrollbar { width: 6px; }
+#settings-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+.control-group { margin-bottom: 12px; }
+.control-group label {
+  display: block; font-size: 11px; margin-bottom: 4px;
+  color: #bbb; text-transform: uppercase;
+}
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%; padding: 8px; box-sizing: border-box;
+  background: rgba(0,0,0,0.5); border: 1px solid #444;
+  color: #fff; border-radius: 4px;
+}
+input[type="file"] {
+  width: 100%; font-size: 11px; color: #aaa; background: #222;
+  border: 1px dashed #555; padding: 5px; border-radius: 4px; cursor: pointer;
+}
+input[type="color"] {
+  width: 100%; height: 35px; padding: 2px; border: 1px solid #444;
+  border-radius: 4px; cursor: pointer; background: #000;
+}
+input[type="range"] { width: 100%; accent-color: var(--primary); }
+textarea { resize: vertical; min-height: 60px; font-family: monospace; font-size: 12px; }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; min-width: 0; }
+button.action-btn {
+  width: 100%; padding: 10px; margin-top: 5px;
+  background: #444; border: 1px solid #666;
+  color: #fff; border-radius: 4px; cursor: pointer;
+  font-weight: bold; transition: 0.2s;
+}
+button.action-btn:hover { background: #555; }
+.section-title {
+  color: var(--primary); margin: 20px 0 10px;
+  border-bottom: 1px solid #333; font-size: 14px; padding-bottom: 5px;
+}
+.section-title.left-color  { color: #ff9944; border-bottom-color: #ff9944; }
+.section-title.right-color { color: #44aaff; border-bottom-color: #44aaff; }
+#elements-container {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%; pointer-events: none;
+}
+.drag-item {
+  position: absolute; cursor: grab; user-select: none;
+  pointer-events: auto; z-index: 50; resize: both; overflow: hidden;
+  transform-origin: center center;
+}
+.drag-item:active { cursor: grabbing; z-index: 1000; }
+.drag-item.editor-selected .item-inner {
+  outline: 2px dashed var(--primary); outline-offset: -2px;
+  box-shadow: inset 0 0 10px rgba(0,255,204,0.5);
+}
+.item-inner {
+  width: 100%; height: 100%; display: flex;
+  justify-content: center; align-items: center;
+  text-align: center; box-sizing: border-box;
+  border-radius: 8px; position: relative; transition: all 0.2s;
+}
+.item-inner img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.drag-item .tt-preview {
+  position: absolute; top: 2px; right: 2px; background: #ff00cc;
+  color: #fff; font-size: 10px; padding: 2px 4px;
+  border-radius: 10px; display: none; z-index: 2;
+}
+#item-toolbar {
+  display: none; position: absolute;
+  background: rgba(20,20,25,0.95); border: 1px solid #555;
+  border-radius: 8px; padding: 15px; z-index: 10001;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  gap: 10px; align-items: flex-end; width: 320px;
+  flex-wrap: wrap; backdrop-filter: blur(5px);
+}
+#item-toolbar .mini-group { display: flex; flex-direction: column; gap: 4px; }
+#item-toolbar input { width: 60px; }
+#item-toolbar input[type="text"] { width: 100%; }
+/* Модалка публикации */
+#output-modal {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%; background: rgba(0,0,0,0.9);
+  z-index: 100000; justify-content: center; align-items: center;
+  flex-direction: column; backdrop-filter: blur(5px);
+}
+.modal-content {
+  background: #1a1a1a; padding: 30px; border-radius: 12px;
+  width: 90%; max-width: 700px; border: 1px solid #333;
+  text-align: left; box-shadow: 0 0 50px rgba(0,255,204,0.2);
+}
+.modal-content textarea {
+  width: 100%; height: 100px; margin-top: 10px;
+  background: #000; color: #00ffcc; font-family: monospace;
+  font-size: 11px; border: 1px solid #444; border-radius: 4px;
+  padding: 10px; box-sizing: border-box;
+}
+.modal-steps {
+  background: rgba(0,255,204,0.05); border: 1px solid rgba(0,255,204,0.2);
+  border-radius: 8px; padding: 15px; margin-bottom: 15px;
+  font-size: 13px; line-height: 1.8;
+}
+.modal-steps b { color: var(--primary); }
+/* Модалка теста */
+#test-modal {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%; background: rgba(0,0,0,0.97);
+  z-index: 200000; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+#test-modal.open { display: flex; }
+#test-modal-header {
+  width: 90vw; display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 12px;
+}
+#test-modal-header span { color: var(--primary); font-weight: bold; font-size: 16px; }
+#test-modal-close {
+  background: var(--primary); color: #000; border: none;
+  padding: 8px 18px; border-radius: 8px; cursor: pointer;
+  font-weight: bold; font-size: 14px;
+}
+#test-iframe {
+  width: 90vw; height: 80vh;
+  border: 2px solid var(--primary); border-radius: 12px; background: #000;
+}
+#pub-status { font-size: 12px; color: #aaa; margin-top: 6px; text-align: center; min-height: 18px; }
+.hint-text { font-size: 11px; color: #888; margin-top: 4px; }
+</style>
 </head>
 <body>
-
 <div id="workspace">
-    <button id="settings-btn">⚙ Настройки</button>
-    
-    <div id="settings-panel" class="open">
-        <div class="control-group"><label>Фон (URL или пусто):</label><input type="text" id="bg-input" class="global-style" placeholder="https://..."></div>
-        <div class="row">
-            <div class="control-group" style="flex: 1;"><label>Столбец 1:</label><textarea id="list-left">Apple&#10;Sun</textarea></div>
-            <div class="control-group" style="flex: 1;"><label>Столбец 2:</label><textarea id="list-right">Яблоко&#10;Солнце</textarea></div>
-        </div>
-        <button id="btn-generate" class="action-btn">Сгенерировать элементы</button>
+  <button id="settings-btn">⚙ Настройки</button>
 
-        <h4 style="color:var(--primary); margin:20px 0 10px; border-bottom:1px solid #333;">Общий дизайн карточек</h4>
-        <p style="font-size: 10px; color: #888; margin-top:0;">(Размер меняется потянув за правый нижний угол карточки на экране)</p>
-        <div class="row">
-            <div class="control-group" style="flex:1;"><label>Фон (цвет):</label><input type="color" id="card-bg-color" value="#000000" class="global-style"></div>
-            <div class="control-group" style="flex:1;"><label>Прозрачность:</label><input type="range" id="card-bg-opacity" min="0" max="1" step="0.05" value="0.6" class="global-style"></div>
-        </div>
-        <div class="row">
-            <div class="control-group" style="flex:1;"><label>Цвет рамки:</label><input type="color" id="border-color" value="#ffffff" class="global-style"></div>
-            <div class="control-group" style="flex:1;"><label>Толщина (px):</label><input type="number" id="border-width" value="2" min="0" class="global-style"></div>
-        </div>
-        <div class="control-group"><label>Цвет текста:</label><input type="color" id="text-color" value="#ffffff" class="global-style"></div>
+  <div id="top-right-btns">
+    <button class="top-btn test" id="btn-test">▶ Тест</button>
+    <button class="top-btn pub"  id="btn-publish">🚀 Опубликовать</button>
+  </div>
 
-        <h4 style="color:var(--primary); margin:20px 0 10px; border-bottom:1px solid #333;">Магия и Линии</h4>
-        <div class="row">
-            <div class="control-group" style="flex:1;"><label>Цвет связи:</label><input type="color" id="line-color" value="#00ffcc"></div>
-            <div class="control-group" style="flex:1;"><label>Толщина линии:</label><input type="number" id="line-thickness" value="4" min="1"></div>
+  <div id="settings-panel" class="open">
+
+    <h4 class="section-title" style="margin-top:0;">Основа и Текст</h4>
+    <p style="font-size:10px;color:#aaa;margin-top:-5px;">Формулы: <code>$x^2$</code></p>
+    <div class="row">
+      <div class="control-group">
+        <label>Язык</label><select id="language"></select>
+      </div>
+      <div class="control-group">
+        <label>Шрифт</label><select id="font" class="global-style"></select>
+      </div>
+    </div>
+    <div class="control-group">
+      <label>Фон (картинка):</label>
+      <input type="file" accept="image/*" id="bg-file">
+    </div>
+    <div class="row">
+      <div class="control-group">
+        <label>Столбец 1 (левый):</label>
+        <textarea id="list-left">Apple&#10;$x^2$</textarea>
+      </div>
+      <div class="control-group">
+        <label>Столбец 2 (правый):</label>
+        <textarea id="list-right">Яблоко&#10;Икс в квадрате</textarea>
+      </div>
+    </div>
+    <button id="btn-generate" class="action-btn">⟳ Сгенерировать элементы</button>
+
+    <h4 class="section-title">Анимации</h4>
+    <div class="control-group">
+      <label>При наведении:</label>
+      <select id="anim-hover" class="global-style">
+        <option value="none">Нет</option>
+        <option value="glow">Неоновая подсветка</option>
+        <option value="scaleUp">Увеличение</option>
+        <option value="scaleDown">Уменьшение</option>
+        <option value="pulse">Пульсация</option>
+        <option value="wobble">Тряска</option>
+        <option value="glitch">Глитч</option>
+        <option value="distort">Искажение</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>При клике:</label>
+      <select id="anim-click" class="global-style">
+        <option value="glow" selected>Неоновая подсветка</option>
+        <option value="none">Нет</option>
+        <option value="scaleUp">Увеличение</option>
+        <option value="pulse">Пульсация</option>
+        <option value="wobble">Тряска</option>
+        <option value="glitch">Глитч</option>
+        <option value="distort">Искажение</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Цвет подсветки:</label>
+      <input type="color" id="anim-glow-color" value="#00ffcc" class="global-style">
+    </div>
+
+    <h4 class="section-title">Аудио</h4>
+    <div class="control-group"><label>Верная пара</label><input type="file" accept="audio/*" id="snd-correct-file"></div>
+    <div class="control-group"><label>Ошибка</label><input type="file" accept="audio/*" id="snd-wrong-file"></div>
+    <div class="control-group"><label>Победа</label><input type="file" accept="audio/*" id="snd-win-file"></div>
+
+    <h4 class="section-title left-color">🟠 Группа 1 — левый столбец</h4>
+    <p style="font-size:10px;color:#888;margin-top:-5px;">Размер — растягиванием за угол</p>
+    <div class="row">
+      <div class="control-group"><label>Фон:</label><input type="color" id="card-bg-color-left" value="#000000"></div>
+      <div class="control-group"><label>Прозрачность:</label><input type="range" id="card-bg-opacity-left" min="0" max="1" step="0.05" value="0.6"></div>
+    </div>
+    <div class="row">
+      <div class="control-group"><label>Рамка:</label><input type="color" id="border-color-left" value="#ffffff"></div>
+      <div class="control-group"><label>Толщина (px):</label><input type="number" id="border-width-left" value="2" min="0"></div>
+    </div>
+    <div class="control-group"><label>Цвет текста:</label><input type="color" id="text-color-left" value="#ffffff"></div>
+
+    <h4 class="section-title right-color">🔵 Группа 2 — правый столбец</h4>
+    <div class="row">
+      <div class="control-group"><label>Фон:</label><input type="color" id="card-bg-color-right" value="#000000"></div>
+      <div class="control-group"><label>Прозрачность:</label><input type="range" id="card-bg-opacity-right" min="0" max="1" step="0.05" value="0.6"></div>
+    </div>
+    <div class="row">
+      <div class="control-group"><label>Рамка:</label><input type="color" id="border-color-right" value="#ffffff"></div>
+      <div class="control-group"><label>Толщина (px):</label><input type="number" id="border-width-right" value="2" min="0"></div>
+    </div>
+    <div class="control-group"><label>Цвет текста:</label><input type="color" id="text-color-right" value="#ffffff"></div>
+
+    <h4 class="section-title">✅ После правильного совпадения</h4>
+    <div class="control-group">
+      <label>Прозрачность совпавших карточек:</label>
+      <select id="matched-opacity">
+        <option value="0">Полностью прозрачные (исчезают)</option>
+        <option value="0.35" selected>Полупрозрачные</option>
+        <option value="0.6">Слегка затемнённые</option>
+        <option value="1">Без изменений</option>
+      </select>
+    </div>
+
+    <h4 class="section-title">Подсказки (Tooltip)</h4>
+    <div class="row">
+      <div class="control-group"><label>Фон:</label><input type="color" id="tt-bg" value="#222222"></div>
+      <div class="control-group"><label>Текст:</label><input type="color" id="tt-color" value="#00ffcc"></div>
+    </div>
+    <div class="row">
+      <div class="control-group"><label>Неон:</label><input type="color" id="tt-glow" value="#00ffcc"></div>
+      <div class="control-group"><label>Скругление (px):</label><input type="number" id="tt-radius" value="8"></div>
+    </div>
+
+    <h4 class="section-title">Линии</h4>
+    <div class="row">
+      <div class="control-group"><label>Цвет:</label><input type="color" id="line-color" value="#00ffcc"></div>
+      <div class="control-group"><label>Толщина:</label><input type="number" id="line-thickness" value="4" min="1"></div>
+    </div>
+    <div class="control-group">
+      <label>Стиль:</label>
+      <select id="line-style">
+        <option value="neon">Неоновая нить</option>
+        <option value="magic">Магическая ⭐</option>
+        <option value="nature">Лесная 🦋</option>
+      </select>
+    </div>
+
+    <h4 class="section-title">🎉 Финальный фидбек</h4>
+    <div class="control-group">
+      <label>Что показывать:</label>
+      <select id="fb-mode">
+        <option value="both">Картинка + текст</option>
+        <option value="text">Только текст</option>
+        <option value="image">Только картинка</option>
+        <option value="none">Не показывать</option>
+      </select>
+    </div>
+
+    <div id="fb-text-block">
+      <div class="control-group">
+        <label>Текст фидбека:</label>
+        <textarea id="fb-text" style="min-height:50px;">🎉 Отлично! Все пары найдены!</textarea>
+      </div>
+      <div class="row">
+        <div class="control-group">
+          <label>Шрифт:</label><select id="fb-font"></select>
         </div>
         <div class="control-group">
-            <label>Стиль взаимодействия (Частицы):</label>
-            <select id="line-style">
-                <option value="neon">Неоновая нить (Классика)</option>
-                <option value="magic">Магическая (Звезды ⭐)</option>
-                <option value="nature">Лесная (Бабочки 🦋)</option>
-            </select>
+          <label>Размер (px):</label>
+          <input type="number" id="fb-font-size" value="28" min="10" max="80">
         </div>
-
-        <button id="btn-publish" class="action-btn publish">🚀 ОПУБЛИКОВАТЬ КОД</button>
+      </div>
+      <div class="row">
+        <div class="control-group"><label>Цвет текста:</label><input type="color" id="fb-text-color" value="#ffffff"></div>
+        <div class="control-group"><label>Фон:</label><input type="color" id="fb-bg-color" value="#0a0a0f"></div>
+      </div>
+      <div class="row">
+        <div class="control-group"><label>Рамка:</label><input type="color" id="fb-border-color" value="#00ffcc"></div>
+        <div class="control-group"><label>Толщина рамки:</label><input type="number" id="fb-border-width" value="2" min="0"></div>
+      </div>
+      <div class="row">
+        <div class="control-group"><label>Скругление (px):</label><input type="number" id="fb-radius" value="16" min="0"></div>
+        <div class="control-group"><label>Цвет неона:</label><input type="color" id="fb-glow-color" value="#00ffcc"></div>
+      </div>
+      <div class="control-group">
+        <label>Анимация появления:</label>
+        <select id="fb-anim">
+          <option value="popUp">Выпрыгивание</option>
+          <option value="fadeIn">Плавное появление</option>
+          <option value="slideUp">Снизу вверх</option>
+          <option value="zoomIn">Зум</option>
+          <option value="none">Без анимации</option>
+        </select>
+      </div>
     </div>
 
-    <div id="item-toolbar">
-        <div><label style="font-size:10px; color:#aaa; display:block;">Шрифт (px)</label><input type="number" id="tool-font" value="20"></div>
-        <div><label style="font-size:10px; color:#aaa; display:block;">Угол (°)</label><input type="number" id="tool-rot" value="0"></div>
+    <div id="fb-image-block">
+      <div class="control-group">
+        <label>Картинка фидбека (файл):</label>
+        <input type="file" accept="image/*" id="fb-img-file">
+        <div class="hint-text">GIF или PNG — покажется при победе</div>
+      </div>
+      <div class="control-group">
+        <label>Ширина картинки (px):</label>
+        <input type="number" id="fb-img-width" value="320" min="50" max="900">
+      </div>
     </div>
 
-    <div id="elements-container"></div>
+    <div style="height:60px;"></div>
+  </div><!-- /settings-panel -->
+
+  <!-- Тулбар элемента -->
+  <div id="item-toolbar">
+    <div class="row" style="width:100%;">
+      <div class="mini-group">
+        <label style="font-size:10px;color:#aaa;">Шрифт (px)</label>
+        <input type="number" id="tool-font" value="20">
+      </div>
+      <div class="mini-group">
+        <label style="font-size:10px;color:#aaa;">Угол (°)</label>
+        <input type="number" id="tool-rot" value="0">
+      </div>
+    </div>
+    <div class="mini-group" style="width:100%;border-top:1px dashed #555;padding-top:8px;margin-top:4px;">
+      <label style="font-size:11px;color:#fff;font-weight:bold;">КАРТИНКА (вместо текста):</label>
+      <input type="file" accept="image/*" id="tool-main-img">
+      <button class="action-btn" id="btn-reset-text"
+        style="padding:4px;font-size:11px;margin-top:5px;background:rgba(255,50,50,0.2);border-color:#ff3333;color:#ffaaaa;">
+        Вернуть текст
+      </button>
+    </div>
+    <div class="mini-group" style="width:100%;border-top:1px dashed #555;padding-top:8px;margin-top:4px;">
+      <label style="font-size:11px;color:var(--primary);font-weight:bold;">ПОДСКАЗКА:</label>
+      <input type="text" id="tool-tt-text" placeholder="Текст подсказки..." style="margin-bottom:5px;">
+      <input type="file" accept="image/*" id="tool-tt-img">
+      <button class="action-btn" id="btn-clear-tt" style="padding:4px;font-size:11px;margin-top:5px;">Удалить подсказку</button>
+    </div>
+  </div>
+
+  <div id="elements-container"></div>
+</div><!-- /workspace -->
+
+<!-- Модалка публикации -->
+<div id="output-modal">
+  <div class="modal-content">
+    <h3 style="color:var(--primary);margin-top:0;">🚀 Опубликовано!</h3>
+    <div class="modal-steps">
+      <b>Как встроить в Genially:</b><br>
+      1. Скопируй iframe ниже<br>
+      2. В Genially: <b>Insert → Others → Iframe</b> → вставь<br>
+      3. Подожди <b>30–60 секунд</b> после публикации
+    </div>
+    <label style="font-size:11px;color:#aaa;text-transform:uppercase;">iframe для Genially:</label>
+    <textarea id="code-output" readonly onclick="this.select()"></textarea>
+    <div id="pub-status"></div>
+    <div class="row" style="margin-top:15px;gap:10px;">
+      <button class="action-btn" onclick="copyIframe()"
+        style="background:var(--primary);color:#000;flex:1;">📋 Скопировать iframe</button>
+      <button class="action-btn"
+        onclick="document.getElementById('output-modal').style.display='none'"
+        style="flex:1;">✕ Закрыть</button>
+    </div>
+  </div>
 </div>
 
-<div id="output-modal">
-    <div class="modal-content">
-        <h3 style="color:var(--primary); margin-top:0;">Готовый код для Genially</h3>
-        <p style="font-size: 13px; color: #ccc;">
-            Скопируй код ниже и вставь его в Genially строго через:<br>
-            <b>Insert -> Others -> Iframe</b>
-        </p>
-        <textarea id="code-iframe" readonly onclick="this.select()"></textarea>
-        <button class="action-btn" style="margin-top:15px;" onclick="document.getElementById('output-modal').style.display='none'">Вернуться в редактор</button>
-    </div>
+<!-- Модалка теста -->
+<div id="test-modal">
+  <div id="test-modal-header">
+    <span>▶ Предпросмотр игры</span>
+    <button id="test-modal-close">✕ Закрыть</button>
+  </div>
+  <iframe id="test-iframe" src="about:blank" allowtransparency="true"></iframe>
 </div>
 
 <script>
-    document.getElementById('settings-btn').addEventListener('click', () => document.getElementById('settings-panel').classList.toggle('open'));
-    
-    const bgInput = document.getElementById('bg-input');
-    const workspace = document.getElementById('workspace');
-    bgInput.addEventListener('input', e => {
-        let v = e.target.value.trim();
-        workspace.style.background = v.startsWith('http') ? `url('${v}') center/cover` : (v || 'transparent');
+/* ============================================================
+   КОНСТАНТЫ
+   ============================================================ */
+const ENDPOINT    = "https://server-kjnn.onrender.com/publish";
+const PUBLISH_KEY = "nika_read_pub_2025";
+const BASE_GAME   = "https://nikashum93.github.io/match/game.html";
+
+/* ============================================================
+   ШРИФТЫ / ЯЗЫКИ
+   ============================================================ */
+const FONT_MAP = {
+  ru: ["Nunito","Rubik","Caveat","Russo One","Montserrat","Comfortaa","Pacifico","Lobster","Amatic SC"],
+  en: ["Nunito","Quicksand","Fredoka One","Bangers","Creepster","Righteous","Orbitron","Indie Flower"],
+  fr: ["Nunito","Dancing Script","Cinzel","Josefin Sans","Playfair Display"],
+  de: ["Nunito","Oswald","Bebas Neue","Fira Sans","Anton"],
+  es: ["Nunito","Ubuntu","Pacifico","Permanent Marker","Merienda"],
+  it: ["Nunito","Montserrat","Great Vibes","Tangerine","Cinzel"],
+  zh: ["Noto Sans SC","Zhi Mang Xing","Ma Shan Zheng","Liu Jian Mao Cao"],
+  ja: ["Noto Sans JP","Yusei Magic","Reggae One","Train One"],
+  ko: ["Noto Sans KR","Jua","Do Hyeon","Black And White Picture"]
+};
+const LANG_NAMES = {
+  ru:"Русский 🇷🇺", en:"English 🇬🇧", fr:"Français 🇫🇷",
+  de:"Deutsch 🇩🇪", es:"Español 🇪🇸", it:"Italiano 🇮🇹",
+  zh:"中文 🇨🇳",    ja:"日本語 🇯🇵",   ko:"한국어 🇰🇷"
+};
+
+const langSel = document.getElementById('language');
+const fontSel = document.getElementById('font');
+const gfLink  = document.getElementById('gf');
+const fbFontSel = document.getElementById('fb-font');
+
+langSel.innerHTML = Object.keys(FONT_MAP)
+  .map(k => `<option value="${k}">${LANG_NAMES[k]}</option>`).join('');
+
+langSel.addEventListener('change', () => {
+  fillFonts(langSel.value);
+  applyFont();
+  generateElements();
+});
+fontSel.addEventListener('change', applyFont);
+
+function fillFonts(lang) {
+  const fonts = FONT_MAP[lang] || FONT_MAP.ru;
+  fontSel.innerHTML  = fonts.map(f => `<option value="${f}">${f}</option>`).join('');
+  fbFontSel.innerHTML = fonts.map(f => `<option value="${f}">${f}</option>`).join('');
+}
+
+function applyFont() {
+  const f = fontSel.value;
+  gfLink.href = `https://fonts.googleapis.com/css2?family=${f.replace(/ /g,'+')}:wght@400;700&display=swap`;
+  document.getElementById('elements-container').style.fontFamily = `"${f}",sans-serif`;
+}
+
+fillFonts('ru');
+applyFont();
+
+/* ============================================================
+   ПАНЕЛЬ НАСТРОЕК — открыть/закрыть
+   ============================================================ */
+document.getElementById('settings-btn').addEventListener('click', () =>
+  document.getElementById('settings-panel').classList.toggle('open'));
+
+/* ============================================================
+   РЕСУРСЫ (base64)
+   ============================================================ */
+const workspace = document.getElementById('workspace');
+let resources = {
+  bg: "", sndCorrect: "", sndWrong: "", sndWin: "", fbImg: ""
+};
+
+function audioToBase64(file, cb) {
+  if (!file) return;
+  const r = new FileReader();
+    r.readAsDataURL(file);
+  r.onload = () => cb(r.result);
+}
+
+function imgToBase64(file, cb) {
+  if (!file) return;
+  const r = new FileReader();
+  r.readAsDataURL(file);
+  r.onload = () => cb(r.result);
+}
+
+/* Фон */
+document.getElementById('bg-file').addEventListener('change', e => {
+  imgToBase64(e.target.files[0], b64 => {
+    resources.bg = b64;
+    workspace.style.backgroundImage = `url(${b64})`;
+  });
+});
+
+/* Звуки */
+document.getElementById('snd-correct-file').addEventListener('change', e =>
+  audioToBase64(e.target.files[0], b64 => resources.sndCorrect = b64));
+document.getElementById('snd-wrong-file').addEventListener('change', e =>
+  audioToBase64(e.target.files[0], b64 => resources.sndWrong = b64));
+document.getElementById('snd-win-file').addEventListener('change', e =>
+  audioToBase64(e.target.files[0], b64 => resources.sndWin = b64));
+
+/* Картинка фидбека */
+document.getElementById('fb-img-file').addEventListener('change', e =>
+  imgToBase64(e.target.files[0], b64 => resources.fbImg = b64));
+
+/* ============================================================
+   ЭЛЕМЕНТЫ — данные
+   ============================================================ */
+let items = [];       // { id, side, pairIndex, text, img, x, y, w, h, rot, fontSize, tooltip:{text,img} }
+let selectedId = null;
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#','');
+  const r = parseInt(h.slice(0,2),16);
+  const g = parseInt(h.slice(2,4),16);
+  const b = parseInt(h.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function getGlobalStyle() {
+  return {
+    font:          document.getElementById('font').value,
+    animHover:     document.getElementById('anim-hover').value,
+    animClick:     document.getElementById('anim-click').value,
+    glowColor:     document.getElementById('anim-glow-color').value,
+    left: {
+      bgColor:     document.getElementById('card-bg-color-left').value,
+      bgOpacity:   parseFloat(document.getElementById('card-bg-opacity-left').value),
+      borderColor: document.getElementById('border-color-left').value,
+      borderWidth: parseInt(document.getElementById('border-width-left').value) || 2,
+      textColor:   document.getElementById('text-color-left').value
+    },
+    right: {
+      bgColor:     document.getElementById('card-bg-color-right').value,
+      bgOpacity:   parseFloat(document.getElementById('card-bg-opacity-right').value),
+      borderColor: document.getElementById('border-color-right').value,
+      borderWidth: parseInt(document.getElementById('border-width-right').value) || 2,
+      textColor:   document.getElementById('text-color-right').value
+    },
+    matchedOpacity: parseFloat(document.getElementById('matched-opacity').value),
+    tooltip: {
+      bg:     document.getElementById('tt-bg').value,
+      color:  document.getElementById('tt-color').value,
+      glow:   document.getElementById('tt-glow').value,
+      radius: parseInt(document.getElementById('tt-radius').value) || 8
+    },
+    line: {
+      color:     document.getElementById('line-color').value,
+      thickness: parseInt(document.getElementById('line-thickness').value) || 4,
+      style:     document.getElementById('line-style').value
+    },
+    feedback: {
+      mode:        document.getElementById('fb-mode').value,
+      text:        document.getElementById('fb-text').value,
+      font:        document.getElementById('fb-font').value,
+      fontSize:    parseInt(document.getElementById('fb-font-size').value) || 28,
+      textColor:   document.getElementById('fb-text-color').value,
+      bgColor:     document.getElementById('fb-bg-color').value,
+      borderColor: document.getElementById('fb-border-color').value,
+      borderWidth: parseInt(document.getElementById('fb-border-width').value) || 2,
+      radius:      parseInt(document.getElementById('fb-radius').value) || 16,
+      glowColor:   document.getElementById('fb-glow-color').value,
+      anim:        document.getElementById('fb-anim').value,
+      imgWidth:    parseInt(document.getElementById('fb-img-width').value) || 320,
+      img:         resources.fbImg
+    }
+  };
+}
+
+/* ============================================================
+   ГЕНЕРАЦИЯ ЭЛЕМЕНТОВ
+   ============================================================ */
+document.getElementById('btn-generate').addEventListener('click', generateElements);
+
+function generateElements() {
+  const leftLines  = document.getElementById('list-left').value
+    .split('\n').map(s => s.trim()).filter(Boolean);
+  const rightLines = document.getElementById('list-right').value
+    .split('\n').map(s => s.trim()).filter(Boolean);
+
+  const count = Math.max(leftLines.length, rightLines.length);
+  if (!count) return;
+
+  const gs = getGlobalStyle();
+  items = [];
+
+  const W = workspace.offsetWidth  || 900;
+  const H = workspace.offsetHeight || 600;
+
+  /* Зоны: левая 15–40%, правая 60–85% */
+  const leftX  = W * 0.15;
+  const rightX = W * 0.60;
+  const startY = H * 0.08;
+  const stepY  = Math.min((H * 0.84) / count, 110);
+  const cardW  = Math.round(W * 0.22);
+  const cardH  = Math.round(Math.min(stepY * 0.82, 90));
+
+  for (let i = 0; i < count; i++) {
+    const jitter = () => (Math.random() - 0.5) * 20;
+    const y = startY + i * stepY;
+
+    if (leftLines[i] !== undefined) {
+      items.push({
+        id: `L${i}`, side: 'left', pairIndex: i,
+        text: leftLines[i], img: '',
+        x: leftX + jitter(), y: y + jitter(),
+        w: cardW, h: cardH,
+        rot: 0, fontSize: 18,
+        tooltip: { text: '', img: '' }
+      });
+    }
+    if (rightLines[i] !== undefined) {
+      items.push({
+        id: `R${i}`, side: 'right', pairIndex: i,
+        text: rightLines[i], img: '',
+        x: rightX + jitter(), y: y + jitter(),
+        w: cardW, h: cardH,
+        rot: 0, fontSize: 18,
+        tooltip: { text: '', img: '' }
+      });
+    }
+  }
+
+  renderAll();
+}
+
+/* ============================================================
+   РЕНДЕР
+   ============================================================ */
+const container = document.getElementById('elements-container');
+
+function renderAll() {
+  container.innerHTML = '';
+  const gs = getGlobalStyle();
+  items.forEach(item => renderItem(item, gs));
+}
+
+function renderItem(item, gs) {
+  gs = gs || getGlobalStyle();
+  const side = gs[item.side];
+
+  const el = document.createElement('div');
+  el.className = 'drag-item';
+  el.id = 'el_' + item.id;
+  el.style.left     = item.x + 'px';
+  el.style.top      = item.y + 'px';
+  el.style.width    = item.w + 'px';
+  el.style.height   = item.h + 'px';
+  el.style.transform = `rotate(${item.rot}deg)`;
+
+  const inner = document.createElement('div');
+  inner.className = 'item-inner';
+  inner.style.background   = hexToRgba(side.bgColor, side.bgOpacity);
+  inner.style.border       = `${side.borderWidth}px solid ${side.borderColor}`;
+  inner.style.color        = side.textColor;
+  inner.style.fontSize     = item.fontSize + 'px';
+  inner.style.fontFamily   = `"${gs.font}", sans-serif`;
+  inner.style.padding      = '6px';
+  inner.style.wordBreak    = 'break-word';
+
+  if (item.img) {
+    const img = document.createElement('img');
+    img.src = item.img;
+    inner.appendChild(img);
+  } else {
+    inner.textContent = item.text;
+    /* MathJax если нужно */
+    if (/\$|\\\(/.test(item.text)) {
+      inner.textContent = '';
+      inner.innerHTML = item.text;
+      if (window.MathJax?.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
+    }
+  }
+
+  /* Бейдж подсказки */
+  const ttBadge = document.createElement('div');
+  ttBadge.className = 'tt-preview';
+  ttBadge.textContent = '💬';
+  if (item.tooltip.text || item.tooltip.img) ttBadge.style.display = 'block';
+  el.appendChild(ttBadge);
+
+  el.appendChild(inner);
+  container.appendChild(el);
+
+  makeDraggable(el, item);
+  makeResizable(el, item);
+
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    selectItem(item.id);
+  });
+}
+
+/* ============================================================
+   DRAG
+   ============================================================ */
+function makeDraggable(el, item) {
+  let ox, oy, startX, startY, dragging = false;
+
+  el.addEventListener('mousedown', e => {
+    if (e.target.closest('#item-toolbar')) return;
+    if (e.button !== 0) return;
+    dragging = true;
+    ox = item.x; oy = item.y;
+    startX = e.clientX; startY = e.clientY;
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    item.x = ox + (e.clientX - startX);
+    item.y = oy + (e.clientY - startY);
+    el.style.left = item.x + 'px';
+    el.style.top  = item.y + 'px';
+  });
+
+  document.addEventListener('mouseup', () => { dragging = false; });
+}
+
+/* ============================================================
+   RESIZE (через ResizeObserver на нативный resize)
+   ============================================================ */
+function makeResizable(el, item) {
+  const ro = new ResizeObserver(entries => {
+    for (const entry of entries) {
+      item.w = Math.round(entry.contentRect.width);
+      item.h = Math.round(entry.contentRect.height);
+    }
+  });
+  ro.observe(el);
+}
+
+/* ============================================================
+   ВЫБОР ЭЛЕМЕНТА — тулбар
+   ============================================================ */
+const toolbar = document.getElementById('item-toolbar');
+
+function selectItem(id) {
+  /* Снять предыдущий */
+  if (selectedId) {
+    const prev = document.getElementById('el_' + selectedId);
+    if (prev) prev.classList.remove('editor-selected');
+  }
+  selectedId = id;
+  const el = document.getElementById('el_' + id);
+  if (!el) return;
+  el.classList.add('editor-selected');
+
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+
+  /* Позиция тулбара */
+  const rect = el.getBoundingClientRect();
+  toolbar.style.display = 'flex';
+  toolbar.style.flexDirection = 'column';
+
+  let tx = rect.right + 10;
+  let ty = rect.top;
+  if (tx + 330 > window.innerWidth) tx = rect.left - 330;
+  if (ty + 300 > window.innerHeight) ty = window.innerHeight - 310;
+  toolbar.style.left = tx + 'px';
+  toolbar.style.top  = Math.max(10, ty) + 'px';
+
+  /* Заполнить поля */
+  document.getElementById('tool-font').value    = item.fontSize;
+  document.getElementById('tool-rot').value     = item.rot;
+  document.getElementById('tool-tt-text').value = item.tooltip.text || '';
+}
+
+/* Закрыть тулбар при клике вне */
+document.addEventListener('click', e => {
+  if (!e.target.closest('#item-toolbar') && !e.target.closest('.drag-item')) {
+    toolbar.style.display = 'none';
+    if (selectedId) {
+      const prev = document.getElementById('el_' + selectedId);
+      if (prev) prev.classList.remove('editor-selected');
+      selectedId = null;
+    }
+  }
+});
+
+/* Шрифт элемента */
+document.getElementById('tool-font').addEventListener('input', e => {
+  if (!selectedId) return;
+  const item = items.find(i => i.id === selectedId);
+  if (!item) return;
+  item.fontSize = parseInt(e.target.value) || 18;
+  const inner = document.querySelector(`#el_${selectedId} .item-inner`);
+  if (inner) inner.style.fontSize = item.fontSize + 'px';
+});
+
+/* Поворот */
+document.getElementById('tool-rot').addEventListener('input', e => {
+  if (!selectedId) return;
+  const item = items.find(i => i.id === selectedId);
+  if (!item) return;
+  item.rot = parseFloat(e.target.value) || 0;
+  const el = document.getElementById('el_' + selectedId);
+  if (el) el.style.transform = `rotate(${item.rot}deg)`;
+});
+
+/* Картинка вместо текста */
+document.getElementById('tool-main-img').addEventListener('change', e => {
+  if (!selectedId) return;
+  const item = items.find(i => i.id === selectedId);
+  if (!item) return;
+  imgToBase64(e.target.files[0], b64 => {
+    item.img = b64;
+    const inner = document.querySelector(`#el_${selectedId} .item-inner`);
+    if (!inner) return;
+    inner.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = b64;
+    inner.appendChild(img);
+  });
+});
+
+/* Вернуть текст */
+document.getElementById('btn-reset-text').addEventListener('click', () => {
+  if (!selectedId) return;
+  const item = items.find(i => i.id === selectedId);
+  if (!item) return;
+  item.img = '';
+  const inner = document.querySelector(`#el_${selectedId} .item-inner`);
+  if (inner) inner.textContent = item.text;
+});
+
+/* Подсказка — текст */
+document.getElementById('tool-tt-text').addEventListener('input', e => {
+  if (!selectedId) return;
+  const item = items.find(i => i.id === selectedId);
+  if (!item) return;
+  item.tooltip.text = e.target.value;
+  const badge = document.querySelector(`#el_${selectedId} .tt-preview`);
+  if (badge) badge.style.display = (item.tooltip.text || item.tooltip.img) ? 'block' : 'none';
+});
+
+/* Подсказка — картинка */
+document.getElementById('tool-tt-img').addEventListener('change', e => {
+  if (!selectedId) return;
+  const item = items.find(i => i.id === selectedId);
+  if (!item) return;
+  imgToBase64(e.target.files[0], b64 => {
+    item.tooltip.img = b64;
+    const badge = document.querySelector(`#el_${selectedId} .tt-preview`);
+    if (badge) badge.style.display = 'block';
+  });
+});
+
+/* Удалить подсказку */
+document.getElementById('btn-clear-tt').addEventListener('click', () => {
+  if (!selectedId) return;
+  const item = items.find(i => i.id === selectedId);
+  if (!item) return;
+  item.tooltip = { text: '', img: '' };
+  document.getElementById('tool-tt-text').value = '';
+  document.getElementById('tool-tt-img').value  = '';
+  const badge = document.querySelector(`#el_${selectedId} .tt-preview`);
+  if (badge) badge.style.display = 'none';
+});
+
+/* ============================================================
+   LIVE-ОБНОВЛЕНИЕ СТИЛЕЙ КАРТОЧЕК
+   ============================================================ */
+const liveStyleIds = [
+  'card-bg-color-left','card-bg-opacity-left','border-color-left','border-width-left','text-color-left',
+  'card-bg-color-right','card-bg-opacity-right','border-color-right','border-width-right','text-color-right',
+  'anim-glow-color','font'
+];
+liveStyleIds.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', applyLiveStyles);
+});
+
+function applyLiveStyles() {
+  const gs = getGlobalStyle();
+  items.forEach(item => {
+    const el = document.getElementById('el_' + item.id);
+    if (!el) return;
+    const inner = el.querySelector('.item-inner');
+    if (!inner) return;
+    const side = gs[item.side];
+    inner.style.background   = hexToRgba(side.bgColor, side.bgOpacity);
+    inner.style.border       = `${side.borderWidth}px solid ${side.borderColor}`;
+    inner.style.color        = side.textColor;
+    inner.style.fontFamily   = `"${gs.font}", sans-serif`;
+  });
+}
+
+/* ============================================================
+   СБОРКА КОНФИГА
+   ============================================================ */
+function buildConfig() {
+  const gs = getGlobalStyle();
+  /* Обновляем img фидбека из resources (загружается асинхронно) */
+  gs.feedback.img = resources.fbImg;
+
+  return {
+    language:  langSel.value,
+    font:      gs.font,
+    bg:        resources.bg,
+    sounds: {
+      correct: resources.sndCorrect,
+      wrong:   resources.sndWrong,
+      win:     resources.sndWin
+    },
+    style: {
+      animHover:      gs.animHover,
+      animClick:      gs.animClick,
+      glowColor:      gs.glowColor,
+      matchedOpacity: gs.matchedOpacity,
+      left:           gs.left,
+      right:          gs.right,
+      tooltip:        gs.tooltip,
+      line:           gs.line
+    },
+    feedback: gs.feedback,
+    items: items.map(item => ({
+      id:        item.id,
+      side:      item.side,
+      pairIndex: item.pairIndex,
+      text:      item.text,
+      img:       item.img,
+      x:         Math.round(item.x),
+      y:         Math.round(item.y),
+      w:         Math.round(item.w),
+      h:         Math.round(item.h),
+      rot:       item.rot,
+      fontSize:  item.fontSize,
+      tooltip:   item.tooltip
+    }))
+  };
+}
+
+/* ============================================================
+   ТЕСТ — открыть движок с данными через postMessage
+   ============================================================ */
+document.getElementById('btn-test').addEventListener('click', () => {
+  if (!items.length) { alert('Сначала сгенерируй элементы.'); return; }
+  const cfg = buildConfig();
+  const modal = document.getElementById('test-modal');
+  const iframe = document.getElementById('test-iframe');
+
+  modal.classList.add('open');
+  iframe.src = BASE_GAME + '?preview=1';
+
+  /* Ждём готовности движка и отправляем данные */
+  const onMsg = e => {
+    if (e.data === 'GAME_READY') {
+      iframe.contentWindow.postMessage({ type: 'LOAD_CONFIG', config: cfg }, '*');
+      window.removeEventListener('message', onMsg);
+    }
+  };
+  window.addEventListener('message', onMsg);
+
+  /* Fallback: если движок не ответил за 2с — всё равно шлём */
+  setTimeout(() => {
+    window.removeEventListener('message', onMsg);
+    try { iframe.contentWindow.postMessage({ type: 'LOAD_CONFIG', config: cfg }, '*'); } catch(_) {}
+  }, 2000);
+});
+
+document.getElementById('test-modal-close').addEventListener('click', () => {
+  document.getElementById('test-modal').classList.remove('open');
+  document.getElementById('test-iframe').src = 'about:blank';
+});
+
+/* ============================================================
+   ПУБЛИКАЦИЯ
+   ============================================================ */
+document.getElementById('btn-publish').addEventListener('click', publishGame);
+
+async function publishGame() {
+  if (!items.length) { alert('Сначала сгенерируй элементы.'); return; }
+
+  const cfg = buildConfig();
+  const status = document.getElementById('pub-status');
+
+  /* ID из первого текста + timestamp */
+  const firstText = (items[0]?.text || 'match').trim();
+  const slug = firstText.toLowerCase()
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')
+    .slice(0, 36) || 'match';
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const stamp = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  const id = `${slug}-${stamp}`;
+
+  const payload = {
+    id,
+    mode:    "json",
+    folder:  "data",
+    content: JSON.stringify(cfg, null, 2)
+  };
+
+  status.textContent = 'Публикую…';
+  document.getElementById('output-modal').style.display = 'flex';
+
+  try {
+    const res = await fetch(ENDPOINT, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Publish-Key': PUBLISH_KEY
+      },
+      body: JSON.stringify(payload)
     });
 
-    document.querySelectorAll('.global-style').forEach(el => el.addEventListener('input', applyGlobalStyles));
-    document.getElementById('btn-generate').addEventListener('click', generateElements);
-    document.getElementById('btn-publish').addEventListener('click', publish);
-
-    let activeItem = null;
-    const toolbar = document.getElementById('item-toolbar');
-    const toolFont = document.getElementById('tool-font');
-    const toolRot = document.getElementById('tool-rot');
-
-    toolFont.addEventListener('input', e => { if(activeItem) activeItem.style.fontSize = e.target.value + 'px'; });
-    toolRot.addEventListener('input', e => { 
-        if(activeItem) {
-            activeItem.dataset.rot = e.target.value;
-            updateTransform(activeItem);
-        }
-    });
-
-    workspace.addEventListener('mousedown', e => {
-        if(e.target === workspace || e.target.id === 'elements-container') {
-            if(activeItem) activeItem.classList.remove('editor-selected');
-            activeItem = null;
-            toolbar.style.display = 'none';
-        }
-    });
-
-    function updateTransform(el) {
-        let rot = el.dataset.rot || '0';
-        el.style.transform = `translate(-50%, -50%) rotate(${rot}deg)`;
+    if (!res.ok) {
+      const txt = await res.text().catch(() => res.statusText);
+      throw new Error(txt || 'Server error');
     }
 
-    let itemsData = [];
-    function isUrl(str) { return str.trim().startsWith('http') || str.trim().startsWith('data:image'); }
+    const iframe = `<iframe src="${BASE_GAME}?id=${encodeURIComponent(id)}" width="900" height="640" style="border:0;" allow="autoplay" allowfullscreen></iframe>`;
+    document.getElementById('code-output').value = iframe;
+    status.textContent = '✅ Готово! Подождите 30–60 секунд, чтобы ссылка обновилась.';
 
-    function generateElements() {
-        document.getElementById('elements-container').innerHTML = '';
-        itemsData = [];
-        let leftRaw = document.getElementById('list-left').value.split('\n').filter(s=>s.trim()!=='');
-        let rightRaw = document.getElementById('list-right').value.split('\n').filter(s=>s.trim()!=='');
-        let count = Math.min(leftRaw.length, rightRaw.length);
-        
-        for(let i=0; i<count; i++) {
-            createDOMElement(i, 'left', leftRaw[i], 20, 15 + (70/count)*i);
-            createDOMElement(i, 'right', rightRaw[i], 80, 15 + (70/count)*i);
-        }
-        applyGlobalStyles();
-    }
+  } catch(e) {
+    status.textContent = '❌ Ошибка: ' + e.message;
+  }
+}
 
-    function createDOMElement(pairId, side, content, startX, startY) {
-        let el = document.createElement('div');
-        el.className = 'drag-item';
-        el.dataset.id = pairId; el.dataset.side = side; el.dataset.rot = '0';
-        
-        if(isUrl(content)) { el.innerHTML = `<img src="${content.trim()}">`; } 
-        else { el.innerText = content; }
+function copyIframe() {
+  const ta = document.getElementById('code-output');
+  ta.select();
+  navigator.clipboard.writeText(ta.value).catch(() => document.execCommand('copy'));
+}
 
-        el.style.left = startX + '%'; el.style.top = startY + '%';
-        el.style.width = '140px'; el.style.height = '60px'; 
-        el.style.fontSize = '20px';
-        
-        document.getElementById('elements-container').appendChild(el);
-        itemsData.push({ id: pairId, side: side, content: content, el: el });
-        
-        updateTransform(el);
-        makeDraggableAndSelectable(el);
-    }
-
-    function makeDraggableAndSelectable(el) {
-        let isDragging = false;
-        el.addEventListener('mousedown', startDrag);
-        
-        function startDrag(e) {
-            let rect = el.getBoundingClientRect();
-            if (e.clientX > rect.right - 15 && e.clientY > rect.bottom - 15) return;
-            if (e.target.tagName.toLowerCase() === 'img') e.preventDefault();
-            
-            if(activeItem) activeItem.classList.remove('editor-selected');
-            activeItem = el;
-            activeItem.classList.add('editor-selected');
-            toolbar.style.display = 'flex';
-            toolFont.value = parseInt(window.getComputedStyle(el).fontSize) || 20;
-            toolRot.value = el.dataset.rot || 0;
-            
-            isDragging = true;
-            document.addEventListener('mousemove', onDrag);
-            document.addEventListener('mouseup', stopDrag);
-        }
-
-        function onDrag(e) {
-            if(!isDragging) return;
-            let rect = workspace.getBoundingClientRect();
-            let x = ((e.clientX - rect.left) / rect.width) * 100;
-            let y = ((e.clientY - rect.top) / rect.height) * 100;
-            el.style.left = Math.max(0, Math.min(100, x)) + '%';
-            el.style.top = Math.max(0, Math.min(100, y)) + '%';
-            toolbar.style.left = (e.clientX + 20) + 'px';
-            toolbar.style.top = (e.clientY - 40) + 'px';
-        }
-
-        function stopDrag() {
-            isDragging = false;
-            document.removeEventListener('mousemove', onDrag);
-            document.removeEventListener('mouseup', stopDrag);
-            let rect = el.getBoundingClientRect();
-            toolbar.style.left = (rect.right + 10) + 'px';
-            toolbar.style.top = (rect.top) + 'px';
-        }
-    }
-
-    function applyGlobalStyles() {
-        let hex = document.getElementById('card-bg-color').value.replace('#', '');
-        let op = document.getElementById('card-bg-opacity').value;
-        let r = parseInt(hex.substring(0,2),16), g = parseInt(hex.substring(2,4),16), b = parseInt(hex.substring(4,6),16);
-        let rgbaBg = `rgba(${r},${g},${b},${op})`;
-        
-        let brdColor = document.getElementById('border-color').value;
-        let brdWidth = document.getElementById('border-width').value + 'px';
-        let txtColor = document.getElementById('text-color').value;
-
-        document.querySelectorAll('.drag-item').forEach(el => {
-            el.style.color = txtColor;
-            el.style.backgroundColor = rgbaBg;
-            el.style.border = `${brdWidth} solid ${brdColor}`;
-        });
-    }
-
-    function publish() {
-        applyGlobalStyles();
-        
-        let bgVal = bgInput.value.trim();
-        let bgCSS = bgVal.startsWith('http') ? `background: url('${bgVal}') center/cover;` : `background: ${bgVal || 'transparent'};`;
-        
-        let lineColor = document.getElementById('line-color').value;
-        let lineThick = document.getElementById('line-thickness').value;
-        let lineStyle = document.getElementById('line-style').value;
-        let themeChar = lineStyle === 'magic' ? '⭐' : (lineStyle === 'nature' ? '🦋' : '');
-
-        let itemsHTML = '';
-        itemsData.forEach(data => {
-            let el = data.el;
-            let inner = isUrl(data.content) ? `<img src="${data.content.trim()}" style="width:100%;height:100%;object-fit:contain;pointer-events:none;">` : data.content;
-            let cssText = `left:${el.style.left}; top:${el.style.top}; width:${el.style.width}; height:${el.style.height}; font-size:${el.style.fontSize}; color:${el.style.color}; background-color:${el.style.backgroundColor}; border:${el.style.border}; transform:${el.style.transform};`;
-            itemsHTML += `<div class="game-item" data-id="${data.id}" data-side="${data.side}" style="${cssText}">${inner}</div>\n`;
-        });
-
-        let engineParts = [];
-        
-        engineParts.push(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Game</title><style>`);
-        engineParts.push(`body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; ${bgCSS} font-family: sans-serif; user-select: none; }`);
-        engineParts.push(`#svg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }`);
-        engineParts.push(`.game-item { position: absolute; z-index: 10; border-radius: 8px; display: flex; justify-content: center; align-items: center; text-align: center; padding: 10px; box-sizing: border-box; cursor: pointer; transition: box-shadow 0.2s, border-color 0.2s; backdrop-filter: blur(4px); transform-origin: center center; }`);
-        engineParts.push(`.game-item.selected { box-shadow: 0 0 20px ${lineColor}; border-color: ${lineColor} !important; z-index: 20; }`);
-        engineParts.push(`.game-item.matched { opacity: 0.8; pointer-events: none; border-color: ${lineColor} !important; }`);
-        engineParts.push(`.game-item.wrong { animation: shake 0.4s; border-color: #ff3333 !important; }`);
-        engineParts.push(`@keyframes shake { 0%, 100% { margin-left: 0; } 25% { margin-left: -10px; } 75% { margin-left: 10px; } }`);
-        engineParts.push(`.particle { font-size: 24px; position: absolute; pointer-events: none; opacity: 0; animation: float 2s ease-out forwards; }`);
-        engineParts.push(`@keyframes float { 0% { opacity: 1; transform: scale(0) rotate(0deg); } 50% { opacity: 1; transform: scale(1.5) rotate(180deg); } 100% { opacity: 0; transform: scale(0) rotate(360deg) translateY(-50px); } }`);
-        engineParts.push(`</style></head><body>`);
-        
-        engineParts.push(`<svg id="svg-canvas"><defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5" result="blur" /><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><g id="lines-group"></g></svg>`);
-        engineParts.push(`<div id="particles-container"></div>`);
-        engineParts.push(itemsHTML);
-        
-        engineParts.push(`<script>`);
-        engineParts.push(`var selectedLeft=null, selectedRight=null, linesGroup=document.getElementById("lines-group"), pCont=document.getElementById("particles-container");`);
-        engineParts.push(`var items=document.querySelectorAll(".game-item"), matchedPairs=0, totalPairs=${itemsData.length/2};`);
-        engineParts.push(`var ropes = []; var mouseX=0, mouseY=0;`);
-        
-        engineParts.push(`document.addEventListener('mousemove', function(e){ mouseX=e.clientX; mouseY=e.clientY; });`);
-        engineParts.push(`function getCenter(el) { var r = el.getBoundingClientRect(); return { x: r.left+r.width/2, y: r.top+r.height/2 }; }`);
-        
-        engineParts.push(`function createRope(el1, el2) {`);
-        engineParts.push(`  var path = document.createElementNS("http://www.w3.org/2000/svg", "path");`);
-        engineParts.push(`  path.setAttribute("stroke", "${lineColor}"); path.setAttribute("stroke-width", "${lineThick}");`);
-        engineParts.push(`  path.setAttribute("fill", "none"); path.setAttribute("stroke-linecap", "round");`);
-        if(lineStyle === 'neon') engineParts.push(`  path.setAttribute("filter", "url(#glow)");`);
-        engineParts.push(`  linesGroup.appendChild(path);`);
-        engineParts.push(`  ropes.push({ el1:el1, el2:el2, path:path, cpX:0, cpY:0, vx:0, vy:0, init:true });`);
-        
-        if(themeChar) {
-            engineParts.push(`  for(var p=0; p<8; p++) { setTimeout(function(){`);
-            engineParts.push(`    var c = getCenter(el1); var part = document.createElement('div'); part.className='particle'; part.innerText='${themeChar}';`);
-            engineParts.push(`    part.style.left = (c.x + (Math.random()-0.5)*100) + 'px'; part.style.top = (c.y + (Math.random()-0.5)*100) + 'px';`);
-            engineParts.push(`    pCont.appendChild(part); setTimeout(function(){ part.remove(); }, 2000);`);
-            engineParts.push(`  }, p*100); }`);
-        }
-        engineParts.push(`}`);
-
-        engineParts.push(`function tick() {`);
-        engineParts.push(`  ropes.forEach(function(r) {`);
-        engineParts.push(`    var p1 = getCenter(r.el1), p2 = getCenter(r.el2);`);
-        engineParts.push(`    var midX = (p1.x+p2.x)/2, midY = (p1.y+p2.y)/2;`);
-        engineParts.push(`    if(r.init) { r.cpX = midX; r.cpY = midY; r.init = false; }`);
-        engineParts.push(`    var targetX = midX, targetY = midY;`);
-        engineParts.push(`    var dx = mouseX - r.cpX, dy = mouseY - r.cpY; var dist = Math.sqrt(dx*dx + dy*dy);`);
-        engineParts.push(`    if(dist < 150) { var force = (150-dist)/150; targetX -= (dx/dist)*force*100; targetY -= (dy/dist)*force*100; }`);
-        engineParts.push(`    r.vx += (targetX - r.cpX) * 0.1; r.vy += (targetY - r.cpY) * 0.1;`);
-        engineParts.push(`    r.vx *= 0.75; r.vy *= 0.75;`);
-        engineParts.push(`    r.cpX += r.vx; r.cpY += r.vy;`);
-        engineParts.push(`    r.path.setAttribute("d", "M "+p1.x+","+p1.y+" Q "+r.cpX+","+r.cpY+" "+p2.x+","+p2.y);`);
-        engineParts.push(`  });`);
-        engineParts.push(`  requestAnimationFrame(tick);`);
-        engineParts.push(`}`);
-        engineParts.push(`requestAnimationFrame(tick);`);
-
-        engineParts.push(`items.forEach(function(item){ item.addEventListener("click", function(){`);
-        engineParts.push(`  if(item.classList.contains("matched")) return;`);
-        engineParts.push(`  var side = item.dataset.side;`);
-        engineParts.push(`  if(side === "left") { if(selectedLeft) selectedLeft.classList.remove("selected"); selectedLeft = item; }`);
-        engineParts.push(`  else { if(selectedRight) selectedRight.classList.remove("selected"); selectedRight = item; }`);
-        engineParts.push(`  item.classList.add("selected");`);
-        engineParts.push(`  if(selectedLeft && selectedRight) {`);
-        engineParts.push(`    if(selectedLeft.dataset.id === selectedRight.dataset.id) {`);
-        engineParts.push(`      createRope(selectedLeft, selectedRight);`);
-        engineParts.push(`      selectedLeft.classList.remove("selected"); selectedRight.classList.remove("selected");`);
-        engineParts.push(`      selectedLeft.classList.add("matched"); selectedRight.classList.add("matched");`);
-        engineParts.push(`      selectedLeft = null; selectedRight = null; matchedPairs++;`);
-        engineParts.push(`      if(matchedPairs === totalPairs) setTimeout(function(){ alert("Победа!"); }, 1000);`);
-        engineParts.push(`    } else {`);
-        engineParts.push(`      selectedLeft.classList.add("wrong"); selectedRight.classList.add("wrong");`);
-        engineParts.push(`      setTimeout(function(){ if(selectedLeft) selectedLeft.classList.remove("selected","wrong"); if(selectedRight) selectedRight.classList.remove("selected","wrong"); selectedLeft=null; selectedRight=null; }, 400);`);
-        engineParts.push(`    }`);
-        engineParts.push(`  }`);
-        engineParts.push(`});});`);
-        
-        engineParts.push(`<\/script></body></html>`);
-
-        let finalRawCode = engineParts.join('\n');
-        
-        let encodedHTML = window.btoa(unescape(encodeURIComponent(finalRawCode)));
-        let finalIframe = `<div style="width: 100%; position: relative; padding-bottom: 56.25%; height: 0;"><iframe src="data:text/html;base64,${encodedHTML}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen></iframe></div>`;
-        
-        document.getElementById('code-iframe').value = finalIframe;
-        document.getElementById('output-modal').style.display = 'flex';
-    }
-
-    window.addEventListener('DOMContentLoaded', generateElements);
+/* ============================================================
+   ИНИЦИАЛИЗАЦИЯ
+   ============================================================ */
+generateElements();
 </script>
-
 </body>
 </html>
