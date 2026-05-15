@@ -20,17 +20,13 @@ body, html {
 }
 #bg-layer {
   position: fixed; inset: 0;
-  background-color: #111;
+  background-color: transparent;
   background-size: cover; background-position: center;
   z-index: 0;
 }
 #canvas-layer {
   position: fixed; inset: 0;
   pointer-events: none; z-index: 10;
-}
-#items-layer {
-  position: fixed; inset: 0;
-  z-index: 20;
 }
 
 /* ---- Loader ---- */
@@ -135,15 +131,18 @@ body, html {
 </div>
 
 <div id="bg-layer"></div>
+
+<div id="game-wrapper" style="transform-origin: 0 0; width: 100%; height: 100%; position: absolute; top: 0; left: 0;">
+  <div id="items-layer"></div>
+  <div id="feedback-box">
+    <img id="feedback-img" src="" alt="">
+    <div id="feedback-text"></div>
+  </div>
+</div>
+
 <canvas id="canvas-layer"></canvas>
-<div id="items-layer"></div>
 <div id="tooltip-box"></div>
 <div id="flash-overlay"></div>
-
-<div id="feedback-box">
-  <img id="feedback-img" src="" alt="">
-  <div id="feedback-text"></div>
-</div>
 
 <script>
 /* ============================================================
@@ -230,7 +229,38 @@ function startGame() {
 
   const pairSet = new Set(CONFIG.items.map(i => i.pairIndex));
   totalPairs = pairSet.size;
+
+  autoScale();
 }
+
+/* ============================================================
+   АВТО-СКЕЙЛИНГ (ЧТОБЫ НЕ ВЫЛЕЗАЛО ЗА ФРЕЙМ)
+   ============================================================ */
+function autoScale() {
+  const wrapper = document.getElementById("game-wrapper");
+  if(!wrapper) return;
+  
+  let maxX = 900, maxY = 640;
+  (CONFIG.items || []).forEach(i => {
+    if(i.x + i.w + 50 > maxX) maxX = i.x + i.w + 50;
+    if(i.y + i.h + 50 > maxY) maxY = i.y + i.h + 50;
+  });
+  
+  if(CONFIG.feedback && CONFIG.feedback.mode !== "none") {
+    const fx = CONFIG.feedback.x || 300, fy = CONFIG.feedback.y || 200;
+    const fw = CONFIG.feedback.w || 300, fh = CONFIG.feedback.h || 200;
+    if(fx + fw + 50 > maxX) maxX = fx + fw + 50;
+    if(fy + fh + 50 > maxY) maxY = fy + fh + 50;
+  }
+  
+  const scaleX = window.innerWidth / maxX;
+  const scaleY = window.innerHeight / maxY;
+  const scale = Math.min(scaleX, scaleY, 1);
+  
+  wrapper.style.transform = `scale(${scale})`;
+  resizeCvs();
+}
+window.addEventListener("resize", autoScale);
 
 /* ============================================================
    ФОН
