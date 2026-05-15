@@ -19,13 +19,44 @@ window.MathJax = {
 body, html {
   margin: 0; padding: 0; width: 100%; height: 100%;
   font-family: 'Segoe UI', sans-serif;
-  background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 50%/20px 20px;
+  background: #111;
   color: #fff; overflow: hidden;
 }
+
+/* === ИСПРАВЛЕННЫЙ КОНТЕЙНЕР 16:9 === */
 #workspace {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  background-size: cover; background-position: center; overflow: hidden;
+  overflow: hidden;
+  background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 50%/20px 20px;
 }
+
+#game-area-wrapper {
+  position: absolute;
+  top: 0; left: 370px; /* Отступ под панель настроек */
+  right: 0; bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+#game-area {
+  position: relative;
+  width: 1280px; 
+  height: 720px;
+  background-size: cover; 
+  background-position: center;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 50px rgba(0,0,0,0.8);
+  /* Масштабирование происходит через JS */
+  transform-origin: center center;
+}
+
+#elements-container {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%; pointer-events: none;
+}
+
 #settings-btn {
   position: absolute; top: 15px; left: 15px; z-index: 10000;
   background: var(--primary); color: #000; border: none;
@@ -100,7 +131,6 @@ button.action-btn:hover { background: #555; }
 .img-input-wrap { display: flex; flex-direction: column; gap: 5px; }
 .img-input-wrap .or-label { font-size: 10px; color: #666; text-align: center; margin: 0; }
 
-/* Стили для кнопок сброса */
 .btn-clear {
   background: rgba(255,50,50,0.2); border: 1px solid #ff3333;
   color: #ffaaaa; border-radius: 4px; padding: 0 10px;
@@ -108,10 +138,6 @@ button.action-btn:hover { background: #555; }
 }
 .btn-clear:hover { background: rgba(255,50,50,0.4); }
 
-#elements-container {
-  position: absolute; top: 0; left: 0;
-  width: 100%; height: 100%; pointer-events: none;
-}
 .drag-item {
   position: absolute; user-select: none;
   pointer-events: auto; z-index: 50;
@@ -200,13 +226,13 @@ button.action-btn:hover { background: #555; }
 /* === РАЗДЕЛЬНЫЕ БЛОКИ ФИДБЕКА В РЕДАКТОРЕ === */
 .fb-drag-box {
   display: none; position: absolute; z-index: 9000; cursor: grab;
-  justify-content: center; align-items: center; font-weight: bold; pointer-events: auto; box-sizing: border-box;
+  font-weight: bold; pointer-events: auto; box-sizing: border-box;
 }
 .fb-drag-box:active { cursor: grabbing; }
 
-#fb-img-drag-box { border: 2px dashed #00ffcc; background: rgba(0,255,204,0.1); border-radius: 12px; }
-#fb-txt-drag-box { border: 2px dashed #ff00cc; background: rgba(255,0,204,0.1); flex-direction: column; text-align: center; }
-.placeholder-text { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); font-size: 14px; text-shadow: 0 0 5px #000; pointer-events: none; }
+#fb-img-drag-box { border: 2px dashed #00ffcc; background: rgba(0,255,204,0.1); border-radius: 12px; justify-content: center; align-items: center; }
+#fb-txt-drag-box { border: 2px dashed #ff00cc; background: rgba(255,0,204,0.1); display: flex; flex-direction: column; text-align: center; justify-content: center; align-items: center;}
+.placeholder-text { position: absolute; inset:0; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); font-size: 14px; text-shadow: 0 0 5px #000; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -475,16 +501,20 @@ button.action-btn:hover { background: #555; }
     </div>
   </div>
 
-  <div id="elements-container">
-    <div id="fb-img-drag-box" class="fb-drag-box">
-      <div class="placeholder-text">КАРТИНКА</div>
-      <img id="fb-preview-img" src="" style="width:100%;height:100%;object-fit:contain;pointer-events:none;display:none;">
-      <div class="resize-handle" style="background: linear-gradient(135deg, transparent 50%, #00ffcc 50%);"></div>
-    </div>
-    
-    <div id="fb-txt-drag-box" class="fb-drag-box">
-      <div id="fb-txt-preview" style="text-align:center; width:100%; word-break:break-word; pointer-events:none;">БЛОК ТЕКСТА</div>
-      <div class="resize-handle" style="background: linear-gradient(135deg, transparent 50%, #ff00cc 50%);"></div>
+  <div id="game-area-wrapper">
+    <div id="game-area">
+      <div id="elements-container"></div>
+      
+      <div id="fb-img-drag-box" class="fb-drag-box">
+        <div class="placeholder-text">КАРТИНКА</div>
+        <img id="fb-preview-img" src="" style="width:100%;height:100%;object-fit:contain;pointer-events:none;display:none;">
+        <div class="resize-handle" style="background: linear-gradient(135deg, transparent 50%, #00ffcc 50%);"></div>
+      </div>
+      
+      <div id="fb-txt-drag-box" class="fb-drag-box">
+        <div id="fb-txt-preview" style="text-align:center; width:100%; word-break:break-word; pointer-events:none;">БЛОК ТЕКСТА</div>
+        <div class="resize-handle" style="background: linear-gradient(135deg, transparent 50%, #ff00cc 50%);"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -518,11 +548,26 @@ button.action-btn:hover { background: #555; }
 
 <script>
 /* ============================================================
-   КОНСТАНТЫ
+   КОНСТАНТЫ И ПУТИ
    ============================================================ */
 const ENDPOINT    = "https://server-kjnn.onrender.com/publish";
 const PUBLISH_KEY = "nika_read_pub_2025";
 const BASE_GAME   = "https://nikashum93.github.io/match/game.html";
+
+/* ============================================================
+   АВТО-МАСШТАБИРОВАНИЕ РАБОЧЕЙ ОБЛАСТИ В РЕДАКТОРЕ (16:9)
+   ============================================================ */
+function resizeEditorWorkspace() {
+  const wa = document.getElementById('game-area');
+  if(!wa) return;
+  const availW = window.innerWidth - 370; // Ширина минус панель настроек
+  const availH = window.innerHeight;
+  // Считаем масштаб, чтобы 1280x720 влезло на экран с отступами (0.95)
+  const scale = Math.min(availW / 1280, availH / 720) * 0.95;
+  wa.style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', resizeEditorWorkspace);
+resizeEditorWorkspace();
 
 /* ============================================================
    ШРИФТЫ / ЯЗЫКИ
@@ -585,9 +630,9 @@ document.getElementById('settings-btn').addEventListener('click', () =>
   document.getElementById('settings-panel').classList.toggle('open'));
 
 /* ============================================================
-   РЕСУРСЫ
+   РЕСУРСЫ (Сжатие картинок)
    ============================================================ */
-const workspace = document.getElementById('workspace');
+const gameArea = document.getElementById('game-area');
 let resources = { bg:'', sndCorrect:'', sndWrong:'', sndWin:'', fbImg:'' };
 
 function fileToBase64(file, cb) {
@@ -634,7 +679,7 @@ function fileToBase64(file, cb) {
 document.getElementById('bg-file').addEventListener('change', e => {
   fileToBase64(e.target.files[0], b64 => {
     resources.bg = b64;
-    workspace.style.backgroundImage = `url(${b64})`;
+    gameArea.style.backgroundImage = `url(${b64})`;
     document.getElementById('bg-url').value = '';
   });
 });
@@ -642,7 +687,7 @@ document.getElementById('bg-url').addEventListener('change', e => {
   const url = e.target.value.trim();
   if (!url) return;
   resources.bg = url;
-  workspace.style.backgroundImage = `url(${url})`;
+  gameArea.style.backgroundImage = `url(${url})`;
 });
 
 document.getElementById('snd-correct-file').addEventListener('change', e => fileToBase64(e.target.files[0], b64 => resources.sndCorrect = b64));
@@ -661,7 +706,7 @@ document.getElementById('fb-img-url').addEventListener('change', e => {
   if (url) { resources.fbImg = url; applyLiveStyles(); }
 });
 
-document.getElementById('btn-clr-bg').addEventListener('click', () => { document.getElementById('bg-url').value = ''; document.getElementById('bg-file').value = ''; resources.bg = ''; workspace.style.backgroundImage = ''; });
+document.getElementById('btn-clr-bg').addEventListener('click', () => { document.getElementById('bg-url').value = ''; document.getElementById('bg-file').value = ''; resources.bg = ''; gameArea.style.backgroundImage = ''; });
 document.getElementById('btn-clr-snd-correct').addEventListener('click', () => { document.getElementById('snd-correct-file').value = ''; resources.sndCorrect = ''; });
 document.getElementById('btn-clr-snd-wrong').addEventListener('click', () => { document.getElementById('snd-wrong-file').value = ''; resources.sndWrong = ''; });
 document.getElementById('btn-clr-snd-win').addEventListener('click', () => { document.getElementById('snd-win-file').value = ''; resources.sndWin = ''; });
@@ -709,13 +754,18 @@ function attachDragAndResize(box) {
   });
 
   document.addEventListener('mousemove', e => {
+    if (!dActive && !rActive) return;
+    // Считаем текущий масштаб game-area, чтобы мышка не "убегала"
+    const wa = document.getElementById('game-area');
+    const scale = parseFloat(wa.style.transform.match(/scale\(([^)]+)\)/)?.[1]) || 1;
+
     if (dActive) {
-      box.style.left = (ox + e.clientX - sx) + 'px';
-      box.style.top = (oy + e.clientY - sy) + 'px';
+      box.style.left = (ox + (e.clientX - sx) / scale) + 'px';
+      box.style.top = (oy + (e.clientY - sy) / scale) + 'px';
     }
     if (rActive) {
-      box.style.width = Math.max(100, sw + e.clientX - sx) + 'px';
-      box.style.height = Math.max(50, sh + e.clientY - sy) + 'px';
+      box.style.width = Math.max(100, sw + (e.clientX - sx) / scale) + 'px';
+      box.style.height = Math.max(50, sh + (e.clientY - sy) / scale) + 'px';
     }
   });
 
@@ -805,7 +855,7 @@ function getGlobalStyle() {
 }
 
 /* ============================================================
-   ГЕНЕРАЦИЯ ЭЛЕМЕНТОВ (В РАМКАХ 16:9)
+   ГЕНЕРАЦИЯ ЭЛЕМЕНТОВ (В РАМКАХ 1280x720)
    ============================================================ */
 document.getElementById('btn-generate').addEventListener('click', generateElements);
 
@@ -817,24 +867,12 @@ function generateElements() {
 
   items = [];
 
-  let W = workspace.offsetWidth;
-  let H = workspace.offsetHeight;
-  let oX = 0, oY = 0;
-  
-  // Создаем виртуальную зону 16:9 в центре экрана
-  if (W / H > 16 / 9) {
-    let newW = H * (16 / 9);
-    oX = (W - newW) / 2;
-    W = newW;
-  } else {
-    let newH = W / (16 / 9);
-    oY = (H - newH) / 2;
-    H = newH;
-  }
+  const W = 1280;
+  const H = 720;
 
-  const leftX  = oX + W * 0.15;
-  const rightX = oX + W * 0.60;
-  const startY = oY + H * 0.08;
+  const leftX  = W * 0.15;
+  const rightX = W * 0.60;
+  const startY = H * 0.08;
   const stepY  = Math.min((H * 0.84) / count, 110);
   const cardW  = Math.round(W * 0.22);
   const cardH  = Math.round(Math.min(stepY * 0.82, 90));
@@ -854,12 +892,7 @@ function generateElements() {
 const container = document.getElementById('elements-container');
 
 function renderAll() {
-  const fbImgBox = document.getElementById('fb-img-drag-box');
-  const fbTxtBox = document.getElementById('fb-txt-drag-box');
   container.innerHTML = '';
-  container.appendChild(fbImgBox);
-  container.appendChild(fbTxtBox);
-
   selectedId = null;
   document.getElementById('item-toolbar').style.display = 'none';
   const gs = getGlobalStyle();
@@ -907,7 +940,7 @@ function renderItem(item, gs) {
 }
 
 /* ============================================================
-   DRAG & RESIZE КАРТОЧЕК
+   DRAG & RESIZE КАРТОЧЕК С УЧЕТОМ МАСШТАБА
    ============================================================ */
 function makeDraggableItem(el, item, handle) {
   let ox, oy, sx, sy, active = false;
@@ -918,8 +951,10 @@ function makeDraggableItem(el, item, handle) {
   });
   document.addEventListener('mousemove', e => {
     if (!active) return;
-    item.x = ox + (e.clientX - sx);
-    item.y = oy + (e.clientY - sy);
+    const wa = document.getElementById('game-area');
+    const scale = parseFloat(wa.style.transform.match(/scale\(([^)]+)\)/)?.[1]) || 1;
+    item.x = ox + (e.clientX - sx) / scale;
+    item.y = oy + (e.clientY - sy) / scale;
     el.style.left = item.x + 'px'; el.style.top  = item.y + 'px';
   });
   document.addEventListener('mouseup', () => { active = false; });
@@ -932,8 +967,10 @@ function makeResizableItem(el, item, handle) {
   });
   document.addEventListener('mousemove', e => {
     if (!active) return;
-    item.w = Math.max(60, sw + (e.clientX - sx));
-    item.h = Math.max(30, sh + (e.clientY - sy));
+    const wa = document.getElementById('game-area');
+    const scale = parseFloat(wa.style.transform.match(/scale\(([^)]+)\)/)?.[1]) || 1;
+    item.w = Math.max(60, sw + (e.clientX - sx) / scale);
+    item.h = Math.max(30, sh + (e.clientY - sy) / scale);
     el.style.width  = item.w + 'px'; el.style.height = item.h + 'px';
   });
   document.addEventListener('mouseup', () => { active = false; });
@@ -1113,7 +1150,10 @@ document.getElementById('btn-publish').addEventListener('click', async () => {
   try {
     const res = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type':'application/json', 'X-Publish-Key': PUBLISH_KEY }, body: JSON.stringify({id, mode:'json', folder:'data', content:JSON.stringify(cfg, null, 2)}) });
     if (!res.ok) throw new Error(await res.text().catch(() => res.statusText));
-    document.getElementById('code-output').value = `<iframe src="${BASE_GAME}?id=${encodeURIComponent(id)}" width="100%" height="100%" style="border:0;" allow="autoplay" allowfullscreen></iframe>`;
+    
+    // IFRAME ВОЗВРАЩЕН В ПЕРВОЗДАННОМ ВИДЕ
+    document.getElementById('code-output').value = `<iframe src="${BASE_GAME}?id=${encodeURIComponent(id)}" width="1280" height="720" style="border:0;width:100%;height:100%;" allow="autoplay" allowfullscreen></iframe>`;
+    
     status.innerHTML = '✅ Готово!<br><span style="color:#ffcc00;">Внимание: GitHub обновит данные в течение 30–60 секунд. Если в игре будет загрузка, просто подождите.</span>';
   } catch(e) { status.textContent = '❌ Ошибка: ' + e.message; }
 });
@@ -1123,7 +1163,7 @@ function copyIframe() {
 }
 
 /* ============================================================
-   buildGameHtml — полный встроенный движок игры
+   buildGameHtml — полный встроенный движок игры (для теста)
    ============================================================ */
 function buildGameHtml(cfg) {
   const cfgJson = JSON.stringify(cfg).replace(/<\/script>/gi, '<\\/script>');
@@ -1141,7 +1181,6 @@ function buildGameHtml(cfg) {
     + 'body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:transparent;}\n'
     + '#bg{position:fixed;inset:0;background-color:transparent;background-size:cover;background-position:center;z-index:0}\n'
     + '#cvs{position:fixed;inset:0;pointer-events:none;z-index:10}\n'
-    + '#layer{position:absolute;inset:0;z-index:20}\n'
     + '#loader-screen { position: fixed; inset: 0; background: rgba(20,20,25,0.4); backdrop-filter: blur(4px); z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease; }\n'
     + '.loader-box { background: rgba(10,10,15,0.85); padding: 30px; border-radius: 16px; border: 1px solid rgba(0,255,204,0.3); box-shadow: 0 10px 40px rgba(0,0,0,0.8); text-align: center; color: #fff; font-family: sans-serif; }\n'
     + '.spinner { width: 40px; height: 40px; border: 4px solid rgba(0,255,204,0.2); border-top-color: #00ffcc; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }\n'
@@ -1183,8 +1222,8 @@ function buildGameHtml(cfg) {
     + '<\/style></head><body>\n'
     + '<div id="loader-screen"><div class="loader-box"><div class="spinner"></div><div id="loader-text" style="font-weight:bold;font-size:16px;">Без паники — игра загружается.<br><span style="font-size:12px;color:#aaa;">Минутку... ожидаем ответ</span></div></div></div>\n'
     + '<div id="bg"></div>\n'
-    + '<div id="game-wrapper" style="position:absolute; left:0; top:0; transform-origin:0 0;">\n'
-    + '  <div id="layer"></div>\n'
+    + '<div id="game-wrapper" style="width:1280px; height:720px; position:absolute; left:50%; top:50%; transform-origin:center; transform:translate(-50%, -50%);">\n'
+    + '  <div id="layer" style="position:absolute; inset:0; z-index:20;"></div>\n'
     + '  <div id="fb-img-box"><img id="fbimg" src=""></div>\n'
     + '  <div id="fb-txt-box" style="flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box;"><div id="fbtxt"></div></div>\n'
     + '</div>\n'
@@ -1195,31 +1234,14 @@ function buildGameHtml(cfg) {
     + 'const CFG=' + cfgJson + ';\n'
     + 'document.getElementById("loader-screen").style.display = "none";\n'
     + '\n'
-    + 'function resizeGame() {\n'
-    + '  let maxX = 900, maxY = 600;\n'
-    + '  (CFG.items || []).forEach(i => {\n'
-    + '    if (i.x + i.w > maxX) maxX = i.x + i.w + 50;\n'
-    + '    if (i.y + i.h > maxY) maxY = i.y + i.h + 50;\n'
-    + '  });\n'
-    + '  if (CFG.feedback) {\n'
-    + '    if (CFG.feedback.imgX + CFG.feedback.imgW > maxX) maxX = CFG.feedback.imgX + CFG.feedback.imgW + 50;\n'
-    + '    if (CFG.feedback.txtX + CFG.feedback.txtW > maxX) maxX = CFG.feedback.txtX + CFG.feedback.txtW + 50;\n'
-    + '    if (CFG.feedback.imgY + CFG.feedback.imgH > maxY) maxY = CFG.feedback.imgY + CFG.feedback.imgH + 50;\n'
-    + '    if (CFG.feedback.txtY + CFG.feedback.txtH > maxY) maxY = CFG.feedback.txtY + CFG.feedback.txtH + 50;\n'
-    + '  }\n'
+    + 'function autoScale() {\n'
     + '  const wrapper = document.getElementById("game-wrapper");\n'
-    + '  const scale = Math.min(window.innerWidth / maxX, window.innerHeight / maxY);\n'
-    + '  const scaledW = maxX * scale;\n'
-    + '  const scaledH = maxY * scale;\n'
-    + '  const left = (window.innerWidth - scaledW) / 2;\n'
-    + '  const top = (window.innerHeight - scaledH) / 2;\n'
-    + '  wrapper.style.transform = "translate(" + left + "px, " + top + "px) scale(" + scale + ")";\n'
-    + '  window.gameScale = scale;\n'
-    + '  window.gameOffsetX = left;\n'
-    + '  window.gameOffsetY = top;\n'
+    + '  if(!wrapper) return;\n'
+    + '  const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);\n'
+    + '  wrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;\n'
     + '}\n'
-    + 'window.addEventListener("resize", resizeGame);\n'
-    + 'resizeGame();\n'
+    + 'window.addEventListener("resize", autoScale);\n'
+    + 'autoScale();\n'
     + '\n'
     + 'function hexToRgba(hex,alpha){\n'
     + '  if(!hex) return "rgba(0,0,0,"+alpha+")";\n'
@@ -1414,7 +1436,7 @@ function buildGameHtml(cfg) {
     + '  createMatchFx(a, b, st.effMatch || "fireworks");\n'
     + '  const ra=a.getBoundingClientRect(); const rb=b.getBoundingClientRect();\n'
     + '  const wrapper = document.getElementById("game-wrapper");\n'
-    + '  const scale = parseFloat(wrapper.style.transform.match(/scale\\(([^)]+)\\)/)?.[1]) || 1;\n'
+    + '  const scale = parseFloat(wrapper.style.transform.match(/scale\\\\(([^)]+)\\\\)/)?.[1]) || 1;\n'
     + '  const rectW = wrapper.getBoundingClientRect();\n'
     + '  const ax=((a.dataset.side==="left"?ra.right:ra.left) - rectW.left) / scale;\n'
     + '  const ay=((ra.top+ra.height/2) - rectW.top) / scale;\n'
@@ -1451,7 +1473,7 @@ function buildGameHtml(cfg) {
     + 'function renderCanvasLoop() {\n'
     + '  ctx.clearRect(0,0, canvas.width, canvas.height);\n'
     + '  const wrapper = document.getElementById("game-wrapper");\n'
-    + '  const scale = parseFloat(wrapper.style.transform.match(/scale\\(([^)]+)\\)/)?.[1]) || 1;\n'
+    + '  const scale = parseFloat(wrapper.style.transform.match(/scale\\\\(([^)]+)\\\\)/)?.[1]) || 1;\n'
     + '  const rectW = wrapper.getBoundingClientRect();\n'
     + '  ctx.save(); ctx.translate(rectW.left, rectW.top); ctx.scale(scale, scale);\n'
     + '  const time = performance.now() * 0.001;\n'
@@ -1468,11 +1490,11 @@ function buildGameHtml(cfg) {
     + '  if (style === "rope") {\n'
     + '    cy1 += Math.sin(time*3)*20; cy2 += Math.cos(time*3)*20;\n'
     + '  } else if(style !== "circuit" && style !== "arrow") {\n'
-    + '    let mX = mouseX, mY = mouseY;\n'
-    + '    if(window.gameScale) {\n'
-    + '      mX = (mouseX - window.gameOffsetX) / window.gameScale;\n'
-    + '      mY = (mouseY - window.gameOffsetY) / window.gameScale;\n'
-    + '    }\n'
+    + '    const wrapper = document.getElementById("game-wrapper");\n'
+    + '    const scale = parseFloat(wrapper.style.transform.match(/scale\\\\(([^)]+)\\\\)/)?.[1]) || 1;\n'
+    + '    const rectW = wrapper.getBoundingClientRect();\n'
+    + '    const mX = (mouseX - rectW.left) / scale;\n'
+    + '    const mY = (mouseY - rectW.top) / scale;\n'
     + '    const distToMouse = Math.hypot(mx - mX, (y1+y2)/2 - mY);\n'
     + '    if(distToMouse < 150) {\n'
     + '      const rep = (150 - distToMouse) * 0.3;\n'
