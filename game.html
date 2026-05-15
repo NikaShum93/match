@@ -136,7 +136,7 @@ body, html {
   <div id="fb-img-box">
     <img id="fbimg" src="" alt="">
   </div>
-  <div id="fb-txt-box" style="flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box;">
+  <div id="fb-txt-box" style="flex-direction:column; align-items:center; justify-content:center; text-align:center; box-sizing:border-box;">
     <div id="fbtxt"></div>
   </div>
 </div>
@@ -646,7 +646,7 @@ function drawComplexLine(L, time) {
     ctx.save(); ctx.translate(x2,y2); ctx.rotate(Math.atan2(y2-py2, x2-px2)); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-thickness*4, thickness*2); ctx.lineTo(-thickness*4, -thickness*2); ctx.closePath(); ctx.fill(); ctx.restore();
   }
   else {
-    ctx.shadowColor = color; ctx.shadowBlur = 18; ctx.strokeStyle = color+'55'; ctx.lineWidth = thickness*3;
+    ctx.shadowColor = color; ctx.shadowBlur = 18; ctx.strokeStyle = color+"55"; ctx.lineWidth = thickness*3;
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();
     ctx.strokeStyle = color; ctx.lineWidth = thickness; ctx.shadowBlur = 8;
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();
