@@ -15,11 +15,12 @@ window.MathJax = {
 *, *::before, *::after { box-sizing: border-box; }
 body, html {
   margin: 0; padding: 0; width: 100%; height: 100%;
-  overflow: hidden; background: #111;
+  overflow: hidden; background: transparent;
   font-family: sans-serif;
 }
 #bg-layer {
   position: fixed; inset: 0;
+  background-color: #111;
   background-size: cover; background-position: center;
   z-index: 0;
 }
@@ -32,6 +33,22 @@ body, html {
   z-index: 20;
 }
 
+/* ---- Loader ---- */
+#loader-screen {
+  position: fixed; inset: 0; background: rgba(20, 20, 25, 0.4); backdrop-filter: blur(4px);
+  z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  transition: opacity 0.5s ease;
+}
+.loader-box {
+  background: rgba(10, 10, 15, 0.85); padding: 30px; border-radius: 16px; border: 1px solid rgba(0,255,204,0.3);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8); text-align: center; color: #fff; font-family: 'Segoe UI', sans-serif;
+}
+.spinner {
+  width: 40px; height: 40px; border: 4px solid rgba(0,255,204,0.2); border-top-color: #00ffcc;
+  border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ---- Карточка ---- */
 .card {
   position: absolute;
@@ -42,13 +59,18 @@ body, html {
   transition: opacity 0.5s ease, transform 0.15s ease;
   user-select: none;
 }
-.card.selected {
-  z-index: 100;
-}
-.card.matched {
-  pointer-events: none;
-  cursor: default;
-}
+.card.selected { z-index: 100; }
+.card.matched { pointer-events: none; cursor: default; }
+
+/* Анимации выбранной карточки */
+.anim-sel-float { animation: selFloat 2s ease-in-out infinite; }
+.anim-sel-pulse { animation: selPulse 1s ease infinite; }
+.anim-sel-shake { animation: selShake 0.5s ease infinite; }
+.anim-sel-glow  { filter: drop-shadow(0 0 15px var(--glow,#00ffcc)) brightness(1.2); }
+
+@keyframes selFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes selPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes selShake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
 
 /* ---- Tooltip ---- */
 #tooltip-box {
@@ -59,119 +81,85 @@ body, html {
   max-width: 260px; text-align: center;
   box-shadow: 0 0 20px rgba(0,0,0,0.6);
 }
-#tooltip-box img { max-width: 220px; border-radius: 6px; margin-top: 6px; display: block; }
 
 /* ---- Фидбек ---- */
-#feedback-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.82);
-  z-index: 50000;
-  display: none; justify-content: center; align-items: center;
-  flex-direction: column; gap: 20px;
-  backdrop-filter: blur(6px);
-}
-#feedback-overlay.show { display: flex; }
-
 #feedback-box {
-  display: flex; flex-direction: column;
-  align-items: center; gap: 16px;
-  padding: 30px 36px;
-  border-radius: 16px;
-  max-width: 90vw;
+  position: absolute; z-index: 50000; display: none; flex-direction: column; align-items: center; gap: 16px;
+  padding: 30px 36px; border-radius: 16px; box-sizing: border-box; backdrop-filter: blur(6px); text-align: center;
 }
-#feedback-img { display: block; border-radius: 12px; }
-#feedback-text {
-  font-weight: 900; text-align: center;
-  line-height: 1.4;
+#feedback-box.show { display: flex; }
+#feedback-img { display: block; border-radius: 12px; max-width: 100%; height: auto; }
+#feedback-text { font-weight: 900; line-height: 1.4; word-break: break-word; }
+
+@keyframes popUp { 0% { transform: scale(0.3); opacity: 0; } 70% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+
+/* ---- Анимации hover карточек ---- */
+@keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.12);} }
+@keyframes wobble { 0%,100%{transform:rotate(0deg);} 25%{transform:rotate(-6deg);} 75%{transform:rotate(6deg);} }
+@keyframes glitch { 0%,100%{clip-path:none;transform:translate(0);} 20%{clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%);transform:translate(-4px,2px);} 40%{clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%);transform:translate(4px,-2px);} 60%{clip-path:none;transform:translate(2px,4px);} }
+@keyframes distort { 0%,100%{transform:skew(0deg,0deg);} 25%{transform:skew(6deg,2deg);} 75%{transform:skew(-6deg,-2deg);} }
+@keyframes scaleUp { 0%,100%{transform:scale(1);} 50%{transform:scale(1.18);} }
+@keyframes scaleDown { 0%,100%{transform:scale(1);} 50%{transform:scale(0.88);} }
+
+/* ---- Частицы Эффектов ---- */
+.fx-particle {
+  position: fixed; pointer-events: none; z-index: 30000; font-size: 24px;
+  animation: fxFly var(--dur, 1s) cubic-bezier(0.25,1,0.5,1) forwards;
+}
+@keyframes fxFly {
+  0%   { opacity: 1; transform: translate(0,0) scale(var(--s,1)) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--dx),var(--dy)) scale(var(--se,0.5)) rotate(var(--rot,180deg)); }
 }
 
-/* ---- Анимации появления фидбека ---- */
-@keyframes popUp {
-  0%   { transform: scale(0.3); opacity: 0; }
-  70%  { transform: scale(1.08); opacity: 1; }
-  100% { transform: scale(1); }
+.fx-rain {
+  position: fixed; pointer-events: none; z-index: 30000; width: 2px; height: 30px; background: rgba(100,200,255,0.8);
+  animation: rainDrop 0.6s linear forwards;
 }
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes slideUp {
-  from { transform: translateY(80px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-@keyframes zoomIn {
-  from { transform: scale(0); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
-}
+@keyframes rainDrop { 0% { transform: translateY(-50px); opacity: 1; } 100% { transform: translateY(100vh); opacity: 0; } }
 
-/* ---- Анимации карточек ---- */
-@keyframes pulse {
-  0%,100% { transform: scale(1); }
-  50%      { transform: scale(1.12); }
+#flash-overlay {
+  position: fixed; inset: 0; background: #fff; z-index: 40000; opacity: 0; pointer-events: none;
 }
-@keyframes wobble {
-  0%,100% { transform: rotate(0deg); }
-  25%     { transform: rotate(-6deg); }
-  75%     { transform: rotate(6deg); }
-}
-@keyframes glitch {
-  0%,100% { clip-path: none; transform: translate(0); }
-  20%     { clip-path: polygon(0 20%,100% 20%,100% 40%,0 40%); transform: translate(-4px,2px); }
-  40%     { clip-path: polygon(0 60%,100% 60%,100% 80%,0 80%); transform: translate(4px,-2px); }
-  60%     { clip-path: none; transform: translate(2px,4px); }
-}
-@keyframes distort {
-  0%,100% { transform: skew(0deg,0deg); }
-  25%     { transform: skew(6deg,2deg); }
-  75%     { transform: skew(-6deg,-2deg); }
-}
-@keyframes scaleUp {
-  0%,100% { transform: scale(1); }
-  50%     { transform: scale(1.18); }
-}
-@keyframes scaleDown {
-  0%,100% { transform: scale(1); }
-  50%     { transform: scale(0.88); }
-}
-
-/* ---- Неон-линия (SVG) ---- */
-.line-neon { filter: drop-shadow(0 0 6px var(--lc,#00ffcc)); }
-
-/* ---- Частицы ---- */
-.particle {
-  position: fixed; pointer-events: none; z-index: 30;
-  font-size: 18px; animation: particleFly 0.9s ease-out forwards;
-}
-@keyframes particleFly {
-  0%   { opacity: 1; transform: translate(0,0) scale(1); }
-  100% { opacity: 0; transform: translate(var(--dx),var(--dy)) scale(0.3); }
-}
+@keyframes flashFx { 0% { opacity: 0.8; } 20% { opacity: 0; } 40% { opacity: 0.5; } 100% { opacity: 0; } }
 </style>
 </head>
 <body>
+
+<div id="loader-screen">
+  <div class="loader-box">
+    <div class="spinner"></div>
+    <div id="loader-text" style="font-weight:bold; font-size:16px;">
+      Без паники — игра загружается.<br><span style="font-size:12px;color:#aaa;margin-top:8px;display:block;">Минутку, ожидаем данные...</span>
+    </div>
+  </div>
+</div>
 
 <div id="bg-layer"></div>
 <canvas id="canvas-layer"></canvas>
 <div id="items-layer"></div>
 <div id="tooltip-box"></div>
+<div id="flash-overlay"></div>
 
-<div id="feedback-overlay">
-  <div id="feedback-box">
-    <img id="feedback-img" src="" alt="">
-    <div id="feedback-text"></div>
-  </div>
+<div id="feedback-box">
+  <img id="feedback-img" src="" alt="">
+  <div id="feedback-text"></div>
 </div>
 
 <script>
 /* ============================================================
    КОНСТАНТЫ
    ============================================================ */
-const JSON_BASE = "https://server-kjnn.onrender.com/data/";
+const JSON_BASE = "https://nikashum93.github.io/texts/data/";
 
 /* ============================================================
    ЗАГРУЗКА КОНФИГА
    ============================================================ */
 let CONFIG = null;
+let selectedCard = null;
+let matchedPairs = 0;
+let totalPairs   = 0;
+let sounds       = {};
+let activeLines  = []; 
 
 async function init() {
   const params = new URLSearchParams(location.search);
@@ -179,11 +167,11 @@ async function init() {
   const preview = params.get('preview');
 
   if (preview) {
-    /* Режим теста — ждём postMessage от редактора */
+    document.getElementById('loader-screen').style.display = 'none';
     window.parent.postMessage('GAME_READY', '*');
     window.addEventListener('message', e => {
       if (e.data?.type === 'LOAD_CONFIG') {
-                CONFIG = e.data.config;
+        CONFIG = e.data.config;
         startGame();
       }
     });
@@ -192,29 +180,40 @@ async function init() {
 
   if (id) {
     try {
-      const res = await fetch(`${JSON_BASE}${encodeURIComponent(id)}.json`);
-      if (!res.ok) throw new Error('Файл не найден: ' + id);
-      CONFIG = await res.json();
+      CONFIG = await fetchWithRetry(`${JSON_BASE}${encodeURIComponent(id)}.json`);
+      const loader = document.getElementById('loader-screen');
+      if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.style.display = 'none', 500);
+      }
       startGame();
     } catch(e) {
-      document.body.innerHTML = `<div style="color:#ff4444;padding:40px;font-size:18px;">
-        ❌ Ошибка загрузки: ${e.message}</div>`;
+      document.getElementById('loader-text').innerHTML = `❌ Ошибка: Сервер GitHub ещё не обновил данные.<br><span style="font-size:12px;color:#ccc;display:block;margin-top:10px;">Обновите страницу через минуту.</span>`;
+      document.querySelector('.spinner').style.display = 'none';
     }
     return;
   }
 
-  document.body.innerHTML = `<div style="color:#aaa;padding:40px;font-size:16px;">
-    ⚠️ Не передан параметр <code>?id=</code></div>`;
+  document.getElementById('loader-screen').style.display = 'none';
 }
 
-/* ============================================================
-   ИГРОВОЕ СОСТОЯНИЕ
-   ============================================================ */
-let selectedCard = null;   // DOM-элемент выбранной карточки
-let matchedPairs = 0;
-let totalPairs   = 0;
-let sounds       = {};
-let gfLink       = null;
+async function fetchWithRetry(url, retries = 20, delay = 2000) {
+  const textEl = document.getElementById('loader-text');
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url + "?t=" + new Date().getTime());
+      if (res.ok) return await res.json();
+    } catch(err) {}
+    
+    if (i < retries - 1) {
+      if(i > 1 && textEl) {
+        textEl.innerHTML = `Без паники — игра публикуется.<br><span style="font-size:12px;color:#aaa;display:block;margin-top:8px;">Ждём GitHub (Попытка ${i+1} из ${retries})...</span>`;
+      }
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw new Error('Файл не найден');
+}
 
 /* ============================================================
    СТАРТ ИГРЫ
@@ -227,8 +226,8 @@ function startGame() {
   loadSounds();
   renderCards();
   initCanvas();
+  renderCanvasLoop();
 
-  /* Считаем пары */
   const pairSet = new Set(CONFIG.items.map(i => i.pairIndex));
   totalPairs = pairSet.size;
 }
@@ -248,7 +247,7 @@ function applyBackground() {
    ============================================================ */
 function loadFont() {
   if (!CONFIG.font) return;
-  gfLink = document.createElement('link');
+  const gfLink = document.createElement('link');
   gfLink.rel  = 'stylesheet';
   gfLink.href = `https://fonts.googleapis.com/css2?family=${CONFIG.font.replace(/ /g,'+')}:wght@400;700&display=swap`;
   document.head.appendChild(gfLink);
@@ -297,14 +296,12 @@ function renderCards() {
     card.dataset.pairIndex  = item.pairIndex;
     card.dataset.side       = item.side;
 
-    /* Позиция и размер */
     card.style.left      = item.x + 'px';
     card.style.top       = item.y + 'px';
     card.style.width     = item.w + 'px';
     card.style.height    = item.h + 'px';
     card.style.transform = `rotate(${item.rot || 0}deg)`;
 
-    /* Стиль */
     card.style.background  = hexToRgba(side.bgColor, side.bgOpacity);
     card.style.border      = `${side.borderWidth}px solid ${side.borderColor}`;
     card.style.color       = side.textColor;
@@ -312,7 +309,6 @@ function renderCards() {
     card.style.fontFamily  = `"${font}", sans-serif`;
     card.style.fontWeight  = '700';
 
-    /* Контент */
     if (item.img) {
       const img = document.createElement('img');
       img.src   = item.img;
@@ -330,7 +326,6 @@ function renderCards() {
       }
     }
 
-    /* Анимация при наведении */
     const animHover = st.animHover || 'none';
     const glowColor = st.glowColor || '#00ffcc';
 
@@ -338,15 +333,18 @@ function renderCards() {
       if (card.classList.contains('matched')) return;
       applyAnim(card, animHover, glowColor);
     });
+    
     card.addEventListener('mouseleave', () => {
-      if (card.classList.contains('matched')) return;
-      clearAnim(card);
+      if (!card.classList.contains('matched') && selectedCard !== card) {
+        clearAnim(card);
+      }
     });
 
-    /* Клик */
-    card.addEventListener('click', () => onCardClick(card));
+    card.addEventListener('click', (e) => { 
+      e.stopPropagation(); 
+      onCardClick(card); 
+    });
 
-    /* Tooltip */
     if (item.tooltip && (item.tooltip.text || item.tooltip.img)) {
       card.dataset.ttText = item.tooltip.text || '';
       card.dataset.ttImg  = item.tooltip.img  || '';
@@ -357,18 +355,27 @@ function renderCards() {
 
     layer.appendChild(card);
   });
+
+  document.addEventListener('click', () => {
+    if (selectedCard) {
+      selectedCard.classList.remove('selected');
+      selectedCard.className = selectedCard.className.replace(/anim-sel-\w+/g, '').trim();
+      clearAnim(selectedCard);
+      selectedCard = null;
+    }
+  });
 }
 
 /* ============================================================
    АНИМАЦИИ КАРТОЧЕК
    ============================================================ */
 function applyAnim(card, anim, glowColor) {
+  if (selectedCard === card) return; 
   card.style.removeProperty('animation');
-  void card.offsetWidth; /* reflow */
+  void card.offsetWidth; 
 
   switch (anim) {
     case 'glow':
-      // ИСПОЛЬЗУЕМ DROP-SHADOW ДЛЯ ОБВОДКИ ПО КОНТУРУ
       card.style.filter = `drop-shadow(0 0 8px ${glowColor}) drop-shadow(0 0 20px ${glowColor})`;
       break;
     case 'scaleUp':
@@ -397,7 +404,7 @@ function applyAnim(card, anim, glowColor) {
 function clearAnim(card) {
   card.style.animation  = '';
   card.style.boxShadow  = '';
-  card.style.filter     = ''; // ОБНУЛЯЕМ ФИЛЬТР ПРИ СБРОСЕ
+  card.style.filter     = ''; 
 }
 
 /* ============================================================
@@ -407,28 +414,26 @@ function onCardClick(card) {
   if (card.classList.contains('matched')) return;
 
   const st        = CONFIG.style || {};
-  const animClick = st.animClick || 'glow';
+  const selAnim   = st.animSelected || 'glow';
   const glowColor = st.glowColor || '#00ffcc';
 
-  /* Если кликнули по уже выбранной — снять выбор */
   if (selectedCard === card) {
     card.classList.remove('selected');
+    card.className = card.className.replace(/anim-sel-\w+/g, '').trim();
     clearAnim(card);
     selectedCard = null;
     return;
   }
 
-  /* Анимация клика */
-  applyAnim(card, animClick, glowColor);
   card.classList.add('selected');
+  card.style.setProperty('--glow', glowColor);
+  if(selAnim !== 'none') card.classList.add('anim-sel-' + selAnim);
 
   if (!selectedCard) {
-    /* Первый выбор */
     selectedCard = card;
     return;
   }
 
-  /* Второй выбор — проверяем пару */
   const first  = selectedCard;
   const second = card;
 
@@ -436,10 +441,8 @@ function onCardClick(card) {
   const sameSide  = first.dataset.side      === second.dataset.side;
 
   if (sameIndex && !sameSide) {
-    /* ✅ Верная пара */
     onMatch(first, second);
   } else {
-    /* ❌ Ошибка */
     onMismatch(first, second);
   }
 
@@ -456,20 +459,31 @@ function onMatch(a, b) {
   const matchedOpacity = st.matchedOpacity !== undefined ? st.matchedOpacity : 0.35;
   const glowColor      = st.glowColor || '#00ffcc';
 
-  /* Рисуем линию */
-  drawLine(a, b);
+  createMatchFx(a, b, st.effMatch || 'fireworks');
 
-  /* Частицы */
-  spawnParticles(a, '⭐');
-  spawnParticles(b, '✨');
+  const ra = a.getBoundingClientRect();
+  const rb = b.getBoundingClientRect();
+  const ax = a.dataset.side === 'left' ? ra.right  : ra.left;
+  const ay = ra.top + ra.height / 2;
+  const bx = b.dataset.side === 'left' ? rb.right  : rb.left;
+  const by = rb.top + rb.height / 2;
 
-  /* Пометить как совпавшие */
+  const lineSt = st.line || {};
+  activeLines.push({
+    x1: ax, y1: ay,
+    x2: bx, y2: by,
+    color: lineSt.color || '#00ffcc',
+    thickness: lineSt.thickness || 4,
+    style: lineSt.style || 'neon',
+    emoji: lineSt.emoji || '⭐'
+  });
+
   [a, b].forEach(card => {
     card.classList.remove('selected');
+    card.className = card.className.replace(/anim-sel-\w+/g, '').trim();
     card.classList.add('matched');
     clearAnim(card);
     card.style.opacity   = matchedOpacity;
-    // ОСТАВЛЯЕМ НЕОН ПО КОНТУРУ СОВПАВШЕЙ ПАРЕ
     card.style.filter = `drop-shadow(0 0 10px ${glowColor})`;
   });
 
@@ -484,9 +498,12 @@ function onMatch(a, b) {
    ============================================================ */
 function onMismatch(a, b) {
   playSound('wrong');
+  const st = CONFIG.style || {};
+  
+  createMismatchFx(st.effMismatch || 'shake');
 
-  /* Тряска */
   [a, b].forEach(card => {
+    card.className = card.className.replace(/anim-sel-\w+/g, '').trim();
     card.style.animation = 'wobble 0.4s ease';
     setTimeout(() => {
       card.style.animation = '';
@@ -496,10 +513,55 @@ function onMismatch(a, b) {
   });
 }
 
+function createMatchFx(a, b, fxType) {
+  if(fxType === 'none') return;
+  const ra = a.getBoundingClientRect(); const rb = b.getBoundingClientRect();
+  const centers = [{x: ra.left+ra.width/2, y: ra.top+ra.height/2}, {x: rb.left+rb.width/2, y: rb.top+rb.height/2}];
+  centers.forEach(c => {
+    const count = fxType==='fireworks'?20 : fxType==='confetti'?15 : fxType==='stars'?12 : 10;
+    const emojiStr = fxType==='emoji-burst'?'🤩,🔥,🎉' : fxType==='hearts'?'💖,💕,💓' : fxType==='stars'?'⭐,✨,🌟' : '🎇,🧨,✨';
+    const emojis = emojiStr.split(',');
+    for(let i=0; i<count; i++) {
+      const p = document.createElement('div'); p.className = 'fx-particle';
+      p.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      const angle = Math.random() * Math.PI * 2; const dist = 60 + Math.random() * 120;
+      p.style.setProperty('--dx', Math.cos(angle)*dist + 'px'); p.style.setProperty('--dy', Math.sin(angle)*dist + 'px');
+      p.style.setProperty('--rot', (Math.random()*360 - 180) + 'deg'); p.style.setProperty('--dur', (0.6 + Math.random()*0.6) + 's');
+      p.style.setProperty('--s', 0.5 + Math.random());
+      p.style.left = c.x + 'px'; p.style.top = c.y + 'px';
+      document.body.appendChild(p); setTimeout(()=>p.remove(), 1200);
+    }
+  });
+}
+
+function createMismatchFx(fxType) {
+  if(fxType === 'shake' || fxType === 'none') return;
+  if(fxType === 'lightning') {
+    const f = document.getElementById('flash-overlay'); f.style.animation = 'flashFx 0.5s ease-out';
+    setTimeout(()=>f.style.animation='', 500); return;
+  }
+  const isRain = fxType === 'rain'; const count = isRain ? 40 : 15;
+  const emojis = fxType === 'emoji-drop' ? ['🤡','💩','👎','💔','🤦'] : fxType === 'shatter' ? ['🔴','🔺','🔻'] : ['💧'];
+  for(let i=0; i<count; i++) {
+    const p = document.createElement('div');
+    if(isRain) p.className = 'fx-rain'; else { p.className = 'fx-particle'; p.textContent = emojis[Math.floor(Math.random()*emojis.length)]; }
+    p.style.left = Math.random() * window.innerWidth + 'px';
+    if(!isRain) {
+      p.style.top = '-50px'; p.style.setProperty('--dx', (Math.random()*100 - 50) + 'px');
+      p.style.setProperty('--dy', (window.innerHeight + 100) + 'px');
+      p.style.setProperty('--rot', (Math.random()*360) + 'deg');
+      p.style.setProperty('--dur', (1 + Math.random()) + 's'); p.style.setProperty('--s', 0.8 + Math.random()*0.5);
+    }
+    document.body.appendChild(p); setTimeout(()=>p.remove(), 2000);
+  }
+}
+
 /* ============================================================
    CANVAS — ЛИНИИ
    ============================================================ */
 let canvas, ctx;
+let mouseX = -1000, mouseY = -1000;
+window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
 
 function initCanvas() {
   canvas = document.getElementById('canvas-layer');
@@ -513,122 +575,93 @@ function resizeCanvas() {
   canvas.height = window.innerHeight;
 }
 
-function drawLine(cardA, cardB) {
-  if (!ctx) return;
+function renderCanvasLoop() {
+  ctx.clearRect(0,0, canvas.width, canvas.height);
+  const time = performance.now() * 0.001;
+  activeLines.forEach(line => drawComplexLine(line, time));
+  requestAnimationFrame(renderCanvasLoop);
+}
 
-  const st   = CONFIG.style || {};
-  const line = st.line || {};
-  const color     = line.color     || '#00ffcc';
-  const thickness = line.thickness || 4;
-  const style     = line.style     || 'neon';
-
-  const ra = cardA.getBoundingClientRect();
-  const rb = cardB.getBoundingClientRect();
-
-  /* Точки соединения — середины ближних краёв */
-  const ax = cardA.dataset.side === 'left' ? ra.right  : ra.left;
-  const ay = ra.top + ra.height / 2;
-  const bx = cardB.dataset.side === 'left' ? rb.right  : rb.left;
-  const by = rb.top + rb.height / 2;
-
-  if (style === 'neon') {
-    drawNeonLine(ax, ay, bx, by, color, thickness);
-  } else if (style === 'magic') {
-    drawMagicLine(ax, ay, bx, by, color, thickness);
-  } else if (style === 'nature') {
-    drawNatureLine(ax, ay, bx, by, color, thickness);
+function drawComplexLine(L, time) {
+  const {x1, y1, x2, y2, color, thickness, style, emoji} = L;
+  const mx = (x1+x2)/2;
+  let cx1 = mx, cy1 = y1, cx2 = mx, cy2 = y2;
+  
+  if (style === 'rope') {
+    cy1 += Math.sin(time*3)*20; cy2 += Math.cos(time*3)*20;
+  } else if(style !== 'circuit' && style !== 'arrow') {
+    const distToMouse = Math.hypot(mx - mouseX, (y1+y2)/2 - mouseY);
+    if(distToMouse < 150) {
+      const rep = (150 - distToMouse) * 0.3;
+      cx1 += rep * (mx > mouseX ? 1 : -1); cy1 += rep * ((y1+y2)/2 > mouseY ? 1 : -1);
+      cx2 = cx1; cy2 = cy1;
+    }
   }
-}
 
-function drawNeonLine(x1, y1, x2, y2, color, thickness) {
-  /* Внешнее свечение */
-  ctx.save();
-  ctx.strokeStyle = color + '55';
-  ctx.lineWidth   = thickness * 3;
-  ctx.lineCap     = 'round';
-  ctx.shadowColor = color;
-  ctx.shadowBlur  = 18;
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.bezierCurveTo(
-    (x1 + x2) / 2, y1,
-    (x1 + x2) / 2, y2,
-    x2, y2
-  );
-  ctx.stroke();
+  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = thickness; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
-  /* Основная линия */
-  ctx.strokeStyle = color;
-  ctx.lineWidth   = thickness;
-  ctx.shadowBlur  = 8;
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.bezierCurveTo(
-    (x1 + x2) / 2, y1,
-    (x1 + x2) / 2, y2,
-    x2, y2
-  );
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawMagicLine(x1, y1, x2, y2, color, thickness) {
-  drawNeonLine(x1, y1, x2, y2, color, thickness);
-
-  /* Звёздочки вдоль линии */
-  const steps = 6;
-  for (let i = 0; i <= steps; i++) {
-    const t  = i / steps;
-    const mx = x1 + (x2 - x1) * t;
-    const my = y1 + (y2 - y1) * t;
-    ctx.save();
-    ctx.font      = `${thickness * 3 + 8}px serif`;
+  if (style === 'circuit') {
+    ctx.shadowColor = color; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.moveTo(x1, y1); const midX = x1 + (x2-x1)*0.5;
+    ctx.lineTo(midX, y1); ctx.lineTo(midX, y2); ctx.lineTo(x2, y2); ctx.stroke();
     ctx.fillStyle = '#fff';
-    ctx.shadowColor = color;
-    ctx.shadowBlur  = 10;
-    ctx.fillText('⭐', mx - 8, my + 6);
-    ctx.restore();
+    ctx.beginPath(); ctx.arc(x1,y1, thickness*1.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(midX,y1, thickness, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(midX,y2, thickness, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x2,y2, thickness*1.5, 0, Math.PI*2); ctx.fill();
+  } 
+  else if (style === 'dashed' || style === 'dotted') {
+    ctx.shadowColor = color; ctx.shadowBlur = 8;
+    if(style === 'dotted') { ctx.setLineDash([thickness, thickness*2]); ctx.lineCap = 'round'; } else { ctx.setLineDash([thickness*3, thickness*3]); }
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();
   }
-}
-
-function drawNatureLine(x1, y1, x2, y2, color, thickness) {
-  /* Зелёная нить */
-  drawNeonLine(x1, y1, x2, y2, '#44cc44', thickness);
-
-  /* Бабочки */
-  const steps = 4;
-  for (let i = 1; i < steps; i++) {
-    const t  = i / steps;
-    const mx = x1 + (x2 - x1) * t;
-    const my = y1 + (y2 - y1) * t;
-    ctx.save();
-    ctx.font = `${thickness * 3 + 6}px serif`;
-    ctx.fillText('🦋', mx - 8, my + 6);
-    ctx.restore();
+  else if (style === 'gradient') {
+    const grad = ctx.createLinearGradient(x1,y1,x2,y2);
+    grad.addColorStop(0, color); grad.addColorStop(0.5, '#fff'); grad.addColorStop(1, color);
+    ctx.strokeStyle = grad; ctx.shadowColor = '#fff'; ctx.shadowBlur = 15;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();
   }
-}
-
-/* ============================================================
-   ЧАСТИЦЫ
-   ============================================================ */
-function spawnParticles(card, emoji) {
-  const rect = card.getBoundingClientRect();
-  const cx   = rect.left + rect.width  / 2;
-  const cy   = rect.top  + rect.height / 2;
-
-  for (let i = 0; i < 8; i++) {
-    const p  = document.createElement('div');
-    p.className   = 'particle';
-    p.textContent = emoji;
-    const angle = (i / 8) * Math.PI * 2;
-    const dist  = 50 + Math.random() * 50;
-    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
-    p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
-    p.style.left = cx + 'px';
-    p.style.top  = cy + 'px';
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), 950);
+  else if (style === 'emoji' || style === 'magic' || style === 'nature' || style === 'sparkle') {
+    ctx.strokeStyle = color + '44'; ctx.lineWidth = thickness*0.5;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();
+    const e = style==='magic'?'⭐': style==='nature'?'🦋': style==='sparkle'?'✨': emoji;
+    const steps = style==='sparkle' ? 12 : 8;
+    for(let i=0; i<=steps; i++) {
+      const t = i/steps;
+      const bx = Math.pow(1-t,3)*x1 + 3*Math.pow(1-t,2)*t*cx1 + 3*(1-t)*t*t*cx2 + Math.pow(t,3)*x2;
+      const by = Math.pow(1-t,3)*y1 + 3*Math.pow(1-t,2)*t*cy1 + 3*(1-t)*t*t*cy2 + Math.pow(t,3)*y2;
+      if(style === 'sparkle') {
+        const pulse = Math.abs(Math.sin(time*5 + i));
+        ctx.fillStyle = `rgba(255,255,255,${pulse})`; ctx.shadowColor = color; ctx.shadowBlur = 15;
+        ctx.beginPath(); ctx.arc(bx, by, thickness*(1+pulse), 0, Math.PI*2); ctx.fill();
+      } else {
+        ctx.font = `${thickness*3 + 10}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline='middle';
+        ctx.shadowColor = color; ctx.shadowBlur = 10;
+        ctx.fillText(e, bx, by + Math.sin(time*2 + i)*5);
+      }
+    }
   }
+  else if (style === 'arrow') {
+    ctx.shadowColor = color; ctx.shadowBlur = 15; ctx.strokeStyle = color+'88'; ctx.lineWidth = thickness*2;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();
+    ctx.strokeStyle = color; ctx.lineWidth = thickness;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();
+    const tS = 0.05, tE = 0.95;
+    const px1 = Math.pow(1-tS,3)*x1 + 3*Math.pow(1-tS,2)*tS*cx1 + 3*(1-tS)*tS*tS*cx2 + Math.pow(tS,3)*x2;
+    const py1 = Math.pow(1-tS,3)*y1 + 3*Math.pow(1-tS,2)*tS*cy1 + 3*(1-tS)*tS*tS*cy2 + Math.pow(tS,3)*y2;
+    const px2 = Math.pow(1-tE,3)*x1 + 3*Math.pow(1-tE,2)*tE*cx1 + 3*(1-tE)*tE*tE*cx2 + Math.pow(tE,3)*x2;
+    const py2 = Math.pow(1-tE,3)*y1 + 3*Math.pow(1-tE,2)*tE*cy1 + 3*(1-tE)*tE*tE*cy2 + Math.pow(tE,3)*y2;
+    ctx.fillStyle = color;
+    ctx.save(); ctx.translate(x1,y1); ctx.rotate(Math.atan2(y1-py1, x1-px1)); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-thickness*4, thickness*2); ctx.lineTo(-thickness*4, -thickness*2); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(x2,y2); ctx.rotate(Math.atan2(y2-py2, x2-px2)); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-thickness*4, thickness*2); ctx.lineTo(-thickness*4, -thickness*2); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  else {
+    ctx.shadowColor = color; ctx.shadowBlur = 18; ctx.strokeStyle = color+'55'; ctx.lineWidth = thickness*3;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();
+    ctx.strokeStyle = color; ctx.lineWidth = thickness; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();
+  }
+  ctx.restore();
 }
 
 /* ============================================================
@@ -686,14 +719,20 @@ function showFeedback() {
   const fb = CONFIG.feedback || {};
   if (!fb.mode || fb.mode === 'none') return;
 
-  const overlay  = document.getElementById('feedback-overlay');
   const box      = document.getElementById('feedback-box');
   const imgEl    = document.getElementById('feedback-img');
   const textEl   = document.getElementById('feedback-text');
 
+  /* Координаты из редактора */
+  box.style.position = 'absolute';
+  box.style.left = (fb.x || 300) + 'px';
+  box.style.top = (fb.y || 200) + 'px';
+  box.style.width = (fb.w || 300) + 'px';
+  if (fb.h && fb.h > 20) box.style.height = fb.h + 'px';
+
   /* Стили блока */
   box.style.background   = fb.bgColor     || '#0a0a0f';
-  box.style.border       = `${fb.borderWidth || 2}px solid ${fb.borderColor || '#00ffcc'}`;
+  box.style.border       = `${fb.borderWidth || 0}px solid ${fb.borderColor || '#00ffcc'}`;
   box.style.borderRadius = (fb.radius || 16) + 'px';
   box.style.boxShadow    = `0 0 30px ${fb.glowColor || '#00ffcc'}`;
 
@@ -732,10 +771,7 @@ function showFeedback() {
     box.style.animation = 'none';
   }
 
-  overlay.classList.add('show');
-
-  /* Клик по оверлею — закрыть */
-  overlay.addEventListener('click', () => overlay.classList.remove('show'), { once: true });
+  box.classList.add('show');
 }
 
 /* ============================================================
