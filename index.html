@@ -8,7 +8,7 @@
 <link id="gf" rel="stylesheet" href="">
 <script>
 window.MathJax = {
-  tex: { inlineMath: [['$','$'],['\$','\$']] },
+  tex: { inlineMath: [['$','$'],['\\$','\\$']] },
   startup: { typeset: false }
 };
 </script>
@@ -196,6 +196,15 @@ button.action-btn:hover { background: #555; }
 }
 #pub-status { font-size: 12px; color: #aaa; margin-top: 6px; text-align: center; min-height: 18px; }
 .hint-text { font-size: 11px; color: #888; margin-top: 4px; }
+
+/* Фидбек-блок в редакторе */
+#fb-drag-box {
+  display: none; position: absolute; z-index: 9000; border: 2px dashed #ff00cc; background: rgba(255,0,204,0.1); cursor: grab;
+  justify-content: center; align-items: center; flex-direction: column; padding: 10px; text-align: center; color: #fff; font-weight: bold; border-radius: 16px;
+  pointer-events: auto;
+}
+#fb-drag-box:active { cursor: grabbing; }
+#fb-drag-box::after { content: "БЛОК ФИДБЕКА"; font-size: 14px; text-shadow: 0 0 5px #000; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -243,30 +252,52 @@ button.action-btn:hover { background: #555; }
       </select>
     </div>
     <div class="control-group">
-      <label>При клике:</label>
-      <select id="anim-click">
-        <option value="glow" selected>Неоновая подсветка</option><option value="none">Нет</option>
-        <option value="scaleUp">Увеличение</option><option value="pulse">Пульсация</option>
-        <option value="wobble">Тряска</option><option value="glitch">Глитч</option>
-        <option value="distort">Искажение</option>
+      <label>Состояние Выбора (пока не кликнешь):</label>
+      <select id="anim-selected">
+        <option value="glow" selected>Неоновое свечение</option>
+        <option value="pulse">Пульсация</option>
+        <option value="float">Лёгкое парение</option>
+        <option value="shake">Мелкая тряска</option>
+        <option value="none">Без анимации</option>
       </select>
     </div>
-    <div class="control-group"><label>Цвет подсветки:</label><input type="color" id="anim-glow-color" value="#00ffcc"></div>
+    <div class="control-group"><label>Цвет подсветки (выбор/ховер):</label><input type="color" id="anim-glow-color" value="#00ffcc"></div>
 
-    <h4 class="section-title">Аудио</h4>
-    <div class="control-group"><label>Верная пара</label>
+    <h4 class="section-title">Аудио и Спецэффекты</h4>
+    <div class="control-group"><label>Эффект при ВЕРНОЙ паре:</label>
+      <select id="eff-match">
+        <option value="fireworks" selected>🎆 Фейерверки</option>
+        <option value="confetti">🎊 Конфетти</option>
+        <option value="stars">⭐ Звездопад</option>
+        <option value="hearts">💖 Сердечки</option>
+        <option value="emoji-burst">🤩 Взрыв эмодзи</option>
+        <option value="none">Нет эффекта</option>
+      </select>
+    </div>
+    <div class="control-group"><label>Верная пара (Звук):</label>
       <div style="display:flex; gap:5px;">
         <input type="file" accept="audio/*" id="snd-correct-file">
         <button class="btn-clear" id="btn-clr-snd-correct" title="Удалить">✕</button>
       </div>
     </div>
-    <div class="control-group"><label>Ошибка</label>
+    <hr style="border:0; border-top:1px dashed #444; margin:10px 0;">
+    <div class="control-group"><label>Эффект при ОШИБКЕ:</label>
+      <select id="eff-mismatch">
+        <option value="shake" selected>🫨 Только тряска карточек</option>
+        <option value="rain">🌧️ Проливной дождь</option>
+        <option value="lightning">⚡ Вспышка молнии</option>
+        <option value="emoji-drop">💩 Падающие эмодзи</option>
+        <option value="shatter">🔴 Осколки</option>
+        <option value="none">Нет эффекта</option>
+      </select>
+    </div>
+    <div class="control-group"><label>Ошибка (Звук):</label>
       <div style="display:flex; gap:5px;">
         <input type="file" accept="audio/*" id="snd-wrong-file">
         <button class="btn-clear" id="btn-clr-snd-wrong" title="Удалить">✕</button>
       </div>
     </div>
-    <div class="control-group"><label>Победа</label>
+    <div class="control-group"><label>Победа (Звук):</label>
       <div style="display:flex; gap:5px;">
         <input type="file" accept="audio/*" id="snd-win-file">
         <button class="btn-clear" id="btn-clr-snd-win" title="Удалить">✕</button>
@@ -323,15 +354,38 @@ button.action-btn:hover { background: #555; }
       <div class="control-group"><label>Толщина:</label><input type="number" id="line-thickness" value="4" min="1"></div>
     </div>
     <div class="control-group">
-      <label>Стиль:</label>
+      <label>Тип линии (физика и вид):</label>
       <select id="line-style">
-        <option value="neon">Неоновая нить</option>
+        <option value="neon">Неоновый луч (классика)</option>
+        <option value="rope">Гибкая верёвка (болтается)</option>
+        <option value="circuit">Микросхема (угловатая)</option>
+        <option value="dashed">Пунктирная</option>
+        <option value="dotted">Точки</option>
+        <option value="gradient">Светящийся градиент</option>
+        <option value="arrow">Со стрелками</option>
+        <option value="sparkle">Мерцающие блёстки</option>
         <option value="magic">Магическая ⭐</option>
         <option value="nature">Лесная 🦋</option>
+        <option value="emoji">Нить из Эмодзи</option>
+      </select>
+    </div>
+    <div class="control-group" id="line-emoji-wrapper" style="display:none;">
+      <label>Выберите Эмодзи для нити:</label>
+      <select id="line-emoji" style="font-size:18px;">
+        <option value="🟢">🟢</option><option value="🔵">🔵</option><option value="🟣">🟣</option><option value="🔴">🔴</option><option value="🟠">🟠</option><option value="🟡">🟡</option>
+        <option value="⭐">⭐</option><option value="✨">✨</option><option value="🔥">🔥</option><option value="💥">💥</option><option value="⚡">⚡</option>
+        <option value="🐾">🐾</option><option value="💀">💀</option><option value="👽">👽</option><option value="👻">👻</option><option value="👾">👾</option>
+        <option value="💖">💖</option><option value="💔">💔</option><option value="🌸">🌸</option><option value="🍀">🍀</option><option value="🌲">🌲</option>
+        <option value="💧">💧</option><option value="❄️">❄️</option><option value="☁️">☁️</option><option value="🎈">🎈</option><option value="🩸">🩸</option>
       </select>
     </div>
 
     <h4 class="section-title">🎉 Финальный фидбек</h4>
+    <div class="control-group">
+      <label>Позиция фидбека (перетащи по экрану):</label>
+      <button class="action-btn" id="btn-toggle-fb-drag" style="background:#ff00cc; border-color:#ff00cc; color:#fff;">Показать / Скрыть блок</button>
+      <p style="font-size:10px; color:#aaa; margin-top:5px;">Нажми, чтобы блок появился. Перетащи в нужное место, потяни за уголок для размера.</p>
+    </div>
     <div class="control-group">
       <label>Что показывать:</label>
       <select id="fb-mode">
@@ -416,7 +470,11 @@ button.action-btn:hover { background: #555; }
     </div>
   </div>
 
-  <div id="elements-container"></div>
+  <div id="elements-container">
+    <div id="fb-drag-box">
+      <div class="resize-handle" style="background: linear-gradient(135deg, transparent 50%, #ff00cc 50%);"></div>
+    </div>
+  </div>
 </div>
 
 <div id="output-modal">
@@ -448,11 +506,11 @@ button.action-btn:hover { background: #555; }
 
 <script>
 /* ============================================================
-   КОНСТАНТЫ
+   КОНСТАНТЫ (ИСПРАВЛЕНО НА GAME.HTML ДЛЯ TEXTS)
    ============================================================ */
 const ENDPOINT    = "https://server-kjnn.onrender.com/publish";
 const PUBLISH_KEY = "nika_read_pub_2025";
-const BASE_GAME   = "https://nikashum93.github.io/match/game.html";
+const BASE_GAME   = "https://nikashum93.github.io/texts/game.html";
 
 /* ============================================================
    ШРИФТЫ / ЯЗЫКИ
@@ -489,6 +547,10 @@ langSel.addEventListener('change', () => {
 });
 fontSel.addEventListener('change', applyFont);
 
+document.getElementById('line-style').addEventListener('change', e => {
+  document.getElementById('line-emoji-wrapper').style.display = e.target.value === 'emoji' ? 'block' : 'none';
+});
+
 function fillFonts(lang) {
   const fonts = FONT_MAP[lang] || FONT_MAP.ru;
   fontSel.innerHTML   = fonts.map(f => `<option value="${f}">${f}</option>`).join('');
@@ -519,7 +581,6 @@ let resources = { bg:'', sndCorrect:'', sndWrong:'', sndWin:'', fbImg:'' };
 function fileToBase64(file, cb) {
   if (!file) return;
 
-  // Если это не картинка (например, звук), пускаем как есть
   if (!file.type.startsWith('image/')) {
     const r = new FileReader();
     r.readAsDataURL(file);
@@ -527,7 +588,6 @@ function fileToBase64(file, cb) {
     return;
   }
 
-  // Если это картинка, сжимаем её
   const reader = new FileReader();
   reader.readAsDataURL(file);
   reader.onload = function (event) {
@@ -537,13 +597,11 @@ function fileToBase64(file, cb) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      // Максимальный размер
       const MAX_WIDTH = 1024;
       const MAX_HEIGHT = 1024;
       let width = img.width;
       let height = img.height;
 
-      // Высчитываем пропорции
       if (width > height) {
         if (width > MAX_WIDTH) {
           height *= MAX_WIDTH / width;
@@ -560,13 +618,11 @@ function fileToBase64(file, cb) {
       canvas.height = height;
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Если картинка была с прозрачным фоном, сохраняем прозрачность
       let mimeType = 'image/jpeg';
       if (file.type === 'image/png' || file.type === 'image/webp') {
         mimeType = 'image/webp';
       }
 
-      // Сжимаем до 80% качества
       const compressedBase64 = canvas.toDataURL(mimeType, 0.8);
       cb(compressedBase64);
     };
@@ -631,6 +687,48 @@ document.getElementById('btn-clr-fb-img').addEventListener('click', () => {
 });
 
 /* ============================================================
+   БЛОК ФИДБЕКА В РЕДАКТОРЕ (ДЛЯ ВЫБОРКИ КООРДИНАТ)
+   ============================================================ */
+const fbDragBox = document.getElementById('fb-drag-box');
+document.getElementById('btn-toggle-fb-drag').addEventListener('click', () => {
+  fbDragBox.style.display = fbDragBox.style.display === 'flex' ? 'none' : 'flex';
+  if(fbDragBox.style.display === 'flex' && !fbDragBox.style.left) {
+    fbDragBox.style.left = '300px'; fbDragBox.style.top = '200px'; 
+    fbDragBox.style.width = '300px'; fbDragBox.style.height = '200px';
+  }
+});
+
+let fbActive = false, fbOx, fbOy, fbSx, fbSy;
+fbDragBox.addEventListener('mousedown', e => {
+  if (e.target.classList.contains('resize-handle')) return;
+  fbActive = true; 
+  fbOx = parseInt(fbDragBox.style.left)||0; 
+  fbOy = parseInt(fbDragBox.style.top)||0;
+  fbSx = e.clientX; fbSy = e.clientY;
+});
+document.addEventListener('mousemove', e => {
+  if (!fbActive) return;
+  fbDragBox.style.left = (fbOx + e.clientX - fbSx) + 'px';
+  fbDragBox.style.top = (fbOy + e.clientY - fbSy) + 'px';
+});
+document.addEventListener('mouseup', () => fbActive = false);
+
+let fbrActive = false, fbrSw, fbrSh;
+fbDragBox.querySelector('.resize-handle').addEventListener('mousedown', e => {
+  fbrActive = true; 
+  fbrSw = parseInt(fbDragBox.style.width)||0; 
+  fbrSh = parseInt(fbDragBox.style.height)||0;
+  fbSx = e.clientX; fbSy = e.clientY; 
+  e.stopPropagation();
+});
+document.addEventListener('mousemove', e => {
+  if (!fbrActive) return;
+  fbDragBox.style.width = Math.max(100, fbrSw + e.clientX - fbSx) + 'px';
+  fbDragBox.style.height = Math.max(50, fbrSh + e.clientY - fbSy) + 'px';
+});
+document.addEventListener('mouseup', () => fbrActive = false);
+
+/* ============================================================
    ДАННЫЕ ЭЛЕМЕНТОВ
    ============================================================ */
 let items      = [];
@@ -653,7 +751,9 @@ function getGlobalStyle() {
   return {
     font:      fontSel.value,
     animHover: document.getElementById('anim-hover').value,
-    animClick: document.getElementById('anim-click').value,
+    animSelected: document.getElementById('anim-selected').value,
+    effMatch:  document.getElementById('eff-match').value,
+    effMismatch: document.getElementById('eff-mismatch').value,
     glowColor: document.getElementById('anim-glow-color').value,
     left: {
       bgColor:     document.getElementById('card-bg-color-left').value,
@@ -679,7 +779,8 @@ function getGlobalStyle() {
     line: {
       color:     document.getElementById('line-color').value,
       thickness: readInt('line-thickness', 4),
-      style:     document.getElementById('line-style').value
+      style:     document.getElementById('line-style').value,
+      emoji:     document.getElementById('line-emoji').value
     },
     feedback: {
       mode:        document.getElementById('fb-mode').value,
@@ -694,7 +795,11 @@ function getGlobalStyle() {
       glowColor:   document.getElementById('fb-glow-color').value,
       anim:        document.getElementById('fb-anim').value,
       imgWidth:    readInt('fb-img-width', 320),
-      img:         resources.fbImg
+      img:         resources.fbImg,
+      x:           parseInt(fbDragBox.style.left) || 300,
+      y:           parseInt(fbDragBox.style.top) || 200,
+      w:           parseInt(fbDragBox.style.width) || 300,
+      h:           parseInt(fbDragBox.style.height) || 200
     }
   };
 }
@@ -760,7 +865,10 @@ function generateElements() {
 const container = document.getElementById('elements-container');
 
 function renderAll() {
+  const fbBox = document.getElementById('fb-drag-box');
   container.innerHTML = '';
+  container.appendChild(fbBox);
+  
   selectedId = null;
   document.getElementById('item-toolbar').style.display = 'none';
   const gs = getGlobalStyle();
@@ -905,7 +1013,7 @@ function selectItem(id) {
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('#item-toolbar') && !e.target.closest('.drag-item')) {
+  if (!e.target.closest('#item-toolbar') && !e.target.closest('.drag-item') && e.target.id !== 'btn-toggle-fb-drag') {
     toolbar.style.display = 'none';
     if (selectedId) {
       const prev = document.getElementById('el_' + selectedId);
@@ -1066,7 +1174,9 @@ function buildConfig() {
     },
     style: {
       animHover:      gs.animHover,
-      animClick:      gs.animClick,
+      animSelected:   gs.animSelected,
+      effMatch:       gs.effMatch,
+      effMismatch:    gs.effMismatch,
       glowColor:      gs.glowColor,
       matchedOpacity: gs.matchedOpacity,
       left:           gs.left,
@@ -1154,7 +1264,7 @@ async function publishGame() {
 
     const iframeCode = `<iframe src="${BASE_GAME}?id=${encodeURIComponent(id)}" width="900" height="640" style="border:0;" allow="autoplay" allowfullscreen></iframe>`;
     document.getElementById('code-output').value = iframeCode;
-    status.textContent = '✅ Готово! Подождите 30–60 секунд, чтобы ссылка обновилась.';
+    status.innerHTML = '✅ Готово!<br><span style="color:#ffcc00;">Внимание: GitHub обновит данные в течение 30–60 секунд. Если в игре будет загрузка, просто подождите.</span>';
   } catch(e) {
     status.textContent = '❌ Ошибка: ' + e.message;
   }
@@ -1190,23 +1300,38 @@ function buildGameHtml(cfg) {
     + '#bg{position:fixed;inset:0;background-size:cover;background-position:center;z-index:0}\n'
     + '#cvs{position:fixed;inset:0;pointer-events:none;z-index:10}\n'
     + '#layer{position:fixed;inset:0;z-index:20}\n'
+    + '/* ---- Loader ---- */\n'
+    + '#loader-screen { position: fixed; inset: 0; background: rgba(20,20,25,0.4); backdrop-filter: blur(4px); z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease; }\n'
+    + '.loader-box { background: rgba(10,10,15,0.85); padding: 30px; border-radius: 16px; border: 1px solid rgba(0,255,204,0.3); box-shadow: 0 10px 40px rgba(0,0,0,0.8); text-align: center; color: #fff; font-family: sans-serif; }\n'
+    + '.spinner { width: 40px; height: 40px; border: 4px solid rgba(0,255,204,0.2); border-top-color: #00ffcc; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }\n'
+    + '@keyframes spin { to { transform: rotate(360deg); } }\n'
     + '.card{position:absolute;display:flex;justify-content:center;align-items:center;\n'
     + '  text-align:center;cursor:pointer;border-radius:8px;padding:6px;\n'
     + '  word-break:break-word;transition:opacity .5s ease;user-select:none;font-weight:700;box-sizing:border-box}\n'
+    + '.card.selected { z-index: 100; }\n'
     + '.card.matched{pointer-events:none}\n'
+    + '/* ---- FX & Anims ---- */\n'
+    + '.anim-sel-float { animation: selFloat 2s ease-in-out infinite; }\n'
+    + '.anim-sel-pulse { animation: selPulse 1s ease infinite; }\n'
+    + '.anim-sel-shake { animation: selShake 0.5s ease infinite; }\n'
+    + '.anim-sel-glow  { filter: drop-shadow(0 0 15px var(--glow,#00ffcc)) brightness(1.2); }\n'
+    + '@keyframes selFloat { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }\n'
+    + '@keyframes selPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }\n'
+    + '@keyframes selShake { 0%,100%{transform:rotate(0deg);} 25%{transform:rotate(-3deg);} 75%{transform:rotate(3deg);} }\n'
+    + '.fx-particle { position: fixed; pointer-events: none; z-index: 30000; font-size: 24px; animation: fxFly var(--dur, 1s) cubic-bezier(0.25,1,0.5,1) forwards; }\n'
+    + '@keyframes fxFly { 0% { opacity: 1; transform: translate(0,0) scale(var(--s,1)) rotate(0deg); } 100% { opacity: 0; transform: translate(var(--dx),var(--dy)) scale(var(--se,0.5)) rotate(var(--rot,180deg)); } }\n'
+    + '.fx-rain { position: fixed; pointer-events: none; z-index: 30000; width: 2px; height: 30px; background: rgba(100,200,255,0.8); animation: rainDrop 0.6s linear forwards; }\n'
+    + '@keyframes rainDrop { 0% { transform: translateY(-50px); opacity: 1; } 100% { transform: translateY(100vh); opacity: 0; } }\n'
+    + '#flash-overlay { position: fixed; inset: 0; background: #fff; z-index: 40000; opacity: 0; pointer-events: none; }\n'
+    + '@keyframes flashFx { 0% { opacity: 0.8; } 20% { opacity: 0; } 40% { opacity: 0.5; } 100% { opacity: 0; } }\n'
     + '#ttbox{position:fixed;z-index:9999;padding:10px 14px;border-radius:8px;\n'
     + '  font-size:14px;font-weight:bold;pointer-events:none;display:none;max-width:260px;text-align:center}\n'
     + '#ttbox img{max-width:220px;border-radius:6px;margin-top:6px;display:block}\n'
-    + '#fbover{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:50000;\n'
-    + '  display:none;justify-content:center;align-items:center;\n'
-    + '  flex-direction:column;gap:20px;backdrop-filter:blur(6px)}\n'
-    + '#fbover.show{display:flex}\n'
-    + '#fbbox{display:flex;flex-direction:column;align-items:center;gap:16px;\n'
-    + '  padding:30px 36px;border-radius:16px;max-width:90vw;box-sizing:border-box}\n'
-    + '#fbimg{display:block;border-radius:12px}\n'
+    + '#fbbox{position:absolute;z-index:50000;display:none;flex-direction:column;align-items:center;gap:16px;\n'
+    + '  padding:30px 36px;border-radius:16px;box-sizing:border-box;backdrop-filter:blur(6px)}\n'
+    + '#fbbox.show{display:flex}\n'
+    + '#fbimg{display:block;border-radius:12px;max-width:100%;height:auto;}\n'
     + '#fbtxt{font-weight:900;text-align:center;line-height:1.4}\n'
-    + '.particle{position:fixed;pointer-events:none;z-index:30;font-size:18px;animation:pfly .9s ease-out forwards}\n'
-    + '@keyframes pfly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3)}}\n'
     + '@keyframes popUp{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}\n'
     + '@keyframes fadeIn{from{opacity:0}to{opacity:1}}\n'
     + '@keyframes slideUp{from{transform:translateY(80px);opacity:0}to{transform:translateY(0);opacity:1}}\n'
@@ -1218,16 +1343,19 @@ function buildGameHtml(cfg) {
     + '@keyframes scaleUp{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}\n'
     + '@keyframes scaleDown{0%,100%{transform:scale(1)}50%{transform:scale(.88)}}\n'
     + '<\/style></head><body>\n'
+    + '<div id="loader-screen"><div class="loader-box"><div class="spinner"></div><div id="loader-text" style="font-weight:bold;font-size:16px;">Без паники — игра загружается.<br><span style="font-size:12px;color:#aaa;">Минутку... ожидаем ответ</span></div></div></div>\n'
     + '<div id="bg"></div>\n'
     + '<canvas id="cvs"></canvas>\n'
     + '<div id="layer"></div>\n'
     + '<div id="ttbox"></div>\n'
-    + '<div id="fbover"><div id="fbbox">\n'
+    + '<div id="flash-overlay"></div>\n'
+    + '<div id="fbbox">\n'
     + '  <img id="fbimg" src="" alt="">\n'
     + '  <div id="fbtxt"></div>\n'
-    + '</div></div>\n'
+    + '</div>\n'
     + '<script>\n'
     + 'const CFG=' + cfgJson + ';\n'
+    + 'document.getElementById("loader-screen").style.display = "none";\n' // Скрываем загрузку в превью
     + '\n'
     + 'function hexToRgba(hex,alpha){\n'
     + '  if(!hex) return "rgba(0,0,0,"+alpha+")";\n'
@@ -1256,8 +1384,10 @@ function buildGameHtml(cfg) {
     + '  try{if(sounds[k]){sounds[k].currentTime=0;sounds[k].play().catch(()=>{});}}catch(_){}\n'
     + '}\n'
     + '\n'
-    + 'const canvas=document.getElementById("cvs");\n'
-    + 'const ctx=canvas.getContext("2d");\n'
+    + 'let canvas=document.getElementById("cvs");\n'
+    + 'let ctx=canvas.getContext("2d");\n'
+    + 'let mouseX=-1000, mouseY=-1000;\n'
+    + 'window.addEventListener("mousemove", e => { mouseX = e.clientX; mouseY = e.clientY; });\n'
     + 'function resizeCvs(){canvas.width=innerWidth;canvas.height=innerHeight;}\n'
     + 'resizeCvs();\n'
     + 'window.addEventListener("resize",resizeCvs);\n'
@@ -1266,6 +1396,7 @@ function buildGameHtml(cfg) {
     + 'let matchedPairs=0;\n'
     + 'const pairSet=new Set((CFG.items||[]).map(i=>i.pairIndex));\n'
     + 'const totalPairs=pairSet.size;\n'
+    + 'let activeLines = [];\n'
     + '\n'
     + 'const layer=document.getElementById("layer");\n'
     + 'const st=CFG.style||{};\n'
@@ -1307,14 +1438,24 @@ function buildGameHtml(cfg) {
     + '  });\n'
     + '  card.addEventListener("mousemove",moveTT);\n'
     + '  card.addEventListener("mouseleave",()=>{\n'
-    + '    if(!card.classList.contains("matched")) clearAnim(card);\n'
+    + '    if(!card.classList.contains("matched") && selected!==card) clearAnim(card);\n'
     + '    hideTT();\n'
     + '  });\n'
-    + '  card.addEventListener("click",()=>onCardClick(card));\n'
+    + '  card.addEventListener("click",(e)=>{ e.stopPropagation(); onCardClick(card); });\n'
     + '  layer.appendChild(card);\n'
     + '});\n'
     + '\n'
+    + 'document.addEventListener("click", () => {\n'
+    + '  if(selected) {\n'
+    + '    selected.classList.remove("selected");\n'
+    + '    selected.className = selected.className.replace(/anim-sel-\\w+/g, "").trim();\n'
+    + '    clearAnim(selected);\n'
+    + '    selected = null;\n'
+    + '  }\n'
+    + '});\n'
+    + '\n'
     + 'function applyAnim(card,anim,glow){\n'
+    + '  if(selected===card) return;\n'
     + '  card.style.animation="";\n'
     + '  void card.offsetWidth;\n'
     + '  switch(anim){\n'
@@ -1336,15 +1477,17 @@ function buildGameHtml(cfg) {
     + 'function onCardClick(card){\n'
     + '  if(card.classList.contains("matched")) return;\n'
     + '  const glow=st.glowColor||"#00ffcc";\n'
-    + '  const animClick=st.animClick||"glow";\n'
+    + '  const animSel=st.animSelected||"glow";\n'
     + '  if(selected===card){\n'
     + '    card.classList.remove("selected");\n'
+    + '    card.className = card.className.replace(/anim-sel-\\w+/g, "").trim();\n'
     + '    clearAnim(card);\n'
     + '    selected=null;\n'
     + '    return;\n'
     + '  }\n'
-    + '  applyAnim(card,animClick,glow);\n'
     + '  card.classList.add("selected");\n'
+    + '  card.style.setProperty("--glow", glow);\n'
+    + '  if(animSel!=="none") card.classList.add("anim-sel-"+animSel);\n'
     + '  if(!selected){selected=card;return;}\n'
     + '  const first=selected;\n'
     + '  const second=card;\n'
@@ -1358,27 +1501,76 @@ function buildGameHtml(cfg) {
     + '  }\n'
     + '}\n'
     + '\n'
+    + 'function createMatchFx(a, b, fxType) {\n'
+    + '  if(fxType === "none") return;\n'
+    + '  const ra = a.getBoundingClientRect(); const rb = b.getBoundingClientRect();\n'
+    + '  const centers = [{x: ra.left+ra.width/2, y: ra.top+ra.height/2}, {x: rb.left+rb.width/2, y: rb.top+rb.height/2}];\n'
+    + '  centers.forEach(c => {\n'
+    + '    const count = fxType==="fireworks"?20 : fxType==="confetti"?15 : fxType==="stars"?12 : 10;\n'
+    + '    const emojiStr = fxType==="emoji-burst"?"🤩,🔥,🎉" : fxType==="hearts"?"💖,💕,💓" : fxType==="stars"?"⭐,✨,🌟" : "🎇,🧨,✨";\n'
+    + '    const emojis = emojiStr.split(",");\n'
+    + '    for(let i=0; i<count; i++) {\n'
+    + '      const p = document.createElement("div"); p.className = "fx-particle";\n'
+    + '      p.textContent = emojis[Math.floor(Math.random()*emojis.length)];\n'
+    + '      const angle = Math.random() * Math.PI * 2; const dist = 60 + Math.random() * 120;\n'
+    + '      p.style.setProperty("--dx", Math.cos(angle)*dist + "px"); p.style.setProperty("--dy", Math.sin(angle)*dist + "px");\n'
+    + '      p.style.setProperty("--rot", (Math.random()*360 - 180) + "deg"); p.style.setProperty("--dur", (0.6 + Math.random()*0.6) + "s");\n'
+    + '      p.style.setProperty("--s", 0.5 + Math.random());\n'
+    + '      p.style.left = c.x + "px"; p.style.top = c.y + "px";\n'
+    + '      document.body.appendChild(p); setTimeout(()=>p.remove(), 1200);\n'
+    + '    }\n'
+    + '  });\n'
+    + '}\n'
+    + '\n'
+    + 'function createMismatchFx(fxType) {\n'
+    + '  if(fxType === "shake" || fxType === "none") return;\n'
+    + '  if(fxType === "lightning") {\n'
+    + '    const f = document.getElementById("flash-overlay"); f.style.animation = "flashFx 0.5s ease-out";\n'
+    + '    setTimeout(()=>f.style.animation="", 500); return;\n'
+    + '  }\n'
+    + '  const isRain = fxType === "rain"; const count = isRain ? 40 : 15;\n'
+    + '  const emojis = fxType === "emoji-drop" ? ["🤡","💩","👎","💔","🤦"] : fxType === "shatter" ? ["🔴","🔺","🔻"] : ["💧"];\n'
+    + '  for(let i=0; i<count; i++) {\n'
+    + '    const p = document.createElement("div");\n'
+    + '    if(isRain) p.className = "fx-rain"; else { p.className = "fx-particle"; p.textContent = emojis[Math.floor(Math.random()*emojis.length)]; }\n'
+    + '    p.style.left = Math.random() * window.innerWidth + "px";\n'
+    + '    if(!isRain) {\n'
+    + '      p.style.top = "-50px"; p.style.setProperty("--dx", (Math.random()*100 - 50) + "px");\n'
+    + '      p.style.setProperty("--dy", (window.innerHeight + 100) + "px");\n'
+    + '      p.style.setProperty("--rot", (Math.random()*360) + "deg");\n'
+    + '      p.style.setProperty("--dur", (1 + Math.random()) + "s"); p.style.setProperty("--s", 0.8 + Math.random()*0.5);\n'
+    + '    }\n'
+    + '    document.body.appendChild(p); setTimeout(()=>p.remove(), 2000);\n'
+    + '  }\n'
+    + '}\n'
+    + '\n'
     + 'function onMatch(a,b){\n'
     + '  playSound("correct");\n'
     + '  const opacity=st.matchedOpacity!==undefined?st.matchedOpacity:0.35;\n'
     + '  const glow=st.glowColor||"#00ffcc";\n'
-    + '  drawLine(a,b);\n'
-    + '  spawnParticles(a,"⭐");\n'
-    + '  spawnParticles(b,"✨");\n'
+    + '  createMatchFx(a, b, st.effMatch || "fireworks");\n'
+    + '  const ra=a.getBoundingClientRect(); const rb=b.getBoundingClientRect();\n'
+    + '  const ax=a.dataset.side==="left"?ra.right:ra.left; const ay=ra.top+ra.height/2;\n'
+    + '  const bx=b.dataset.side==="left"?rb.right:rb.left; const by=rb.top+rb.height/2;\n'
+    + '  const l=st.line||{};\n'
+    + '  activeLines.push({x1:ax, y1:ay, x2:bx, y2:by, color:l.color||"#00ffcc", thickness:l.thickness||4, style:l.style||"neon", emoji:l.emoji||"⭐"});\n'
     + '  [a,b].forEach(card=>{\n'
     + '    card.classList.remove("selected");\n'
+    + '    card.className = card.className.replace(/anim-sel-\\w+/g, "").trim();\n'
     + '    card.classList.add("matched");\n'
     + '    clearAnim(card);\n'
     + '    card.style.opacity=opacity;\n'
     + '    card.style.filter="drop-shadow(0 0 10px "+glow+")";\n'
     + '  });\n'
     + '  matchedPairs++;\n'
-    + '  if(matchedPairs>=totalPairs) setTimeout(showFeedback,600);\n'
+    + '  if(matchedPairs>=totalPairs) setTimeout(showFeedback,1000);\n'
     + '}\n'
     + '\n'
     + 'function onMismatch(a,b){\n'
     + '  playSound("wrong");\n'
+    + '  createMismatchFx(st.effMismatch || "shake");\n'
     + '  [a,b].forEach(card=>{\n'
+    + '    card.className = card.className.replace(/anim-sel-\\w+/g, "").trim();\n'
     + '    card.style.animation="wobble .4s ease";\n'
     + '    setTimeout(()=>{\n'
     + '      card.style.animation="";\n'
@@ -1388,75 +1580,91 @@ function buildGameHtml(cfg) {
     + '  });\n'
     + '}\n'
     + '\n'
-    + 'function drawLine(ca,cb){\n'
-    + '  const line=st.line||{};\n'
-    + '  const color=line.color||"#00ffcc";\n'
-    + '  const thick=line.thickness||4;\n'
-    + '  const style=line.style||"neon";\n'
-    + '  const ra=ca.getBoundingClientRect();\n'
-    + '  const rb=cb.getBoundingClientRect();\n'
-    + '  const ax=ca.dataset.side==="left"?ra.right:ra.left;\n'
-    + '  const ay=ra.top+ra.height/2;\n'
-    + '  const bx=cb.dataset.side==="left"?rb.right:rb.left;\n'
-    + '  const by=rb.top+rb.height/2;\n'
-    + '  if(style==="magic")       drawMagicLine(ax,ay,bx,by,color,thick);\n'
-    + '  else if(style==="nature") drawNatureLine(ax,ay,bx,by,color,thick);\n'
-    + '  else                      drawNeonLine(ax,ay,bx,by,color,thick);\n'
+    + 'function renderCanvasLoop() {\n'
+    + '  ctx.clearRect(0,0, canvas.width, canvas.height);\n'
+    + '  const time = performance.now() * 0.001;\n'
+    + '  activeLines.forEach(line => drawComplexLine(line, time));\n'
+    + '  requestAnimationFrame(renderCanvasLoop);\n'
     + '}\n'
+    + 'requestAnimationFrame(renderCanvasLoop);\n'
     + '\n'
-    + 'function drawNeonLine(x1,y1,x2,y2,color,thick){\n'
-    + '  ctx.save();\n'
-    + '  ctx.strokeStyle=color+"55";ctx.lineWidth=thick*3;\n'
-    + '  ctx.lineCap="round";ctx.shadowColor=color;ctx.shadowBlur=18;\n'
-    + '  ctx.beginPath();ctx.moveTo(x1,y1);\n'
-    + '  ctx.bezierCurveTo((x1+x2)/2,y1,(x1+x2)/2,y2,x2,y2);\n'
-    + '  ctx.stroke();\n'
-    + '  ctx.strokeStyle=color;ctx.lineWidth=thick;ctx.shadowBlur=8;\n'
-    + '  ctx.beginPath();ctx.moveTo(x1,y1);\n'
-    + '  ctx.bezierCurveTo((x1+x2)/2,y1,(x1+x2)/2,y2,x2,y2);\n'
-    + '  ctx.stroke();\n'
+    + 'function drawComplexLine(L, time) {\n'
+    + '  const {x1, y1, x2, y2, color, thickness, style, emoji} = L;\n'
+    + '  const mx = (x1+x2)/2;\n'
+    + '  let cx1 = mx, cy1 = y1, cx2 = mx, cy2 = y2;\n'
+    + '  if (style === "rope") {\n'
+    + '    cy1 += Math.sin(time*3)*20; cy2 += Math.cos(time*3)*20;\n'
+    + '  } else if(style !== "circuit" && style !== "arrow") {\n'
+    + '    const distToMouse = Math.hypot(mx - mouseX, (y1+y2)/2 - mouseY);\n'
+    + '    if(distToMouse < 150) {\n'
+    + '      const rep = (150 - distToMouse) * 0.3;\n'
+    + '      cx1 += rep * (mx > mouseX ? 1 : -1); cy1 += rep * ((y1+y2)/2 > mouseY ? 1 : -1);\n'
+    + '      cx2 = cx1; cy2 = cy1;\n'
+    + '    }\n'
+    + '  }\n'
+    + '  ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = thickness; ctx.lineCap = "round"; ctx.lineJoin = "round";\n'
+    + '  if (style === "circuit") {\n'
+    + '    ctx.shadowColor = color; ctx.shadowBlur = 10;\n'
+    + '    ctx.beginPath(); ctx.moveTo(x1, y1); const midX = x1 + (x2-x1)*0.5;\n'
+    + '    ctx.lineTo(midX, y1); ctx.lineTo(midX, y2); ctx.lineTo(x2, y2); ctx.stroke();\n'
+    + '    ctx.fillStyle = "#fff";\n'
+    + '    ctx.beginPath(); ctx.arc(x1,y1, thickness*1.5, 0, Math.PI*2); ctx.fill();\n'
+    + '    ctx.beginPath(); ctx.arc(midX,y1, thickness, 0, Math.PI*2); ctx.fill();\n'
+    + '    ctx.beginPath(); ctx.arc(midX,y2, thickness, 0, Math.PI*2); ctx.fill();\n'
+    + '    ctx.beginPath(); ctx.arc(x2,y2, thickness*1.5, 0, Math.PI*2); ctx.fill();\n'
+    + '  } \n'
+    + '  else if (style === "dashed" || style === "dotted") {\n'
+    + '    ctx.shadowColor = color; ctx.shadowBlur = 8;\n'
+    + '    if(style === "dotted") { ctx.setLineDash([thickness, thickness*2]); ctx.lineCap = "round"; } else { ctx.setLineDash([thickness*3, thickness*3]); }\n'
+    + '    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();\n'
+    + '  }\n'
+    + '  else if (style === "gradient") {\n'
+    + '    const grad = ctx.createLinearGradient(x1,y1,x2,y2);\n'
+    + '    grad.addColorStop(0, color); grad.addColorStop(0.5, "#fff"); grad.addColorStop(1, color);\n'
+    + '    ctx.strokeStyle = grad; ctx.shadowColor = "#fff"; ctx.shadowBlur = 15;\n'
+    + '    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();\n'
+    + '  }\n'
+    + '  else if (style === "emoji" || style === "magic" || style === "nature" || style === "sparkle") {\n'
+    + '    ctx.strokeStyle = color + "44"; ctx.lineWidth = thickness*0.5;\n'
+    + '    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();\n'
+    + '    const e = style==="magic"?"⭐": style==="nature"?"🦋": style==="sparkle"?"✨": emoji;\n'
+    + '    const steps = style==="sparkle" ? 12 : 8;\n'
+    + '    for(let i=0; i<=steps; i++) {\n'
+    + '      const t = i/steps;\n'
+    + '      const bx = Math.pow(1-t,3)*x1 + 3*Math.pow(1-t,2)*t*cx1 + 3*(1-t)*t*t*cx2 + Math.pow(t,3)*x2;\n'
+    + '      const by = Math.pow(1-t,3)*y1 + 3*Math.pow(1-t,2)*t*cy1 + 3*(1-t)*t*t*cy2 + Math.pow(t,3)*y2;\n'
+    + '      if(style === "sparkle") {\n'
+    + '        const pulse = Math.abs(Math.sin(time*5 + i));\n'
+    + '        ctx.fillStyle = `rgba(255,255,255,${pulse})`; ctx.shadowColor = color; ctx.shadowBlur = 15;\n'
+    + '        ctx.beginPath(); ctx.arc(bx, by, thickness*(1+pulse), 0, Math.PI*2); ctx.fill();\n'
+    + '      } else {\n'
+    + '        ctx.font = `${thickness*3 + 10}px sans-serif`; ctx.textAlign = "center"; ctx.textBaseline="middle";\n'
+    + '        ctx.shadowColor = color; ctx.shadowBlur = 10;\n'
+    + '        ctx.fillText(e, bx, by + Math.sin(time*2 + i)*5);\n'
+    + '      }\n'
+    + '    }\n'
+    + '  }\n'
+    + '  else if (style === "arrow") {\n'
+    + '    ctx.shadowColor = color; ctx.shadowBlur = 15; ctx.strokeStyle = color+"88"; ctx.lineWidth = thickness*2;\n'
+    + '    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();\n'
+    + '    ctx.strokeStyle = color; ctx.lineWidth = thickness;\n'
+    + '    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();\n'
+    + '    const tS = 0.05, tE = 0.95;\n'
+    + '    const px1 = Math.pow(1-tS,3)*x1 + 3*Math.pow(1-tS,2)*tS*cx1 + 3*(1-tS)*tS*tS*cx2 + Math.pow(tS,3)*x2;\n'
+    + '    const py1 = Math.pow(1-tS,3)*y1 + 3*Math.pow(1-tS,2)*tS*cy1 + 3*(1-tS)*tS*tS*cy2 + Math.pow(tS,3)*y2;\n'
+    + '    const px2 = Math.pow(1-tE,3)*x1 + 3*Math.pow(1-tE,2)*tE*cx1 + 3*(1-tE)*tE*tE*cx2 + Math.pow(tE,3)*x2;\n'
+    + '    const py2 = Math.pow(1-tE,3)*y1 + 3*Math.pow(1-tE,2)*tE*cy1 + 3*(1-tE)*tE*tE*cy2 + Math.pow(tE,3)*y2;\n'
+    + '    ctx.fillStyle = color;\n'
+    + '    ctx.save(); ctx.translate(x1,y1); ctx.rotate(Math.atan2(y1-py1, x1-px1)); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-thickness*4, thickness*2); ctx.lineTo(-thickness*4, -thickness*2); ctx.closePath(); ctx.fill(); ctx.restore();\n'
+    + '    ctx.save(); ctx.translate(x2,y2); ctx.rotate(Math.atan2(y2-py2, x2-px2)); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-thickness*4, thickness*2); ctx.lineTo(-thickness*4, -thickness*2); ctx.closePath(); ctx.fill(); ctx.restore();\n'
+    + '  }\n'
+    + '  else {\n'
+    + '    ctx.shadowColor = color; ctx.shadowBlur = 18; ctx.strokeStyle = color+"55"; ctx.lineWidth = thickness*3;\n'
+    + '    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();\n'
+    + '    ctx.strokeStyle = color; ctx.lineWidth = thickness; ctx.shadowBlur = 8;\n'
+    + '    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();\n'
+    + '  }\n'
     + '  ctx.restore();\n'
-    + '}\n'
-    + '\n'
-    + 'function drawMagicLine(x1,y1,x2,y2,color,thick){\n'
-    + '  drawNeonLine(x1,y1,x2,y2,color,thick);\n'
-    + '  for(let i=0;i<=6;i++){\n'
-    + '    const t=i/6;\n'
-    + '    ctx.save();\n'
-    + '    ctx.font=(thick*3+8)+"px serif";\n'
-    + '    ctx.fillStyle="#fff";ctx.shadowColor=color;ctx.shadowBlur=10;\n'
-    + '    ctx.fillText("⭐",x1+(x2-x1)*t-8,y1+(y2-y1)*t+6);\n'
-    + '    ctx.restore();\n'
-    + '  }\n'
-    + '}\n'
-    + '\n'
-    + 'function drawNatureLine(x1,y1,x2,y2,color,thick){\n'
-    + '  drawNeonLine(x1,y1,x2,y2,"#44cc44",thick);\n'
-    + '  for(let i=1;i<4;i++){\n'
-    + '    const t=i/4;\n'
-    + '    ctx.save();\n'
-    + '    ctx.font=(thick*3+6)+"px serif";\n'
-    + '    ctx.fillText("🦋",x1+(x2-x1)*t-8,y1+(y2-y1)*t+6);\n'
-    + '    ctx.restore();\n'
-    + '  }\n'
-    + '}\n'
-    + '\n'
-    + 'function spawnParticles(card,emoji){\n'
-    + '  const rect=card.getBoundingClientRect();\n'
-    + '  const cx=rect.left+rect.width/2;\n'
-    + '  const cy=rect.top+rect.height/2;\n'
-    + '  for(let i=0;i<8;i++){\n'
-    + '    const p=document.createElement("div");\n'
-    + '    p.className="particle";\n'
-    + '    p.textContent=emoji;\n'
-    + '    const angle=(i/8)*Math.PI*2;\n'
-    + '    const dist=50+Math.random()*50;\n'
-    + '    p.style.setProperty("--dx",Math.cos(angle)*dist+"px");\n'
-    + '    p.style.setProperty("--dy",Math.sin(angle)*dist+"px");\n'
-    + '    p.style.left=cx+"px";p.style.top=cy+"px";\n'
-    + '    document.body.appendChild(p);\n'
-    + '    setTimeout(()=>p.remove(),950);\n'
-    + '  }\n'
     + '}\n'
     + '\n'
     + 'const ttbox=document.getElementById("ttbox");\n'
@@ -1485,10 +1693,11 @@ function buildGameHtml(cfg) {
     + '  playSound("win");\n'
     + '  const fb=CFG.feedback||{};\n'
     + '  if(!fb.mode||fb.mode==="none") return;\n'
-    + '  const overlay=document.getElementById("fbover");\n'
     + '  const box=document.getElementById("fbbox");\n'
     + '  const imgEl=document.getElementById("fbimg");\n'
     + '  const txtEl=document.getElementById("fbtxt");\n'
+    + '  box.style.left=(fb.x||300)+"px"; box.style.top=(fb.y||200)+"px";\n'
+    + '  box.style.width=(fb.w||300)+"px"; if(fb.h && fb.h>20) box.style.height=fb.h+"px";\n'
     + '  box.style.background=fb.bgColor||"#0a0a0f";\n'
     + '  box.style.border=(fb.borderWidth||0)+"px solid "+(fb.borderColor||"#00ffcc");\n'
     + '  box.style.borderRadius=(fb.radius||16)+"px";\n'
@@ -1505,8 +1714,8 @@ function buildGameHtml(cfg) {
     + '    txtEl.style.color=fb.textColor||"#fff";\n'
     + '    txtEl.style.fontSize=(fb.fontSize||28)+"px";\n'
     + '    txtEl.style.fontFamily=fb.font\n'
-    + '      ? \'"\'+fb.font+\'", sans-serif\'\n'
-    + '      : (CFG.font?\'"\'+CFG.font+\'", sans-serif\':"sans-serif");\n'
+    + '      ? \\'\"\\'+fb.font+\\'\", sans-serif\\'\\n'
+    + '      : (CFG.font?\\'\"\\'+CFG.font+\\'\", sans-serif\\':\"sans-serif\");\n'
     + '    txtEl.style.display="block";\n'
     + '  } else {\n'
     + '    txtEl.style.display="none";\n'
@@ -1515,8 +1724,7 @@ function buildGameHtml(cfg) {
     + '  box.style.animation=anim!=="none"\n'
     + '    ? anim+" .55s cubic-bezier(.34,1.56,.64,1) both"\n'
     + '    : "none";\n'
-    + '  overlay.classList.add("show");\n'
-    + '  overlay.addEventListener("click",()=>overlay.classList.remove("show"),{once:true});\n'
+    + '  box.classList.add("show");\n'
     + '}\n'
     + '<\/script>\n'
     + '</body></html>';
