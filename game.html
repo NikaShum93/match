@@ -6,7 +6,7 @@
 <title>Сопоставление Пар</title>
 <script>
 window.MathJax = {
-  tex: { inlineMath: [['$','$'],['\$','\$']] },
+  tex: { inlineMath: [['$','$'],['\\$','\\$']] },
   startup: { typeset: false }
 };
 </script>
@@ -368,7 +368,8 @@ function applyAnim(card, anim, glowColor) {
 
   switch (anim) {
     case 'glow':
-      card.style.boxShadow = `0 0 18px 4px ${glowColor}, 0 0 40px 8px ${glowColor}55`;
+      // ИСПОЛЬЗУЕМ DROP-SHADOW ДЛЯ ОБВОДКИ ПО КОНТУРУ
+      card.style.filter = `drop-shadow(0 0 8px ${glowColor}) drop-shadow(0 0 20px ${glowColor})`;
       break;
     case 'scaleUp':
       card.style.animation = 'scaleUp 0.4s ease infinite';
@@ -396,6 +397,7 @@ function applyAnim(card, anim, glowColor) {
 function clearAnim(card) {
   card.style.animation  = '';
   card.style.boxShadow  = '';
+  card.style.filter     = ''; // ОБНУЛЯЕМ ФИЛЬТР ПРИ СБРОСЕ
 }
 
 /* ============================================================
@@ -467,7 +469,8 @@ function onMatch(a, b) {
     card.classList.add('matched');
     clearAnim(card);
     card.style.opacity   = matchedOpacity;
-    card.style.boxShadow = `0 0 14px 3px ${glowColor}88`;
+    // ОСТАВЛЯЕМ НЕОН ПО КОНТУРУ СОВПАВШЕЙ ПАРЕ
+    card.style.filter = `drop-shadow(0 0 10px ${glowColor})`;
   });
 
   matchedPairs++;
