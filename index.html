@@ -99,6 +99,15 @@ button.action-btn:hover { background: #555; }
 .section-title.right-color { color: #44aaff; border-bottom-color: #44aaff; }
 .img-input-wrap { display: flex; flex-direction: column; gap: 5px; }
 .img-input-wrap .or-label { font-size: 10px; color: #666; text-align: center; margin: 0; }
+
+/* Стили для кнопок сброса */
+.btn-clear {
+  background: rgba(255,50,50,0.2); border: 1px solid #ff3333;
+  color: #ffaaaa; border-radius: 4px; padding: 0 10px;
+  cursor: pointer; font-weight: bold; transition: 0.2s;
+}
+.btn-clear:hover { background: rgba(255,50,50,0.4); }
+
 #elements-container {
   position: absolute; top: 0; left: 0;
   width: 100%; height: 100%; pointer-events: none;
@@ -204,14 +213,19 @@ button.action-btn:hover { background: #555; }
       <div class="control-group"><label>Язык</label><select id="language"></select></div>
       <div class="control-group"><label>Шрифт</label><select id="font"></select></div>
     </div>
+    
     <div class="control-group">
       <label>Фон (картинка):</label>
       <div class="img-input-wrap">
-        <input type="url" id="bg-url" placeholder="https://... (ссылка на GIF/PNG)">
+        <div style="display:flex; gap:5px;">
+          <input type="url" id="bg-url" placeholder="https://... (ссылка на GIF/PNG)">
+          <button class="btn-clear" id="btn-clr-bg" title="Сбросить фон">✕</button>
+        </div>
         <div class="or-label">— или загрузи файл —</div>
         <input type="file" accept="image/*" id="bg-file">
       </div>
     </div>
+
     <div class="row">
       <div class="control-group"><label>Столбец 1 (левый):</label><textarea id="list-left">Apple&#10;$x^2$</textarea></div>
       <div class="control-group"><label>Столбец 2 (правый):</label><textarea id="list-right">Яблоко&#10;Икс в квадрате</textarea></div>
@@ -240,9 +254,24 @@ button.action-btn:hover { background: #555; }
     <div class="control-group"><label>Цвет подсветки:</label><input type="color" id="anim-glow-color" value="#00ffcc"></div>
 
     <h4 class="section-title">Аудио</h4>
-    <div class="control-group"><label>Верная пара</label><input type="file" accept="audio/*" id="snd-correct-file"></div>
-    <div class="control-group"><label>Ошибка</label><input type="file" accept="audio/*" id="snd-wrong-file"></div>
-    <div class="control-group"><label>Победа</label><input type="file" accept="audio/*" id="snd-win-file"></div>
+    <div class="control-group"><label>Верная пара</label>
+      <div style="display:flex; gap:5px;">
+        <input type="file" accept="audio/*" id="snd-correct-file">
+        <button class="btn-clear" id="btn-clr-snd-correct" title="Удалить">✕</button>
+      </div>
+    </div>
+    <div class="control-group"><label>Ошибка</label>
+      <div style="display:flex; gap:5px;">
+        <input type="file" accept="audio/*" id="snd-wrong-file">
+        <button class="btn-clear" id="btn-clr-snd-wrong" title="Удалить">✕</button>
+      </div>
+    </div>
+    <div class="control-group"><label>Победа</label>
+      <div style="display:flex; gap:5px;">
+        <input type="file" accept="audio/*" id="snd-win-file">
+        <button class="btn-clear" id="btn-clr-snd-win" title="Удалить">✕</button>
+      </div>
+    </div>
 
     <h4 class="section-title left-color">🟠 Группа 1 — левый столбец</h4>
     <p style="font-size:10px;color:#888;margin-top:-5px;">Тяни за ◢ в правом нижнем углу карточки</p>
@@ -339,11 +368,15 @@ button.action-btn:hover { background: #555; }
         </select>
       </div>
     </div>
+    
     <div id="fb-image-block">
       <div class="control-group">
         <label>Картинка фидбека:</label>
         <div class="img-input-wrap">
-          <input type="url" id="fb-img-url" placeholder="https://... (ссылка на GIF/PNG)">
+          <div style="display:flex; gap:5px;">
+            <input type="url" id="fb-img-url" placeholder="https://... (ссылка на GIF/PNG)">
+            <button class="btn-clear" id="btn-clr-fb-img" title="Сбросить картинку">✕</button>
+          </div>
           <div class="or-label">— или загрузи файл —</div>
           <input type="file" accept="image/*" id="fb-img-file">
         </div>
@@ -354,7 +387,6 @@ button.action-btn:hover { background: #555; }
     <div style="height:60px;"></div>
   </div>
 
-  <!-- Тулбар элемента -->
   <div id="item-toolbar">
     <div class="row">
       <div><label>Шрифт (px)</label><input type="number" id="tool-font" value="20"></div>
@@ -387,7 +419,6 @@ button.action-btn:hover { background: #555; }
   <div id="elements-container"></div>
 </div>
 
-<!-- Модалка публикации -->
 <div id="output-modal">
   <div class="modal-content">
     <h3 style="color:var(--primary);margin-top:0;">🚀 Опубликовано!</h3>
@@ -407,7 +438,6 @@ button.action-btn:hover { background: #555; }
   </div>
 </div>
 
-<!-- Модалка теста -->
 <div id="test-modal">
   <div id="test-modal-header">
     <span>▶ Предпросмотр игры</span>
@@ -488,9 +518,59 @@ let resources = { bg:'', sndCorrect:'', sndWrong:'', sndWin:'', fbImg:'' };
 
 function fileToBase64(file, cb) {
   if (!file) return;
-  const r = new FileReader();
-  r.readAsDataURL(file);
-  r.onload = () => cb(r.result);
+
+  // Если это не картинка (например, звук), пускаем как есть
+  if (!file.type.startsWith('image/')) {
+    const r = new FileReader();
+    r.readAsDataURL(file);
+    r.onload = () => cb(r.result);
+    return;
+  }
+
+  // Если это картинка, сжимаем её
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = function (event) {
+    const img = new Image();
+    img.src = event.target.result;
+    img.onload = function () {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Максимальный размер
+      const MAX_WIDTH = 1024;
+      const MAX_HEIGHT = 1024;
+      let width = img.width;
+      let height = img.height;
+
+      // Высчитываем пропорции
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Если картинка была с прозрачным фоном, сохраняем прозрачность
+      let mimeType = 'image/jpeg';
+      if (file.type === 'image/png' || file.type === 'image/webp') {
+        mimeType = 'image/webp';
+      }
+
+      // Сжимаем до 80% качества
+      const compressedBase64 = canvas.toDataURL(mimeType, 0.8);
+      cb(compressedBase64);
+    };
+  };
 }
 
 document.getElementById('bg-file').addEventListener('change', e => {
@@ -525,6 +605,31 @@ document.getElementById('fb-img-url').addEventListener('change', e => {
   if (url) resources.fbImg = url;
 });
 
+// Кнопки очистки ресурсов
+document.getElementById('btn-clr-bg').addEventListener('click', () => {
+  document.getElementById('bg-url').value = '';
+  document.getElementById('bg-file').value = '';
+  resources.bg = '';
+  workspace.style.backgroundImage = '';
+});
+document.getElementById('btn-clr-snd-correct').addEventListener('click', () => {
+  document.getElementById('snd-correct-file').value = '';
+  resources.sndCorrect = '';
+});
+document.getElementById('btn-clr-snd-wrong').addEventListener('click', () => {
+  document.getElementById('snd-wrong-file').value = '';
+  resources.sndWrong = '';
+});
+document.getElementById('btn-clr-snd-win').addEventListener('click', () => {
+  document.getElementById('snd-win-file').value = '';
+  resources.sndWin = '';
+});
+document.getElementById('btn-clr-fb-img').addEventListener('click', () => {
+  document.getElementById('fb-img-url').value = '';
+  document.getElementById('fb-img-file').value = '';
+  resources.fbImg = '';
+});
+
 /* ============================================================
    ДАННЫЕ ЭЛЕМЕНТОВ
    ============================================================ */
@@ -539,7 +644,6 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-/* ИСПРАВЛЕНО: parseInt(...) ?? 0 вместо || 2 — чтобы 0 работал */
 function readInt(id, fallback) {
   const v = parseInt(document.getElementById(id).value);
   return isNaN(v) ? fallback : v;
@@ -555,14 +659,14 @@ function getGlobalStyle() {
       bgColor:     document.getElementById('card-bg-color-left').value,
       bgOpacity:   parseFloat(document.getElementById('card-bg-opacity-left').value),
       borderColor: document.getElementById('border-color-left').value,
-      borderWidth: readInt('border-width-left', 0),   /* 0 теперь работает */
+      borderWidth: readInt('border-width-left', 0),
       textColor:   document.getElementById('text-color-left').value
     },
     right: {
       bgColor:     document.getElementById('card-bg-color-right').value,
       bgOpacity:   parseFloat(document.getElementById('card-bg-opacity-right').value),
       borderColor: document.getElementById('border-color-right').value,
-      borderWidth: readInt('border-width-right', 0),  /* 0 теперь работает */
+      borderWidth: readInt('border-width-right', 0),
       textColor:   document.getElementById('text-color-right').value
     },
     matchedOpacity: parseFloat(document.getElementById('matched-opacity').value),
@@ -585,7 +689,7 @@ function getGlobalStyle() {
       textColor:   document.getElementById('fb-text-color').value,
       bgColor:     document.getElementById('fb-bg-color').value,
       borderColor: document.getElementById('fb-border-color').value,
-      borderWidth: readInt('fb-border-width', 0),     /* 0 теперь работает */
+      borderWidth: readInt('fb-border-width', 0),
       radius:      readInt('fb-radius', 16),
       glowColor:   document.getElementById('fb-glow-color').value,
       anim:        document.getElementById('fb-anim').value,
@@ -675,7 +779,6 @@ function renderItem(item, gs) {
   const inner = document.createElement('div');
   inner.className = 'item-inner';
   inner.style.background  = hexToRgba(side.bgColor, side.bgOpacity);
-  /* borderWidth 0 теперь корректно даёт "0px solid ..." */
   inner.style.border      = `${side.borderWidth}px solid ${side.borderColor}`;
   inner.style.color       = side.textColor;
   inner.style.fontSize    = item.fontSize + 'px';
@@ -939,7 +1042,6 @@ function applyLiveStyles() {
     if (!inner) return;
     const side = gs[item.side];
     inner.style.background = hexToRgba(side.bgColor, side.bgOpacity);
-    /* borderWidth 0 теперь корректно применяется */
     inner.style.border     = `${side.borderWidth}px solid ${side.borderColor}`;
     inner.style.color      = side.textColor;
     inner.style.fontFamily = `"${gs.font}", sans-serif`;
@@ -1003,7 +1105,6 @@ document.getElementById('btn-test').addEventListener('click', () => {
   const iframe = document.getElementById('test-iframe');
 
   modal.classList.add('open');
-  /* srcdoc — встроенный HTML, никакого внешнего URL */
   iframe.srcdoc = html;
 });
 
@@ -1071,7 +1172,6 @@ function copyIframe() {
 function buildGameHtml(cfg) {
   const cfgJson = JSON.stringify(cfg).replace(/<\/script>/gi, '<\\/script>');
 
-  /* Вынести условные части ДО шаблона — никаких вложенных backtick */
   const fontLink = cfg.font
     ? '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family='
       + cfg.font.replace(/ /g, '+') + ':wght@400;700&display=swap">'
@@ -1218,7 +1318,7 @@ function buildGameHtml(cfg) {
     + '  card.style.animation="";\n'
     + '  void card.offsetWidth;\n'
     + '  switch(anim){\n'
-    + '    case "glow":      card.style.boxShadow="0 0 18px 4px "+glow+", 0 0 40px 8px "+glow+"55"; break;\n'
+    + '    case "glow":      card.style.filter="drop-shadow(0 0 8px "+glow+") drop-shadow(0 0 20px "+glow+")"; break;\n'
     + '    case "scaleUp":   card.style.animation="scaleUp .4s ease infinite";    break;\n'
     + '    case "scaleDown": card.style.animation="scaleDown .4s ease infinite";  break;\n'
     + '    case "pulse":     card.style.animation="pulse .6s ease infinite";      break;\n'
@@ -1230,6 +1330,7 @@ function buildGameHtml(cfg) {
     + 'function clearAnim(card){\n'
     + '  card.style.animation="";\n'
     + '  card.style.boxShadow="";\n'
+    + '  card.style.filter="";\n'
     + '}\n'
     + '\n'
     + 'function onCardClick(card){\n'
@@ -1269,7 +1370,7 @@ function buildGameHtml(cfg) {
     + '    card.classList.add("matched");\n'
     + '    clearAnim(card);\n'
     + '    card.style.opacity=opacity;\n'
-    + '    card.style.boxShadow="0 0 14px 3px "+glow+"88";\n'
+    + '    card.style.filter="drop-shadow(0 0 10px "+glow+")";\n'
     + '  });\n'
     + '  matchedPairs++;\n'
     + '  if(matchedPairs>=totalPairs) setTimeout(showFeedback,600);\n'
