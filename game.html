@@ -31,8 +31,9 @@ body, html {
 
 /* ---- Loader ---- */
 #loader-screen {
-  position: fixed; inset: 0; background: rgba(20, 20, 25, 0.9); backdrop-filter: blur(4px);
+  position: fixed; inset: 0; background: rgba(20, 20, 25, 0.4); backdrop-filter: blur(4px);
   z-index: 999999; display: none; flex-direction: column; justify-content: center; align-items: center;
+  transition: opacity 0.5s ease;
 }
 .loader-box {
   background: rgba(10, 10, 15, 0.85); padding: 30px; border-radius: 16px; border: 1px solid rgba(0,255,204,0.3);
@@ -105,16 +106,10 @@ body, html {
 }
 
 .fx-rain {
-  position: fixed; pointer-events: none; z-index: 30000; 
-  width: 2px; height: 40px; 
-  background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(150,220,255,0.8)); 
-  border-radius: 50%;
-  animation: rainDrop linear forwards;
+  position: fixed; pointer-events: none; z-index: 30000; width: 2px; height: 30px; background: rgba(100,200,255,0.8);
+  animation: rainDrop 0.6s linear forwards;
 }
-@keyframes rainDrop { 
-  0% { transform: translateY(-100px) rotate(15deg); opacity: 1; } 
-  100% { transform: translateY(100vh) rotate(15deg); opacity: 0; } 
-}
+@keyframes rainDrop { 0% { transform: translateY(-50px); opacity: 1; } 100% { transform: translateY(100vh); opacity: 0; } }
 
 #flash-overlay {
   position: fixed; inset: 0; background: #fff; z-index: 40000; opacity: 0; pointer-events: none;
@@ -135,13 +130,13 @@ body, html {
 
 <div id="bg-layer"></div>
 
-<div id="game-wrapper" style="width: 1280px; height: 720px; position: absolute; left: 50%; top: 50%; transform-origin: center; transform: translate(-50%, -50%); overflow: hidden;">
+<div id="game-wrapper" style="width: 1280px; height: 720px; position: absolute; left: 50%; top: 50%; transform-origin: center; transform: translate(-50%, -50%); overflow: hidden; z-index: 20;">
   <div id="layer" style="position:absolute; inset:0; z-index:20;"></div>
   
   <div id="fb-img-box">
     <img id="fbimg" src="" alt="">
   </div>
-  <div id="fb-txt-box" style="display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box;">
+  <div id="fb-txt-box" style="flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box;">
     <div id="fbtxt"></div>
   </div>
 </div>
