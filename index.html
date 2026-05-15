@@ -198,11 +198,11 @@ button.action-btn:hover { background: #555; }
 .hint-text { font-size: 11px; color: #888; margin-top: 4px; }
 
 /* === РАЗДЕЛЬНЫЕ БЛОКИ ФИДБЕКА В РЕДАКТОРЕ === */
-#fb-img-drag-box, #fb-txt-drag-box {
+.fb-drag-box {
   display: none; position: absolute; z-index: 9000; cursor: grab;
   justify-content: center; align-items: center; font-weight: bold; pointer-events: auto; box-sizing: border-box;
 }
-#fb-img-drag-box:active, #fb-txt-drag-box:active { cursor: grabbing; }
+.fb-drag-box:active { cursor: grabbing; }
 
 #fb-img-drag-box { border: 2px dashed #00ffcc; background: rgba(0,255,204,0.1); border-radius: 12px; }
 #fb-txt-drag-box { border: 2px dashed #ff00cc; background: rgba(255,0,204,0.1); flex-direction: column; text-align: center; }
@@ -475,16 +475,14 @@ button.action-btn:hover { background: #555; }
     </div>
   </div>
 
-  <div id="game-area">
-    <div id="elements-container"></div>
-    
-    <div id="fb-img-drag-box">
+  <div id="elements-container">
+    <div id="fb-img-drag-box" class="fb-drag-box">
       <div class="placeholder-text">КАРТИНКА</div>
       <img id="fb-preview-img" src="" style="width:100%;height:100%;object-fit:contain;pointer-events:none;display:none;">
       <div class="resize-handle" style="background: linear-gradient(135deg, transparent 50%, #00ffcc 50%);"></div>
     </div>
     
-    <div id="fb-txt-drag-box">
+    <div id="fb-txt-drag-box" class="fb-drag-box">
       <div id="fb-txt-preview" style="text-align:center; width:100%; word-break:break-word; pointer-events:none;">БЛОК ТЕКСТА</div>
       <div class="resize-handle" style="background: linear-gradient(135deg, transparent 50%, #ff00cc 50%);"></div>
     </div>
@@ -525,21 +523,6 @@ button.action-btn:hover { background: #555; }
 const ENDPOINT    = "https://server-kjnn.onrender.com/publish";
 const PUBLISH_KEY = "nika_read_pub_2025";
 const BASE_GAME   = "https://nikashum93.github.io/match/game.html";
-
-/* ============================================================
-   АВТО-МАСШТАБИРОВАНИЕ РАБОЧЕЙ ОБЛАСТИ (16:9)
-   ============================================================ */
-function resizeEditorWorkspace() {
-  const wa = document.getElementById('game-area');
-  if(!wa) return;
-  const availW = window.innerWidth - 370; // Минус панель настроек
-  const availH = window.innerHeight;
-  // Масштабируем 1280x720, чтобы вписалось с запасом 5%
-  const scale = Math.min(availW / 1280, availH / 720) * 0.95;
-  wa.style.transform = `translate(-50%, -50%) scale(${scale})`;
-}
-window.addEventListener('resize', resizeEditorWorkspace);
-resizeEditorWorkspace();
 
 /* ============================================================
    ШРИФТЫ / ЯЗЫКИ
@@ -726,17 +709,13 @@ function attachDragAndResize(box) {
   });
 
   document.addEventListener('mousemove', e => {
-    // ВАЖНО: Мышка движется в масштабированном экране, поэтому компенсируем масштаб game-area
-    const wa = document.getElementById('game-area');
-    const scale = parseFloat(wa.style.transform.match(/scale\(([^)]+)\)/)?.[1]) || 1;
-
     if (dActive) {
-      box.style.left = (ox + (e.clientX - sx) / scale) + 'px';
-      box.style.top = (oy + (e.clientY - sy) / scale) + 'px';
+      box.style.left = (ox + e.clientX - sx) + 'px';
+      box.style.top = (oy + e.clientY - sy) + 'px';
     }
     if (rActive) {
-      box.style.width = Math.max(100, sw + (e.clientX - sx) / scale) + 'px';
-      box.style.height = Math.max(50, sh + (e.clientY - sy) / scale) + 'px';
+      box.style.width = Math.max(100, sw + e.clientX - sx) + 'px';
+      box.style.height = Math.max(50, sh + e.clientY - sy) + 'px';
     }
   });
 
@@ -826,7 +805,7 @@ function getGlobalStyle() {
 }
 
 /* ============================================================
-   ГЕНЕРАЦИЯ ЭЛЕМЕНТОВ (В РАМКАХ 1280x720)
+   ГЕНЕРАЦИЯ ЭЛЕМЕНТОВ (В РАМКАХ 16:9)
    ============================================================ */
 document.getElementById('btn-generate').addEventListener('click', generateElements);
 
@@ -838,12 +817,24 @@ function generateElements() {
 
   items = [];
 
-  const W = 1280;
-  const H = 720;
+  let W = workspace.offsetWidth;
+  let H = workspace.offsetHeight;
+  let oX = 0, oY = 0;
+  
+  // Создаем виртуальную зону 16:9 в центре экрана
+  if (W / H > 16 / 9) {
+    let newW = H * (16 / 9);
+    oX = (W - newW) / 2;
+    W = newW;
+  } else {
+    let newH = W / (16 / 9);
+    oY = (H - newH) / 2;
+    H = newH;
+  }
 
-  const leftX  = W * 0.15;
-  const rightX = W * 0.60;
-  const startY = H * 0.08;
+  const leftX  = oX + W * 0.15;
+  const rightX = oX + W * 0.60;
+  const startY = oY + H * 0.08;
   const stepY  = Math.min((H * 0.84) / count, 110);
   const cardW  = Math.round(W * 0.22);
   const cardH  = Math.round(Math.min(stepY * 0.82, 90));
@@ -863,7 +854,12 @@ function generateElements() {
 const container = document.getElementById('elements-container');
 
 function renderAll() {
+  const fbImgBox = document.getElementById('fb-img-drag-box');
+  const fbTxtBox = document.getElementById('fb-txt-drag-box');
   container.innerHTML = '';
+  container.appendChild(fbImgBox);
+  container.appendChild(fbTxtBox);
+
   selectedId = null;
   document.getElementById('item-toolbar').style.display = 'none';
   const gs = getGlobalStyle();
@@ -911,7 +907,7 @@ function renderItem(item, gs) {
 }
 
 /* ============================================================
-   DRAG & RESIZE КАРТОЧЕК (С УЧЕТОМ МАСШТАБА)
+   DRAG & RESIZE КАРТОЧЕК
    ============================================================ */
 function makeDraggableItem(el, item, handle) {
   let ox, oy, sx, sy, active = false;
@@ -922,10 +918,8 @@ function makeDraggableItem(el, item, handle) {
   });
   document.addEventListener('mousemove', e => {
     if (!active) return;
-    const wa = document.getElementById('game-area');
-    const scale = parseFloat(wa.style.transform.match(/scale\(([^)]+)\)/)?.[1]) || 1;
-    item.x = ox + (e.clientX - sx) / scale;
-    item.y = oy + (e.clientY - sy) / scale;
+    item.x = ox + (e.clientX - sx);
+    item.y = oy + (e.clientY - sy);
     el.style.left = item.x + 'px'; el.style.top  = item.y + 'px';
   });
   document.addEventListener('mouseup', () => { active = false; });
@@ -938,10 +932,8 @@ function makeResizableItem(el, item, handle) {
   });
   document.addEventListener('mousemove', e => {
     if (!active) return;
-    const wa = document.getElementById('game-area');
-    const scale = parseFloat(wa.style.transform.match(/scale\(([^)]+)\)/)?.[1]) || 1;
-    item.w = Math.max(60, sw + (e.clientX - sx) / scale);
-    item.h = Math.max(30, sh + (e.clientY - sy) / scale);
+    item.w = Math.max(60, sw + (e.clientX - sx));
+    item.h = Math.max(30, sh + (e.clientY - sy));
     el.style.width  = item.w + 'px'; el.style.height = item.h + 'px';
   });
   document.addEventListener('mouseup', () => { active = false; });
@@ -953,26 +945,15 @@ function makeResizableItem(el, item, handle) {
 const toolbar = document.getElementById('item-toolbar');
 
 function selectItem(id) {
-  if (selectedId) {
-    const prev = document.getElementById('el_' + selectedId);
-    if (prev) prev.classList.remove('editor-selected');
-  }
-  selectedId = id;
-  const el = document.getElementById('el_' + id);
-  if (!el) return;
+  if (selectedId) document.getElementById('el_' + selectedId)?.classList.remove('editor-selected');
+  selectedId = id; const el = document.getElementById('el_' + id); if (!el) return;
   el.classList.add('editor-selected');
+  const item = items.find(i => i.id === id); if (!item) return;
 
-  const item = items.find(i => i.id === id);
-  if (!item) return;
-
-  const rect = el.getBoundingClientRect();
-  toolbar.style.display = 'flex';
-  let tx = rect.right + 12;
-  let ty = rect.top;
-  if (tx + 310 > window.innerWidth)  tx = rect.left - 312;
-  if (ty + 340 > window.innerHeight) ty = window.innerHeight - 345;
-  toolbar.style.left = Math.max(5, tx) + 'px';
-  toolbar.style.top  = Math.max(5, ty) + 'px';
+  const rect = el.getBoundingClientRect(); toolbar.style.display = 'flex';
+  let tx = rect.right + 12, ty = rect.top;
+  if (tx + 310 > window.innerWidth)  tx = rect.left - 312; if (ty + 340 > window.innerHeight) ty = window.innerHeight - 345;
+  toolbar.style.left = Math.max(5, tx) + 'px'; toolbar.style.top  = Math.max(5, ty) + 'px';
 
   document.getElementById('tool-font').value    = item.fontSize;
   document.getElementById('tool-rot').value     = item.rot;
@@ -982,122 +963,26 @@ function selectItem(id) {
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('#item-toolbar') && !e.target.closest('.drag-item') && !e.target.closest('#fb-img-drag-box') && !e.target.closest('#fb-txt-drag-box') && e.target.id !== 'btn-toggle-fb-drag') {
+  if (!e.target.closest('#item-toolbar') && !e.target.closest('.drag-item') && !e.target.closest('.fb-drag-box') && e.target.id !== 'btn-toggle-fb-drag') {
     toolbar.style.display = 'none';
     if (selectedId) {
-      const prev = document.getElementById('el_' + selectedId);
-      if (prev) prev.classList.remove('editor-selected');
+      document.getElementById('el_' + selectedId)?.classList.remove('editor-selected');
       selectedId = null;
     }
   }
 });
 
-document.getElementById('tool-font').addEventListener('input', e => {
-  if (!selectedId) return;
-  const item = items.find(i => i.id === selectedId);
-  if (!item) return;
-  item.fontSize = parseInt(e.target.value) || 18;
-  const inner = document.querySelector(`#el_${selectedId} .item-inner`);
-  if (inner) inner.style.fontSize = item.fontSize + 'px';
-});
-
-document.getElementById('tool-rot').addEventListener('input', e => {
-  if (!selectedId) return;
-  const item = items.find(i => i.id === selectedId);
-  if (!item) return;
-  item.rot = parseFloat(e.target.value) || 0;
-  const el = document.getElementById('el_' + selectedId);
-  if (el) el.style.transform = `rotate(${item.rot}deg)`;
-});
-
-document.getElementById('tool-img-url').addEventListener('change', e => {
-  if (!selectedId) return;
-  const item = items.find(i => i.id === selectedId);
-  if (!item) return;
-  const url = e.target.value.trim();
-  if (!url) return;
-  item.img = url;
-  setCardImage(selectedId, url);
-});
-
-document.getElementById('tool-main-img').addEventListener('change', e => {
-  if (!selectedId) return;
-  const item = items.find(i => i.id === selectedId);
-  if (!item) return;
-  fileToBase64(e.target.files[0], b64 => {
-    item.img = b64;
-    setCardImage(selectedId, b64);
-    document.getElementById('tool-img-url').value = '';
-  });
-});
-
-function setCardImage(id, src) {
-  const inner = document.querySelector(`#el_${id} .item-inner`);
-  if (!inner) return;
-  inner.innerHTML = '';
-  const img = document.createElement('img');
-  img.src = src;
-  inner.appendChild(img);
-}
-
-document.getElementById('btn-reset-text').addEventListener('click', () => {
-  if (!selectedId) return;
-  const item = items.find(i => i.id === selectedId);
-  if (!item) return;
-  item.img = '';
-  const inner = document.querySelector(`#el_${selectedId} .item-inner`);
-  if (!inner) return;
-  if (/\$|\\\(/.test(item.text)) {
-    inner.innerHTML = item.text;
-    if (window.MathJax?.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
-  } else {
-    inner.textContent = item.text;
-  }
-  document.getElementById('tool-img-url').value = '';
-});
-
-document.getElementById('tool-tt-text').addEventListener('input', e => {
-  if (!selectedId) return;
-  const item = items.find(i => i.id === selectedId);
-  if (!item) return;
-  item.tooltip.text = e.target.value;
-  updateTtBadge(selectedId, item);
-});
-
-document.getElementById('tool-tt-url').addEventListener('change', e => {
-  if (!selectedId) return;
-  const item = items.find(i => i.id === selectedId);
-  if (!item) return;
-  item.tooltip.img = e.target.value.trim();
-  updateTtBadge(selectedId, item);
-});
-
-document.getElementById('tool-tt-img').addEventListener('change', e => {
-  if (!selectedId) return;
-  const item = items.find(i => i.id === selectedId);
-  if (!item) return;
-  fileToBase64(e.target.files[0], b64 => {
-    item.tooltip.img = b64;
-    document.getElementById('tool-tt-url').value = '';
-    updateTtBadge(selectedId, item);
-  });
-});
-
-document.getElementById('btn-clear-tt').addEventListener('click', () => {
-  if (!selectedId) return;
-  const item = items.find(i => i.id === selectedId);
-  if (!item) return;
-  item.tooltip = { text: '', img: '' };
-  document.getElementById('tool-tt-text').value = '';
-  document.getElementById('tool-tt-url').value  = '';
-  document.getElementById('tool-tt-img').value  = '';
-  updateTtBadge(selectedId, item);
-});
-
-function updateTtBadge(id, item) {
-  const badge = document.querySelector(`#el_${id} .tt-badge`);
-  if (badge) badge.style.display = (item.tooltip.text || item.tooltip.img) ? 'block' : 'none';
-}
+document.getElementById('tool-font').addEventListener('input', e => { if (!selectedId) return; items.find(i => i.id === selectedId).fontSize = parseInt(e.target.value) || 18; document.querySelector(`#el_${selectedId} .item-inner`).style.fontSize = e.target.value + 'px'; });
+document.getElementById('tool-rot').addEventListener('input', e => { if (!selectedId) return; items.find(i => i.id === selectedId).rot = parseFloat(e.target.value) || 0; document.getElementById('el_' + selectedId).style.transform = `rotate(${e.target.value}deg)`; });
+document.getElementById('tool-img-url').addEventListener('change', e => { if (!selectedId) return; const url = e.target.value.trim(); if (!url) return; items.find(i=>i.id===selectedId).img = url; setCardImage(selectedId, url); });
+document.getElementById('tool-main-img').addEventListener('change', e => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); fileToBase64(e.target.files[0], b64 => { item.img = b64; setCardImage(selectedId, b64); document.getElementById('tool-img-url').value = ''; }); });
+function setCardImage(id, src) { const inner = document.querySelector(`#el_${id} .item-inner`); if (!inner) return; inner.innerHTML = ''; const img = document.createElement('img'); img.src = src; inner.appendChild(img); }
+document.getElementById('btn-reset-text').addEventListener('click', () => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); item.img = ''; const inner = document.querySelector(`#el_${selectedId} .item-inner`); if (!inner) return; if (/\$|\\\(/.test(item.text)) { inner.innerHTML = item.text; if (window.MathJax?.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{}); } else { inner.textContent = item.text; } document.getElementById('tool-img-url').value = ''; });
+document.getElementById('tool-tt-text').addEventListener('input', e => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); item.tooltip.text = e.target.value; updateTtBadge(selectedId, item); });
+document.getElementById('tool-tt-url').addEventListener('change', e => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); item.tooltip.img = e.target.value.trim(); updateTtBadge(selectedId, item); });
+document.getElementById('tool-tt-img').addEventListener('change', e => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); fileToBase64(e.target.files[0], b64 => { item.tooltip.img = b64; document.getElementById('tool-tt-url').value = ''; updateTtBadge(selectedId, item); }); });
+document.getElementById('btn-clear-tt').addEventListener('click', () => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); item.tooltip = { text: '', img: '' }; document.getElementById('tool-tt-text').value = ''; document.getElementById('tool-tt-url').value  = ''; document.getElementById('tool-tt-img').value  = ''; updateTtBadge(selectedId, item); });
+function updateTtBadge(id, item) { const badge = document.querySelector(`#el_${id} .tt-badge`); if (badge) badge.style.display = (item.tooltip.text || item.tooltip.img) ? 'block' : 'none'; }
 
 /* ============================================================
    LIVE-ОБНОВЛЕНИЕ СТИЛЕЙ
@@ -1228,7 +1113,7 @@ document.getElementById('btn-publish').addEventListener('click', async () => {
   try {
     const res = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type':'application/json', 'X-Publish-Key': PUBLISH_KEY }, body: JSON.stringify({id, mode:'json', folder:'data', content:JSON.stringify(cfg, null, 2)}) });
     if (!res.ok) throw new Error(await res.text().catch(() => res.statusText));
-    document.getElementById('code-output').value = `<iframe src="${BASE_GAME}?id=${encodeURIComponent(id)}" width="1280" height="720" style="border:0;width:100%;height:100%;" allow="autoplay" allowfullscreen></iframe>`;
+    document.getElementById('code-output').value = `<iframe src="${BASE_GAME}?id=${encodeURIComponent(id)}" width="100%" height="100%" style="border:0;" allow="autoplay" allowfullscreen></iframe>`;
     status.innerHTML = '✅ Готово!<br><span style="color:#ffcc00;">Внимание: GitHub обновит данные в течение 30–60 секунд. Если в игре будет загрузка, просто подождите.</span>';
   } catch(e) { status.textContent = '❌ Ошибка: ' + e.message; }
 });
@@ -1298,7 +1183,7 @@ function buildGameHtml(cfg) {
     + '<\/style></head><body>\n'
     + '<div id="loader-screen"><div class="loader-box"><div class="spinner"></div><div id="loader-text" style="font-weight:bold;font-size:16px;">Без паники — игра загружается.<br><span style="font-size:12px;color:#aaa;">Минутку... ожидаем ответ</span></div></div></div>\n'
     + '<div id="bg"></div>\n'
-    + '<div id="game-wrapper" style="width:1280px; height:720px; position:absolute; left:50%; top:50%; transform-origin:center; transform:translate(-50%, -50%);">\n'
+    + '<div id="game-wrapper" style="position:absolute; left:0; top:0; transform-origin:0 0;">\n'
     + '  <div id="layer"></div>\n'
     + '  <div id="fb-img-box"><img id="fbimg" src=""></div>\n'
     + '  <div id="fb-txt-box" style="flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box;"><div id="fbtxt"></div></div>\n'
@@ -1310,14 +1195,31 @@ function buildGameHtml(cfg) {
     + 'const CFG=' + cfgJson + ';\n'
     + 'document.getElementById("loader-screen").style.display = "none";\n'
     + '\n'
-    + 'function autoScale() {\n'
+    + 'function resizeGame() {\n'
+    + '  let maxX = 900, maxY = 600;\n'
+    + '  (CFG.items || []).forEach(i => {\n'
+    + '    if (i.x + i.w > maxX) maxX = i.x + i.w + 50;\n'
+    + '    if (i.y + i.h > maxY) maxY = i.y + i.h + 50;\n'
+    + '  });\n'
+    + '  if (CFG.feedback) {\n'
+    + '    if (CFG.feedback.imgX + CFG.feedback.imgW > maxX) maxX = CFG.feedback.imgX + CFG.feedback.imgW + 50;\n'
+    + '    if (CFG.feedback.txtX + CFG.feedback.txtW > maxX) maxX = CFG.feedback.txtX + CFG.feedback.txtW + 50;\n'
+    + '    if (CFG.feedback.imgY + CFG.feedback.imgH > maxY) maxY = CFG.feedback.imgY + CFG.feedback.imgH + 50;\n'
+    + '    if (CFG.feedback.txtY + CFG.feedback.txtH > maxY) maxY = CFG.feedback.txtY + CFG.feedback.txtH + 50;\n'
+    + '  }\n'
     + '  const wrapper = document.getElementById("game-wrapper");\n'
-    + '  if(!wrapper) return;\n'
-    + '  const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);\n'
-    + '  wrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;\n'
+    + '  const scale = Math.min(window.innerWidth / maxX, window.innerHeight / maxY);\n'
+    + '  const scaledW = maxX * scale;\n'
+    + '  const scaledH = maxY * scale;\n'
+    + '  const left = (window.innerWidth - scaledW) / 2;\n'
+    + '  const top = (window.innerHeight - scaledH) / 2;\n'
+    + '  wrapper.style.transform = "translate(" + left + "px, " + top + "px) scale(" + scale + ")";\n'
+    + '  window.gameScale = scale;\n'
+    + '  window.gameOffsetX = left;\n'
+    + '  window.gameOffsetY = top;\n'
     + '}\n'
-    + 'window.addEventListener("resize", autoScale);\n'
-    + 'autoScale();\n'
+    + 'window.addEventListener("resize", resizeGame);\n'
+    + 'resizeGame();\n'
     + '\n'
     + 'function hexToRgba(hex,alpha){\n'
     + '  if(!hex) return "rgba(0,0,0,"+alpha+")";\n'
@@ -1566,11 +1468,11 @@ function buildGameHtml(cfg) {
     + '  if (style === "rope") {\n'
     + '    cy1 += Math.sin(time*3)*20; cy2 += Math.cos(time*3)*20;\n'
     + '  } else if(style !== "circuit" && style !== "arrow") {\n'
-    + '    const wrapper = document.getElementById("game-wrapper");\n'
-    + '    const scale = parseFloat(wrapper.style.transform.match(/scale\\(([^)]+)\\)/)?.[1]) || 1;\n'
-    + '    const rectW = wrapper.getBoundingClientRect();\n'
-    + '    const mX = (mouseX - rectW.left) / scale;\n'
-    + '    const mY = (mouseY - rectW.top) / scale;\n'
+    + '    let mX = mouseX, mY = mouseY;\n'
+    + '    if(window.gameScale) {\n'
+    + '      mX = (mouseX - window.gameOffsetX) / window.gameScale;\n'
+    + '      mY = (mouseY - window.gameOffsetY) / window.gameScale;\n'
+    + '    }\n'
     + '    const distToMouse = Math.hypot(mx - mX, (y1+y2)/2 - mY);\n'
     + '    if(distToMouse < 150) {\n'
     + '      const rep = (150 - distToMouse) * 0.3;\n'
@@ -1698,7 +1600,7 @@ function buildGameHtml(cfg) {
     + '    txtEl.textContent = fb.text || "🎉 Отлично!";\n'
     + '    txtEl.style.color = fb.textColor || "#fff";\n'
     + '    txtEl.style.fontSize = (fb.fontSize || 28) + "px";\n'
-    + '    txtEl.style.fontFamily = fb.font ? "\\'" + fb.font + "\\', sans-serif" : (CFG.font ? "\\'" + CFG.font + "\\', sans-serif" : "sans-serif");\n'
+    + '    txtEl.style.fontFamily = fb.font ? "\\"" + fb.font + "\\", sans-serif" : (CFG.font ? "\\"" + CFG.font + "\\", sans-serif" : "sans-serif");\n'
     + '    txtBox.style.display = "flex";\n'
     + '    txtBox.style.animation = animStr;\n'
     + '    if (/\\$|\\\\\\(/.test(txtEl.textContent) && window.MathJax?.typesetPromise) {\n'
