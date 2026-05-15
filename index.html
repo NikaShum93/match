@@ -192,7 +192,7 @@ button.action-btn:hover { background: #555; }
 }
 #test-iframe {
   width: 90vw; height: 80vh;
-  border: 2px solid var(--primary); border-radius: 12px; background: #000;
+  border: 2px solid var(--primary); border-radius: 12px; background: transparent;
 }
 #pub-status { font-size: 12px; color: #aaa; margin-top: 6px; text-align: center; min-height: 18px; }
 .hint-text { font-size: 11px; color: #888; margin-top: 4px; }
@@ -506,7 +506,7 @@ button.action-btn:hover { background: #555; }
 
 <script>
 /* ============================================================
-   КОНСТАНТЫ (ИСПРАВЛЕНО НА GAME.HTML ДЛЯ TEXTS)
+   КОНСТАНТЫ
    ============================================================ */
 const ENDPOINT    = "https://server-kjnn.onrender.com/publish";
 const PUBLISH_KEY = "nika_read_pub_2025";
@@ -596,7 +596,6 @@ function fileToBase64(file, cb) {
     img.onload = function () {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-
       const MAX_WIDTH = 1024;
       const MAX_HEIGHT = 1024;
       let width = img.width;
@@ -661,7 +660,6 @@ document.getElementById('fb-img-url').addEventListener('change', e => {
   if (url) resources.fbImg = url;
 });
 
-// Кнопки очистки ресурсов
 document.getElementById('btn-clr-bg').addEventListener('click', () => {
   document.getElementById('bg-url').value = '';
   document.getElementById('bg-file').value = '';
@@ -687,7 +685,7 @@ document.getElementById('btn-clr-fb-img').addEventListener('click', () => {
 });
 
 /* ============================================================
-   БЛОК ФИДБЕКА В РЕДАКТОРЕ (ДЛЯ ВЫБОРКИ КООРДИНАТ)
+   ПЕРЕТАСКИВАНИЕ БЛОКА ФИДБЕКА В РЕДАКТОРЕ
    ============================================================ */
 const fbDragBox = document.getElementById('fb-drag-box');
 document.getElementById('btn-toggle-fb-drag').addEventListener('click', () => {
@@ -868,7 +866,7 @@ function renderAll() {
   const fbBox = document.getElementById('fb-drag-box');
   container.innerHTML = '';
   container.appendChild(fbBox);
-  
+
   selectedId = null;
   document.getElementById('item-toolbar').style.display = 'none';
   const gs = getGlobalStyle();
@@ -1296,11 +1294,10 @@ function buildGameHtml(cfg) {
     + fontLink + '\n'
     + '<style>\n'
     + '*,*::before,*::after{box-sizing:border-box}\n'
-    + 'body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#111}\n'
-    + '#bg{position:fixed;inset:0;background-size:cover;background-position:center;z-index:0}\n'
+    + 'body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:transparent}\n'
+    + '#bg{position:fixed;inset:0;background-color:transparent;background-size:cover;background-position:center;z-index:0}\n'
     + '#cvs{position:fixed;inset:0;pointer-events:none;z-index:10}\n'
     + '#layer{position:fixed;inset:0;z-index:20}\n'
-    + '/* ---- Loader ---- */\n'
     + '#loader-screen { position: fixed; inset: 0; background: rgba(20,20,25,0.4); backdrop-filter: blur(4px); z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease; }\n'
     + '.loader-box { background: rgba(10,10,15,0.85); padding: 30px; border-radius: 16px; border: 1px solid rgba(0,255,204,0.3); box-shadow: 0 10px 40px rgba(0,0,0,0.8); text-align: center; color: #fff; font-family: sans-serif; }\n'
     + '.spinner { width: 40px; height: 40px; border: 4px solid rgba(0,255,204,0.2); border-top-color: #00ffcc; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }\n'
@@ -1310,7 +1307,6 @@ function buildGameHtml(cfg) {
     + '  word-break:break-word;transition:opacity .5s ease;user-select:none;font-weight:700;box-sizing:border-box}\n'
     + '.card.selected { z-index: 100; }\n'
     + '.card.matched{pointer-events:none}\n'
-    + '/* ---- FX & Anims ---- */\n'
     + '.anim-sel-float { animation: selFloat 2s ease-in-out infinite; }\n'
     + '.anim-sel-pulse { animation: selPulse 1s ease infinite; }\n'
     + '.anim-sel-shake { animation: selShake 0.5s ease infinite; }\n'
@@ -1331,7 +1327,7 @@ function buildGameHtml(cfg) {
     + '  padding:30px 36px;border-radius:16px;box-sizing:border-box;backdrop-filter:blur(6px)}\n'
     + '#fbbox.show{display:flex}\n'
     + '#fbimg{display:block;border-radius:12px;max-width:100%;height:auto;}\n'
-    + '#fbtxt{font-weight:900;text-align:center;line-height:1.4}\n'
+    + '#fbtxt{font-weight:900;text-align:center;line-height:1.4;word-break:break-word;}\n'
     + '@keyframes popUp{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}\n'
     + '@keyframes fadeIn{from{opacity:0}to{opacity:1}}\n'
     + '@keyframes slideUp{from{transform:translateY(80px);opacity:0}to{transform:translateY(0);opacity:1}}\n'
@@ -1345,17 +1341,19 @@ function buildGameHtml(cfg) {
     + '<\/style></head><body>\n'
     + '<div id="loader-screen"><div class="loader-box"><div class="spinner"></div><div id="loader-text" style="font-weight:bold;font-size:16px;">Без паники — игра загружается.<br><span style="font-size:12px;color:#aaa;">Минутку... ожидаем ответ</span></div></div></div>\n'
     + '<div id="bg"></div>\n'
+    + '<div id="game-wrapper" style="transform-origin:0 0; width:100%; height:100%; position:absolute; top:0; left:0;">\n'
+    + '  <div id="layer"></div>\n'
+    + '  <div id="fbbox">\n'
+    + '    <img id="fbimg" src="" alt="">\n'
+    + '    <div id="fbtxt"></div>\n'
+    + '  </div>\n'
+    + '</div>\n'
     + '<canvas id="cvs"></canvas>\n'
-    + '<div id="layer"></div>\n'
     + '<div id="ttbox"></div>\n'
     + '<div id="flash-overlay"></div>\n'
-    + '<div id="fbbox">\n'
-    + '  <img id="fbimg" src="" alt="">\n'
-    + '  <div id="fbtxt"></div>\n'
-    + '</div>\n'
     + '<script>\n'
     + 'const CFG=' + cfgJson + ';\n'
-    + 'document.getElementById("loader-screen").style.display = "none";\n' // Скрываем загрузку в превью
+    + 'document.getElementById("loader-screen").style.display = "none";\n'
     + '\n'
     + 'function hexToRgba(hex,alpha){\n'
     + '  if(!hex) return "rgba(0,0,0,"+alpha+")";\n'
@@ -1388,7 +1386,7 @@ function buildGameHtml(cfg) {
     + 'let ctx=canvas.getContext("2d");\n'
     + 'let mouseX=-1000, mouseY=-1000;\n'
     + 'window.addEventListener("mousemove", e => { mouseX = e.clientX; mouseY = e.clientY; });\n'
-    + 'function resizeCvs(){canvas.width=innerWidth;canvas.height=innerHeight;}\n'
+    + 'function resizeCvs(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}\n'
     + 'resizeCvs();\n'
     + 'window.addEventListener("resize",resizeCvs);\n'
     + '\n'
@@ -1401,6 +1399,27 @@ function buildGameHtml(cfg) {
     + 'const layer=document.getElementById("layer");\n'
     + 'const st=CFG.style||{};\n'
     + 'const font=CFG.font||"sans-serif";\n'
+    + '\n'
+    + 'function autoScale() {\n'
+    + '  const wrapper = document.getElementById("game-wrapper");\n'
+    + '  if(!wrapper) return;\n'
+    + '  let maxX = 900, maxY = 640;\n'
+    + '  (CFG.items || []).forEach(i => {\n'
+    + '    if(i.x + i.w + 50 > maxX) maxX = i.x + i.w + 50;\n'
+    + '    if(i.y + i.h + 50 > maxY) maxY = i.y + i.h + 50;\n'
+    + '  });\n'
+    + '  if(CFG.feedback && CFG.feedback.mode !== "none") {\n'
+    + '    const fx = CFG.feedback.x || 300, fy = CFG.feedback.y || 200;\n'
+    + '    const fw = CFG.feedback.w || 300, fh = CFG.feedback.h || 200;\n'
+    + '    if(fx + fw + 50 > maxX) maxX = fx + fw + 50;\n'
+    + '    if(fy + fh + 50 > maxY) maxY = fy + fh + 50;\n'
+    + '  }\n'
+    + '  const scaleX = window.innerWidth / maxX;\n'
+    + '  const scaleY = window.innerHeight / maxY;\n'
+    + '  const scale = Math.min(scaleX, scaleY, 1);\n'
+    + '  wrapper.style.transform = "scale(" + scale + ")";\n'
+    + '}\n'
+    + 'window.addEventListener("resize", autoScale);\n'
     + '\n'
     + '(CFG.items||[]).forEach(item=>{\n'
     + '  const side=item.side==="left"?st.left:st.right;\n'
@@ -1713,9 +1732,7 @@ function buildGameHtml(cfg) {
     + '    txtEl.textContent=fb.text||"🎉 Отлично!";\n'
     + '    txtEl.style.color=fb.textColor||"#fff";\n'
     + '    txtEl.style.fontSize=(fb.fontSize||28)+"px";\n'
-    + '    txtEl.style.fontFamily=fb.font\n'
-    + '      ? \\'\"\\'+fb.font+\\'\", sans-serif\\'\\n'
-    + '      : (CFG.font?\\'\"\\'+CFG.font+\\'\", sans-serif\\':\"sans-serif\");\n'
+    + '    txtEl.style.fontFamily = fb.font ? "\\"" + fb.font + "\\", sans-serif" : (CFG.font ? "\\"" + CFG.font + "\\", sans-serif" : "sans-serif");\n'
     + '    txtEl.style.display="block";\n'
     + '  } else {\n'
     + '    txtEl.style.display="none";\n'
@@ -1726,6 +1743,7 @@ function buildGameHtml(cfg) {
     + '    : "none";\n'
     + '  box.classList.add("show");\n'
     + '}\n'
+    + 'autoScale();\n'
     + '<\/script>\n'
     + '</body></html>';
 
