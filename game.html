@@ -130,13 +130,13 @@ body, html {
 
 <div id="bg-layer"></div>
 
-<div id="game-wrapper" style="width: 1280px; height: 720px; position: absolute; left: 50%; top: 50%; transform-origin: center; transform: translate(-50%, -50%);">
-  <div id="items-layer" style="position:absolute; inset:0; z-index:20;"></div>
+<div id="game-wrapper" style="position: absolute; transform-origin: 0 0; left: 0; top: 0;">
+  <div id="layer" style="position:absolute; inset:0; z-index:20;"></div>
   
   <div id="fb-img-box">
     <img id="fbimg" src="" alt="">
   </div>
-  <div id="fb-txt-box" style="flex-direction:column; align-items:center; justify-content:center; text-align:center; box-sizing:border-box;">
+  <div id="fb-txt-box" style="display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box;">
     <div id="fbtxt"></div>
   </div>
 </div>
@@ -146,8 +146,14 @@ body, html {
 <div id="flash-overlay"></div>
 
 <script>
+/* ============================================================
+   КОНСТАНТЫ
+   ============================================================ */
 const JSON_BASE = "https://nikashum93.github.io/texts/data/";
 
+/* ============================================================
+   ЗАГРУЗКА КОНФИГА
+   ============================================================ */
 let CONFIG = null;
 let selectedCard = null;
 let matchedPairs = 0;
@@ -162,6 +168,7 @@ async function init() {
 
   if (preview) {
     document.getElementById('loader-screen').style.display = 'none';
+    window.parent.postMessage('GAME_READY', '*');
     window.addEventListener('message', e => {
       if (e.data?.type === 'LOAD_CONFIG') {
         CONFIG = e.data.config;
@@ -200,7 +207,7 @@ async function fetchWithRetry(url, retries = 20, delay = 2000) {
     
     if (i < retries - 1) {
       if(i > 1 && textEl) {
-        textEl.innerHTML = `Без паники — игра публикуется.<br><span style="font-size:12px;color:#aaa;display:block;margin-top:8px;">Ждём GitHub (Попытка ${i+1} из ${retries})...</span>`;
+        textEl.innerHTML = `Без паники — игра публикуется.<br><span style="font-size:12px;color:#aaa;display:block;margin-top:8px;">Минутку... ожидаем ответ сервера (Попытка ${i+1} из ${retries})</span>`;
       }
       await new Promise(r => setTimeout(r, delay));
     }
@@ -208,6 +215,9 @@ async function fetchWithRetry(url, retries = 20, delay = 2000) {
   throw new Error('Файл не найден');
 }
 
+/* ============================================================
+   СТАРТ ИГРЫ
+   ============================================================ */
 function startGame() {
   if (!CONFIG) return;
 
@@ -228,17 +238,44 @@ function startGame() {
   const pairSet = new Set(CONFIG.items.map(i => i.pairIndex));
   totalPairs = pairSet.size;
 
-  autoScale();
+  resizeGame();
 }
 
-function autoScale() {
+/* ============================================================
+   АВТО-СКЕЙЛИНГ (ЧТОБЫ НЕ ВЫЛЕЗАЛО ЗА ФРЕЙМ)
+   ============================================================ */
+function resizeGame() {
+  let maxX = 900, maxY = 600;
+  (CONFIG.items || []).forEach(i => {
+      if (i.x + i.w > maxX) maxX = i.x + i.w + 50;
+      if (i.y + i.h > maxY) maxY = i.y + i.h + 50;
+  });
+  if (CONFIG.feedback) {
+      if (CONFIG.feedback.imgX + CONFIG.feedback.imgW > maxX) maxX = CONFIG.feedback.imgX + CONFIG.feedback.imgW + 50;
+      if (CONFIG.feedback.txtX + CONFIG.feedback.txtW > maxX) maxX = CONFIG.feedback.txtX + CONFIG.feedback.txtW + 50;
+      if (CONFIG.feedback.imgY + CONFIG.feedback.imgH > maxY) maxY = CONFIG.feedback.imgY + CONFIG.feedback.imgH + 50;
+      if (CONFIG.feedback.txtY + CONFIG.feedback.txtH > maxY) maxY = CONFIG.feedback.txtY + CONFIG.feedback.txtH + 50;
+  }
   const wrapper = document.getElementById("game-wrapper");
   if(!wrapper) return;
-  const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
-  wrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
-}
-window.addEventListener("resize", autoScale);
 
+  const scale = Math.min(window.innerWidth / maxX, window.innerHeight / maxY);
+  const scaledW = maxX * scale;
+  const scaledH = maxY * scale;
+  const left = (window.innerWidth - scaledW) / 2;
+  const top = (window.innerHeight - scaledH) / 2;
+  
+  wrapper.style.transform = "translate(" + left + "px, " + top + "px) scale(" + scale + ")";
+  window.gameScale = scale;
+  window.gameOffsetX = left;
+  window.gameOffsetY = top;
+  resizeCvs();
+}
+window.addEventListener("resize", resizeGame);
+
+/* ============================================================
+   ФОН
+   ============================================================ */
 function applyBackground() {
   const bg = document.getElementById('bg-layer');
   if (CONFIG.bg) {
@@ -246,6 +283,9 @@ function applyBackground() {
   }
 }
 
+/* ============================================================
+   ЗВУКИ
+   ============================================================ */
 function loadSounds() {
   const s = CONFIG.sounds || {};
   ['correct','wrong','win'].forEach(key => {
@@ -275,8 +315,11 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+/* ============================================================
+   КАРТОЧКИ
+   ============================================================ */
 function renderCards() {
-  const layer = document.getElementById('items-layer');
+  const layer = document.getElementById('layer');
   layer.innerHTML = '';
 
   const st    = CONFIG.style || {};
@@ -437,14 +480,10 @@ function onMatch(a, b) {
   const ra = a.getBoundingClientRect();
   const rb = b.getBoundingClientRect();
   
-  const wrapper = document.getElementById("game-wrapper");
-  const scale = parseFloat(wrapper.style.transform.match(/scale\(([^)]+)\)/)?.[1]) || 1;
-  const rectW = wrapper.getBoundingClientRect();
-  
-  const ax = ((a.dataset.side === 'left' ? ra.right : ra.left) - rectW.left) / scale;
-  const ay = ((ra.top + ra.height / 2) - rectW.top) / scale;
-  const bx = ((b.dataset.side === 'left' ? rb.right : rb.left) - rectW.left) / scale;
-  const by = ((rb.top + rb.height / 2) - rectW.top) / scale;
+  const ax = ((a.dataset.side === 'left' ? ra.right : ra.left) - window.gameOffsetX) / window.gameScale;
+  const ay = ((ra.top + ra.height / 2) - window.gameOffsetY) / window.gameScale;
+  const bx = ((b.dataset.side === 'left' ? rb.right : rb.left) - window.gameOffsetX) / window.gameScale;
+  const by = ((rb.top + rb.height / 2) - window.gameOffsetY) / window.gameScale;
 
   const lineSt = st.line || {};
   activeLines.push({
@@ -534,19 +573,18 @@ function createMismatchFx(fxType) {
 let canvas, ctx;
 let mouseX = -1000, mouseY = -1000;
 window.addEventListener('mousemove', e => { 
-  const wrapper = document.getElementById("game-wrapper");
-  if(!wrapper) return;
-  const scale = parseFloat(wrapper.style.transform.match(/scale\(([^)]+)\)/)?.[1]) || 1;
-  const rectW = wrapper.getBoundingClientRect();
-  mouseX = (e.clientX - rectW.left) / scale; 
-  mouseY = (e.clientY - rectW.top) / scale; 
+  if(window.gameScale) {
+    mouseX = (e.clientX - window.gameOffsetX) / window.gameScale;
+    mouseY = (e.clientY - window.gameOffsetY) / window.gameScale;
+  } else {
+    mouseX = e.clientX; mouseY = e.clientY; 
+  }
 });
 
 function initCanvas() {
   canvas = document.getElementById('canvas-layer');
   ctx    = canvas.getContext('2d');
   resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
 }
 
 function resizeCanvas() {
@@ -556,19 +594,16 @@ function resizeCanvas() {
 
 function renderCanvasLoop() {
   ctx.clearRect(0,0, canvas.width, canvas.height);
-  const wrapper = document.getElementById("game-wrapper");
-  if(!wrapper) return;
-  const scale = parseFloat(wrapper.style.transform.match(/scale\(([^)]+)\)/)?.[1]) || 1;
-  const rectW = wrapper.getBoundingClientRect();
-  
-  ctx.save();
-  ctx.translate(rectW.left, rectW.top);
-  ctx.scale(scale, scale);
+  if(window.gameScale) {
+    ctx.save();
+    ctx.translate(window.gameOffsetX, window.gameOffsetY);
+    ctx.scale(window.gameScale, window.gameScale);
+  }
   
   const time = performance.now() * 0.001;
   activeLines.forEach(line => drawComplexLine(line, time));
-  ctx.restore();
   
+  if(window.gameScale) ctx.restore();
   requestAnimationFrame(renderCanvasLoop);
 }
 
