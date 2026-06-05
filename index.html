@@ -296,7 +296,7 @@ button.action-btn:hover { background: #555; }
         <option value="wobble">Тряска</option>
         <option value="glitch">Глитч</option>
         <option value="distort">Искажение</option>
-      </select>
+    </select>
     </div>
     <div class="control-group">
       <label>При клике (Состояние Выбора):</label>
@@ -1136,6 +1136,41 @@ function applyLiveStyles() {
   }
 }
 
+function showTT(e,tt){
+  const ts=getGlobalStyle().tooltip||{};
+  const ttbox=document.getElementById("ttbox");
+  ttbox.innerHTML="";
+  ttbox.style.background=ts.bg||"#222";
+  ttbox.style.color=ts.color||"#00ffcc";
+  ttbox.style.borderRadius=(ts.radius||8)+"px";
+  ttbox.style.boxShadow="0 0 16px "+(ts.glow||"#00ffcc");
+  ttbox.style.border="1px solid "+(ts.glow||"#00ffcc")+"55";
+  if(tt.text){
+    const d=document.createElement("div");
+    if(/\$|\\\(/.test(tt.text)){
+      d.innerHTML=tt.text;
+      if(window.MathJax&&MathJax.typesetPromise) MathJax.typesetPromise([d]).catch(()=>{});
+    } else {
+      d.textContent=tt.text;
+    }
+    ttbox.appendChild(d);
+  }
+  if(tt.img){const i=document.createElement("img");i.src=tt.img;ttbox.appendChild(i);}
+  ttbox.style.display="block";
+  moveTT(e);
+}
+
+function moveTT(e){
+  const ttbox=document.getElementById("ttbox");
+  let x=e.clientX+14,y=e.clientY+14;
+  if(x+270>innerWidth)  x=e.clientX-280;
+  if(y+200>innerHeight) y=e.clientY-210;
+  ttbox.style.left=x+"px";ttbox.style.top=y+"px";
+}
+
+function hideTT(){document.getElementById("ttbox").style.display="none";}
+
+
 document.getElementById('btn-test').addEventListener('click', () => {
   if (!items.length) { alert('Сначала сгенерируй элементы.'); return; }
   const cfg  = buildConfig();
@@ -1165,7 +1200,7 @@ document.getElementById('btn-publish').addEventListener('click', async () => {
     const res = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type':'application/json', 'X-Publish-Key': PUBLISH_KEY }, body: JSON.stringify({id, mode:'json', folder:'data', content:JSON.stringify(cfg, null, 2)}) });
     if (!res.ok) throw new Error(await res.text().catch(() => res.statusText));
     
-    document.getElementById('code-output').value = `<div style="width:100%;height:100%;"><iframe src="${BASE_GAME}?id=${encodeURIComponent(id)}" width="100%" height="100%" style="border:0;width:100%;height:100%;" allow="autoplay" allowfullscreen></iframe></div>`;
+    document.getElementById('code-output').value = `<iframe src="${BASE_GAME}?id=${encodeURIComponent(id)}" width="100%" height="100%" style="border:0;width:100%;height:100%;" allow="autoplay" allowfullscreen></iframe>`;
     
     status.innerHTML = '✅ Готово!<br><span style="color:#ffcc00;">Внимание: GitHub обновит данные в течение 30–60 секунд. Если в игре будет загрузка, просто подождите.</span>';
   } catch(e) { status.textContent = '❌ Ошибка: ' + e.message; }
