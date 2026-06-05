@@ -27,11 +27,10 @@ body, html {
   background-size: cover; background-position: center; overflow: hidden;
 }
 
-/* === НОВОЕ: Ограничитель 16:9 === */
 #game-area {
   position: absolute;
   width: 1280px; height: 720px;
-  left: calc(50% + 185px); /* Центр с учетом панели настроек 370px */
+  left: calc(50% + 185px); 
   top: 50%;
   transform: translate(-50%, -50%);
   transform-origin: center center;
@@ -114,7 +113,6 @@ button.action-btn:hover { background: #555; }
 .img-input-wrap { display: flex; flex-direction: column; gap: 5px; }
 .img-input-wrap .or-label { font-size: 10px; color: #666; text-align: center; margin: 0; }
 
-/* Стили для кнопок сброса */
 .btn-clear {
   background: rgba(255,50,50,0.2); border: 1px solid #ff3333;
   color: #ffaaaa; border-radius: 4px; padding: 0 10px;
@@ -196,7 +194,7 @@ button.action-btn:hover { background: #555; }
 }
 #test-modal.open { display: flex; }
 #test-modal-header {
-  width: 90vw; display: flex; justify-content: space-between;
+  width: 90vw; max-width: calc(85vh * 16 / 9); display: flex; justify-content: space-between;
   align-items: center; margin-bottom: 12px;
 }
 #test-modal-header span { color: var(--primary); font-weight: bold; font-size: 16px; }
@@ -205,13 +203,14 @@ button.action-btn:hover { background: #555; }
   padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: bold;
 }
 #test-iframe {
-  width: 90vw; height: 80vh;
+  width: 90vw;
+  max-width: calc(85vh * 16 / 9);
+  aspect-ratio: 16 / 9;
   border: 2px solid var(--primary); border-radius: 12px; background: transparent;
 }
 #pub-status { font-size: 12px; color: #aaa; margin-top: 6px; text-align: center; min-height: 18px; }
 .hint-text { font-size: 11px; color: #888; margin-top: 4px; }
 
-/* === РАЗДЕЛЬНЫЕ БЛОКИ ФИДБЕКА В РЕДАКТОРЕ === */
 #fb-img-drag-box, #fb-txt-drag-box {
   display: none; position: absolute; z-index: 9000; cursor: grab;
   justify-content: center; align-items: center; font-weight: bold; pointer-events: auto; box-sizing: border-box;
@@ -253,8 +252,13 @@ button.action-btn:hover { background: #555; }
 
     <div class="row">
       <div class="control-group"><label>Столбец 1 (левый):</label><textarea id="list-left">Apple&#10;$x^2$</textarea></div>
-      <div class="control-group"><label>Столбец 2 (правый):</label><textarea id="list-right">Яблоко&#10;Икс в квадрате</textarea></div>
+      <div class="control-group"><label>Подсказка 1 (URL/Текст):</label><textarea id="tt-left"></textarea></div>
     </div>
+    <div class="row">
+      <div class="control-group"><label>Столбец 2 (правый):</label><textarea id="list-right">Яблоко&#10;Икс в квадрате</textarea></div>
+      <div class="control-group"><label>Подсказка 2 (URL/Текст):</label><textarea id="tt-right"></textarea></div>
+    </div>
+
     <button id="btn-generate" class="action-btn">⟳ Сгенерировать элементы</button>
 
     <h4 class="section-title">Анимации</h4>
@@ -482,16 +486,6 @@ button.action-btn:hover { background: #555; }
         ✕ Вернуть текст
       </button>
     </div>
-    <div style="border-top:1px dashed #555;padding-top:8px;">
-      <label style="color:var(--primary);">ПОДСКАЗКА:</label>
-      <input type="text" id="tool-tt-text" placeholder="Текст подсказки...">
-      <div class="img-input-wrap" style="margin-top:5px;">
-        <input type="url" id="tool-tt-url" placeholder="https://... (картинка подсказки)">
-        <div class="or-label">— или файл —</div>
-        <input type="file" accept="image/*" id="tool-tt-img">
-      </div>
-      <button class="action-btn" id="btn-clear-tt" style="padding:5px;font-size:11px;margin-top:5px;">Удалить подсказку</button>
-    </div>
   </div>
 
   <div id="game-area">
@@ -515,11 +509,11 @@ button.action-btn:hover { background: #555; }
     <h3 style="color:var(--primary);margin-top:0;">🚀 Опубликовано!</h3>
     <div class="modal-steps">
       <b>Как встроить в Genially:</b><br>
-      1. Скопируй iframe ниже<br>
+      1. Скопируй код ниже<br>
       2. В Genially: <b>Insert → Others → Iframe</b> → вставь<br>
       3. Подожди <b>30–60 секунд</b> после публикации
     </div>
-    <label style="font-size:11px;color:#aaa;text-transform:uppercase;">iframe для Genially:</label>
+    <label style="font-size:11px;color:#aaa;text-transform:uppercase;">КОД для Genially:</label>
     <textarea id="code-output" readonly onclick="this.select()"></textarea>
     <div id="pub-status"></div>
     <div class="row" style="margin-top:15px;gap:10px;">
@@ -538,16 +532,10 @@ button.action-btn:hover { background: #555; }
 </div>
 
 <script>
-/* ============================================================
-   КОНСТАНТЫ
-   ============================================================ */
 const ENDPOINT    = "https://server-kjnn.onrender.com/publish";
 const PUBLISH_KEY = "nika_read_pub_2025";
 const BASE_GAME   = "https://nikashum93.github.io/texts/game.html";
 
-/* ============================================================
-   АВТО-МАСШТАБИРОВАНИЕ РАБОЧЕЙ ОБЛАСТИ В РЕДАКТОРЕ (16:9)
-   ============================================================ */
 function resizeEditorWorkspace() {
   const wa = document.getElementById('game-area');
   if(!wa) return;
@@ -559,9 +547,6 @@ function resizeEditorWorkspace() {
 window.addEventListener('resize', resizeEditorWorkspace);
 resizeEditorWorkspace();
 
-/* ============================================================
-   ШРИФТЫ / ЯЗЫКИ
-   ============================================================ */
 const FONT_MAP = {
   ru: ["Nunito","Rubik","Caveat","Russo One","Montserrat","Comfortaa","Pacifico","Lobster","Amatic SC"],
   en: ["Nunito","Quicksand","Fredoka One","Bangers","Creepster","Righteous","Orbitron","Indie Flower"],
@@ -616,15 +601,9 @@ function applyFont() {
 fillFonts('ru');
 applyFont();
 
-/* ============================================================
-   ПАНЕЛЬ НАСТРОЕК
-   ============================================================ */
 document.getElementById('settings-btn').addEventListener('click', () =>
   document.getElementById('settings-panel').classList.toggle('open'));
 
-/* ============================================================
-   РЕСУРСЫ
-   ============================================================ */
 const gameArea = document.getElementById('game-area');
 let resources = { bg:'', sndCorrect:'', sndWrong:'', sndWin:'', fbImg:'' };
 
@@ -705,9 +684,6 @@ document.getElementById('btn-clr-snd-wrong').addEventListener('click', () => { d
 document.getElementById('btn-clr-snd-win').addEventListener('click', () => { document.getElementById('snd-win-file').value = ''; resources.sndWin = ''; });
 document.getElementById('btn-clr-fb-img').addEventListener('click', () => { document.getElementById('fb-img-url').value = ''; document.getElementById('fb-img-file').value = ''; resources.fbImg = ''; applyLiveStyles(); });
 
-/* ============================================================
-   ПЕРЕТАСКИВАНИЕ ДВУХ БЛОКОВ ФИДБЕКА
-   ============================================================ */
 const fbImgDragBox = document.getElementById('fb-img-drag-box');
 const fbTxtDragBox = document.getElementById('fb-txt-drag-box');
 
@@ -767,9 +743,6 @@ function attachDragAndResize(box) {
 attachDragAndResize(fbImgDragBox);
 attachDragAndResize(fbTxtDragBox);
 
-/* ============================================================
-   ДАННЫЕ ЭЛЕМЕНТОВ
-   ============================================================ */
 let items      = [];
 let selectedId = null;
 
@@ -811,10 +784,10 @@ function getGlobalStyle() {
     },
     matchedOpacity: parseFloat(document.getElementById('matched-opacity').value),
     tooltip: {
-      bg:     document.getElementById('tt-bg').value,
-      color:  document.getElementById('tt-color').value,
-      glow:   document.getElementById('tt-glow').value,
-      radius: readInt('tt-radius', 8)
+      bg:      document.getElementById('tt-bg').value,
+      color:   document.getElementById('tt-color').value,
+      glow:    document.getElementById('tt-glow').value,
+      radius:  readInt('tt-radius', 8)
     },
     line: {
       color:     document.getElementById('line-color').value,
@@ -847,15 +820,30 @@ function getGlobalStyle() {
   };
 }
 
-/* ============================================================
-   ГЕНЕРАЦИЯ ЭЛЕМЕНТОВ СТРОГО В 1280x720
-   ============================================================ */
 document.getElementById('btn-generate').addEventListener('click', generateElements);
 
+function getLinesData(listId, ttId) {
+    const listRaw = document.getElementById(listId).value.split('\n');
+    const ttRaw = document.getElementById(ttId).value.split('\n');
+    const data = [];
+    for(let i=0; i<Math.max(listRaw.length, ttRaw.length); i++) {
+        const text = (listRaw[i] || '').trim();
+        if(text) data.push({ text, tt: (ttRaw[i] || '').trim() });
+    }
+    return data;
+}
+
+function parseTooltip(val) {
+    if (!val) return { text: '', img: '' };
+    if (val.startsWith('http') || val.startsWith('data:')) return { text: '', img: val };
+    return { text: val, img: '' };
+}
+
 function generateElements() {
-  const leftLines  = document.getElementById('list-left').value.split('\n').map(s => s.trim()).filter(Boolean);
-  const rightLines = document.getElementById('list-right').value.split('\n').map(s => s.trim()).filter(Boolean);
-  const count = Math.max(leftLines.length, rightLines.length);
+  const leftData = getLinesData('list-left', 'tt-left');
+  const rightData = getLinesData('list-right', 'tt-right');
+  const count = Math.max(leftData.length, rightData.length);
+  
   if (!count) return;
 
   items = [];
@@ -873,15 +861,12 @@ function generateElements() {
   for (let i = 0; i < count; i++) {
     const jitter = () => (Math.random() - 0.5) * 20;
     const y = startY + i * stepY;
-    if (leftLines[i] !== undefined) items.push({ id: `L${i}`, side: 'left', pairIndex: i, text: leftLines[i], img: '', x: leftX + jitter(), y: y + jitter(), w: cardW, h: cardH, rot: 0, fontSize: 18, tooltip: { text: '', img: '' } });
-    if (rightLines[i] !== undefined) items.push({ id: `R${i}`, side: 'right', pairIndex: i, text: rightLines[i], img: '', x: rightX + jitter(), y: y + jitter(), w: cardW, h: cardH, rot: 0, fontSize: 18, tooltip: { text: '', img: '' } });
+    if (leftData[i]) items.push({ id: `L${i}`, side: 'left', pairIndex: i, text: leftData[i].text, img: '', x: leftX + jitter(), y: y + jitter(), w: cardW, h: cardH, rot: 0, fontSize: 18, tooltip: parseTooltip(leftData[i].tt) });
+    if (rightData[i]) items.push({ id: `R${i}`, side: 'right', pairIndex: i, text: rightData[i].text, img: '', x: rightX + jitter(), y: y + jitter(), w: cardW, h: cardH, rot: 0, fontSize: 18, tooltip: parseTooltip(rightData[i].tt) });
   }
   renderAll();
 }
 
-/* ============================================================
-   РЕНДЕР
-   ============================================================ */
 const container = document.getElementById('elements-container');
 
 function renderAll() {
@@ -937,9 +922,6 @@ function renderItem(item, gs) {
   el.addEventListener('click', e => { e.stopPropagation(); selectItem(item.id); });
 }
 
-/* ============================================================
-   DRAG & RESIZE КАРТОЧЕК С УЧЕТОМ МАСШТАБА
-   ============================================================ */
 function makeDraggableItem(el, item, handle) {
   let ox, oy, sx, sy, active = false;
   el.addEventListener('mousedown', e => {
@@ -974,9 +956,6 @@ function makeResizableItem(el, item, handle) {
   document.addEventListener('mouseup', () => { active = false; });
 }
 
-/* ============================================================
-   ВЫБОР ЭЛЕМЕНТА
-   ============================================================ */
 const toolbar = document.getElementById('item-toolbar');
 
 function selectItem(id) {
@@ -992,9 +971,7 @@ function selectItem(id) {
 
   document.getElementById('tool-font').value    = item.fontSize;
   document.getElementById('tool-rot').value     = item.rot;
-  document.getElementById('tool-tt-text').value = item.tooltip.text || '';
   document.getElementById('tool-img-url').value = item.img.startsWith('data:') ? '' : (item.img || '');
-  document.getElementById('tool-tt-url').value  = (item.tooltip.img || '').startsWith('data:') ? '' : (item.tooltip.img || '');
 }
 
 document.addEventListener('click', e => {
@@ -1013,15 +990,7 @@ document.getElementById('tool-img-url').addEventListener('change', e => { if (!s
 document.getElementById('tool-main-img').addEventListener('change', e => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); fileToBase64(e.target.files[0], b64 => { item.img = b64; setCardImage(selectedId, b64); document.getElementById('tool-img-url').value = ''; }); });
 function setCardImage(id, src) { const inner = document.querySelector(`#el_${id} .item-inner`); if (!inner) return; inner.innerHTML = ''; const img = document.createElement('img'); img.src = src; inner.appendChild(img); }
 document.getElementById('btn-reset-text').addEventListener('click', () => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); item.img = ''; const inner = document.querySelector(`#el_${selectedId} .item-inner`); if (!inner) return; if (/\$|\\\(/.test(item.text)) { inner.innerHTML = item.text; if (window.MathJax?.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{}); } else { inner.textContent = item.text; } document.getElementById('tool-img-url').value = ''; });
-document.getElementById('tool-tt-text').addEventListener('input', e => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); item.tooltip.text = e.target.value; updateTtBadge(selectedId, item); });
-document.getElementById('tool-tt-url').addEventListener('change', e => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); item.tooltip.img = e.target.value.trim(); updateTtBadge(selectedId, item); });
-document.getElementById('tool-tt-img').addEventListener('change', e => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); fileToBase64(e.target.files[0], b64 => { item.tooltip.img = b64; document.getElementById('tool-tt-url').value = ''; updateTtBadge(selectedId, item); }); });
-document.getElementById('btn-clear-tt').addEventListener('click', () => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); item.tooltip = { text: '', img: '' }; document.getElementById('tool-tt-text').value = ''; document.getElementById('tool-tt-url').value  = ''; document.getElementById('tool-tt-img').value  = ''; updateTtBadge(selectedId, item); });
-function updateTtBadge(id, item) { const badge = document.querySelector(`#el_${id} .tt-badge`); if (badge) badge.style.display = (item.tooltip.text || item.tooltip.img) ? 'block' : 'none'; }
 
-/* ============================================================
-   LIVE-ОБНОВЛЕНИЕ СТИЛЕЙ
-   ============================================================ */
 [
   'card-bg-color-left','card-bg-opacity-left','border-color-left','border-width-left','text-color-left',
   'card-bg-color-right','card-bg-opacity-right','border-color-right','border-width-right','text-color-right',
@@ -1045,7 +1014,6 @@ function applyLiveStyles() {
     inner.style.fontFamily = `"${gs.font}", sans-serif`;
   });
 
-  // Лайв-превью фидбека
   const fbt = document.getElementById('fb-txt-drag-box');
   fbt.style.background = gs.feedback.bgColor;
   fbt.style.border = `${gs.feedback.borderWidth}px solid ${gs.feedback.borderColor}`;
@@ -1071,9 +1039,6 @@ function applyLiveStyles() {
   }
 }
 
-/* ============================================================
-   СБОРКА КОНФИГА
-   ============================================================ */
 function buildConfig() {
   const gs = getGlobalStyle();
   gs.feedback.img = resources.fbImg;
@@ -1118,9 +1083,6 @@ function buildConfig() {
   };
 }
 
-/* ============================================================
-   ТЕСТ И ПУБЛИКАЦИЯ
-   ============================================================ */
 document.getElementById('btn-test').addEventListener('click', () => {
   if (!items.length) { alert('Сначала сгенерируй элементы.'); return; }
   const cfg  = buildConfig();
@@ -1149,7 +1111,10 @@ document.getElementById('btn-publish').addEventListener('click', async () => {
   try {
     const res = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type':'application/json', 'X-Publish-Key': PUBLISH_KEY }, body: JSON.stringify({id, mode:'json', folder:'data', content:JSON.stringify(cfg, null, 2)}) });
     if (!res.ok) throw new Error(await res.text().catch(() => res.statusText));
-    document.getElementById('code-output').value = `<iframe src="${BASE_GAME}?id=${encodeURIComponent(id)}" width="100%" height="100%" style="border:0;width:100%;height:100%;" allow="autoplay" allowfullscreen></iframe>`;
+    
+    // Обертка DIV добавлена для Genially 
+    document.getElementById('code-output').value = `<div style="width:100%;height:100%;"><iframe src="${BASE_GAME}?id=${encodeURIComponent(id)}" width="100%" height="100%" style="border:0;width:100%;height:100%;" allow="autoplay" allowfullscreen></iframe></div>`;
+    
     status.innerHTML = '✅ Готово!<br><span style="color:#ffcc00;">Внимание: GitHub обновит данные в течение 30–60 секунд. Если в игре будет загрузка, просто подождите.</span>';
   } catch(e) { status.textContent = '❌ Ошибка: ' + e.message; }
 });
@@ -1158,9 +1123,6 @@ function copyIframe() {
   const ta = document.getElementById('code-output'); ta.select(); navigator.clipboard.writeText(ta.value).catch(() => document.execCommand('copy'));
 }
 
-/* ============================================================
-   buildGameHtml — полный встроенный движок игры (ТЕСТ)
-   ============================================================ */
 function buildGameHtml(cfg) {
   const cfgJson = JSON.stringify(cfg).replace(/<\/script>/gi, '<\\/script>');
   const fontLink = cfg.font ? '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=' + cfg.font.replace(/ /g, '+') + ':wght@400;700&display=swap">' : '';
@@ -1640,9 +1602,6 @@ function buildGameHtml(cfg) {
 
   return html;
 }
-  /* ============================================================
-   ИНИЦИАЛИЗАЦИЯ
-   ============================================================ */
 generateElements();
 </script>
 </body>
