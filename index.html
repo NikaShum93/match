@@ -36,7 +36,10 @@ body, html {
   transform-origin: center center;
   border: 2px dashed rgba(255, 255, 255, 0.2);
   box-shadow: 0 0 50px rgba(0,0,0,0.5);
-  background: transparent;
+  background-color: transparent;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
 }
 
 #settings-btn {
@@ -220,6 +223,26 @@ button.action-btn:hover { background: #555; }
 #fb-img-drag-box { border: 2px dashed #00ffcc; background: rgba(0,255,204,0.1); border-radius: 12px; }
 #fb-txt-drag-box { border: 2px dashed #ff00cc; background: rgba(255,0,204,0.1); flex-direction: column; text-align: center; }
 .placeholder-text { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); font-size: 14px; text-shadow: 0 0 5px #000; pointer-events: none; }
+
+/* CSS для точек-маркеров */
+.dot-marker {
+  width: var(--d-size); height: var(--d-size);
+  background: var(--d-color);
+  border-radius: 50%;
+  display: flex; justify-content: center; align-items: center;
+  font-size: calc(var(--d-size) * 0.8);
+  box-shadow: 0 0 10px var(--d-color);
+  pointer-events: none;
+}
+.dot-square { border-radius: 4px; }
+.dot-pulse { animation: dotPulse 1.5s infinite; }
+.dot-glow { box-shadow: 0 0 20px var(--d-color), inset 0 0 10px #fff; }
+.dot-star { background: transparent; box-shadow: none; text-shadow: 0 0 10px var(--d-color); }
+@keyframes dotPulse {
+  0% { box-shadow: 0 0 0 0 var(--d-color); }
+  70% { box-shadow: 0 0 0 calc(var(--d-size)*0.5) transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
 </style>
 </head>
 <body>
@@ -409,6 +432,22 @@ button.action-btn:hover { background: #555; }
       </select>
     </div>
 
+    <h4 class="section-title">📍 Точки (вместо пустых карточек)</h4>
+    <div class="row">
+      <div class="control-group"><label>Цвет:</label><input type="color" id="dot-color" value="#00ffcc"></div>
+      <div class="control-group"><label>Размер (px):</label><input type="number" id="dot-size" value="30" min="10" max="100"></div>
+    </div>
+    <div class="control-group">
+      <label>Форма / Эффект:</label>
+      <select id="dot-style">
+        <option value="circle">Круг</option>
+        <option value="square">Квадрат</option>
+        <option value="pulse">Радар (Пульсация)</option>
+        <option value="glow">Светящаяся сфера</option>
+        <option value="star">Звезда ⭐</option>
+      </select>
+    </div>
+
     <h4 class="section-title">🎉 Финальный фидбек</h4>
     <div class="control-group">
       <label>Блоки фидбека на экране:</label>
@@ -478,8 +517,6 @@ button.action-btn:hover { background: #555; }
       <label>КАРТИНКА (вместо текста):</label>
       <div class="img-input-wrap">
         <input type="url" id="tool-img-url" placeholder="https://... (ссылка)">
-        <div class="or-label">— или файл —</div>
-        <input type="file" accept="image/*" id="tool-main-img">
       </div>
       <button class="action-btn" id="btn-reset-text"
         style="padding:5px;font-size:11px;margin-top:5px;background:rgba(255,50,50,0.2);border-color:#ff3333;color:#ffaaaa;">
@@ -795,6 +832,11 @@ function getGlobalStyle() {
       style:     document.getElementById('line-style').value,
       emoji:     document.getElementById('line-emoji').value
     },
+    dot: {
+      color:     document.getElementById('dot-color').value,
+      size:      readInt('dot-size', 30),
+      style:     document.getElementById('dot-style').value
+    },
     feedback: {
       mode:        document.getElementById('fb-mode').value,
       text:        document.getElementById('fb-text').value,
@@ -828,7 +870,8 @@ function getLinesData(listId, ttId) {
     const data = [];
     for(let i=0; i<Math.max(listRaw.length, ttRaw.length); i++) {
         const text = (listRaw[i] || '').trim();
-        if(text) data.push({ text, tt: (ttRaw[i] || '').trim() });
+        const tt = (ttRaw[i] || '').trim();
+        if(text || tt) data.push({ text, tt });
     }
     return data;
 }
@@ -892,20 +935,34 @@ function renderItem(item, gs) {
 
   const inner = document.createElement('div');
   inner.className = 'item-inner';
-  inner.style.background  = hexToRgba(side.bgColor, side.bgOpacity);
-  inner.style.border      = `${side.borderWidth}px solid ${side.borderColor}`;
-  inner.style.color       = side.textColor;
-  inner.style.fontSize    = item.fontSize + 'px';
-  inner.style.fontFamily  = `"${gs.font}", sans-serif`;
-  inner.style.padding     = '6px';
-  inner.style.wordBreak   = 'break-word';
-
-  if (item.img) {
-    const img = document.createElement('img'); img.src = item.img; inner.appendChild(img);
-  } else if (/\$|\\\(/.test(item.text)) {
-    inner.innerHTML = item.text; if (window.MathJax?.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
+  
+  const isEmpty = !item.text && !item.img;
+  
+  if (isEmpty) {
+    inner.style.background = 'transparent';
+    inner.style.border = 'none';
+    const dot = document.createElement('div');
+    dot.className = 'dot-marker dot-' + gs.dot.style;
+    dot.style.setProperty('--d-color', gs.dot.color);
+    dot.style.setProperty('--d-size', gs.dot.size + 'px');
+    if (gs.dot.style === 'star') dot.textContent = '⭐';
+    inner.appendChild(dot);
   } else {
-    inner.textContent = item.text;
+    inner.style.background  = hexToRgba(side.bgColor, side.bgOpacity);
+    inner.style.border      = `${side.borderWidth}px solid ${side.borderColor}`;
+    inner.style.color       = side.textColor;
+    inner.style.fontSize    = item.fontSize + 'px';
+    inner.style.fontFamily  = `"${gs.font}", sans-serif`;
+    inner.style.padding     = '6px';
+    inner.style.wordBreak   = 'break-word';
+
+    if (item.img) {
+      const img = document.createElement('img'); img.src = item.img; inner.appendChild(img);
+    } else if (/\$|\\\(/.test(item.text)) {
+      inner.innerHTML = item.text; if (window.MathJax?.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
+    } else {
+      inner.textContent = item.text;
+    }
   }
 
   const badge = document.createElement('div'); badge.className = 'tt-badge'; badge.textContent = '💬';
@@ -984,17 +1041,28 @@ document.addEventListener('click', e => {
   }
 });
 
-document.getElementById('tool-font').addEventListener('input', e => { if (!selectedId) return; items.find(i => i.id === selectedId).fontSize = parseInt(e.target.value) || 18; document.querySelector(`#el_${selectedId} .item-inner`).style.fontSize = e.target.value + 'px'; });
+document.getElementById('tool-font').addEventListener('input', e => { if (!selectedId) return; items.find(i => i.id === selectedId).fontSize = parseInt(e.target.value) || 18; applyLiveStyles(); });
 document.getElementById('tool-rot').addEventListener('input', e => { if (!selectedId) return; items.find(i => i.id === selectedId).rot = parseFloat(e.target.value) || 0; document.getElementById('el_' + selectedId).style.transform = `rotate(${e.target.value}deg)`; });
-document.getElementById('tool-img-url').addEventListener('change', e => { if (!selectedId) return; const url = e.target.value.trim(); if (!url) return; items.find(i=>i.id===selectedId).img = url; setCardImage(selectedId, url); });
-document.getElementById('tool-main-img').addEventListener('change', e => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); fileToBase64(e.target.files[0], b64 => { item.img = b64; setCardImage(selectedId, b64); document.getElementById('tool-img-url').value = ''; }); });
-function setCardImage(id, src) { const inner = document.querySelector(`#el_${id} .item-inner`); if (!inner) return; inner.innerHTML = ''; const img = document.createElement('img'); img.src = src; inner.appendChild(img); }
-document.getElementById('btn-reset-text').addEventListener('click', () => { if (!selectedId) return; const item = items.find(i => i.id === selectedId); item.img = ''; const inner = document.querySelector(`#el_${selectedId} .item-inner`); if (!inner) return; if (/\$|\\\(/.test(item.text)) { inner.innerHTML = item.text; if (window.MathJax?.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{}); } else { inner.textContent = item.text; } document.getElementById('tool-img-url').value = ''; });
+
+document.getElementById('tool-img-url').addEventListener('change', e => { 
+  if (!selectedId) return; 
+  const url = e.target.value.trim(); 
+  items.find(i=>i.id===selectedId).img = url; 
+  applyLiveStyles(); 
+});
+
+document.getElementById('btn-reset-text').addEventListener('click', () => { 
+  if (!selectedId) return; 
+  items.find(i => i.id === selectedId).img = ''; 
+  document.getElementById('tool-img-url').value = ''; 
+  applyLiveStyles(); 
+});
 
 [
   'card-bg-color-left','card-bg-opacity-left','border-color-left','border-width-left','text-color-left',
   'card-bg-color-right','card-bg-opacity-right','border-color-right','border-width-right','text-color-right',
-  'fb-text','fb-text-color','fb-bg-color','fb-border-color','fb-border-width','fb-radius','fb-glow-color','fb-font-size'
+  'fb-text','fb-text-color','fb-bg-color','fb-border-color','fb-border-width','fb-radius','fb-glow-color','fb-font-size',
+  'dot-color', 'dot-size', 'dot-style'
 ].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', applyLiveStyles);
@@ -1007,11 +1075,40 @@ function applyLiveStyles() {
     if (!el) return;
     const inner = el.querySelector('.item-inner');
     if (!inner) return;
-    const side = gs[item.side];
-    inner.style.background = hexToRgba(side.bgColor, side.bgOpacity);
-    inner.style.border     = `${side.borderWidth}px solid ${side.borderColor}`;
-    inner.style.color      = side.textColor;
-    inner.style.fontFamily = `"${gs.font}", sans-serif`;
+    
+    const isEmpty = !item.text && !item.img;
+    
+    if(isEmpty) {
+       inner.style.background = 'transparent';
+       inner.style.border = 'none';
+       
+       let dot = inner.querySelector('.dot-marker');
+       if (!dot) {
+           inner.innerHTML = '';
+           dot = document.createElement('div');
+           inner.appendChild(dot);
+       }
+       dot.className = 'dot-marker dot-' + gs.dot.style;
+       dot.style.setProperty('--d-color', gs.dot.color);
+       dot.style.setProperty('--d-size', gs.dot.size + 'px');
+       dot.textContent = gs.dot.style === 'star' ? '⭐' : '';
+    } else {
+       const side = gs[item.side];
+       inner.style.background = hexToRgba(side.bgColor, side.bgOpacity);
+       inner.style.border     = `${side.borderWidth}px solid ${side.borderColor}`;
+       inner.style.color      = side.textColor;
+       inner.style.fontSize   = item.fontSize + 'px';
+       inner.style.fontFamily = `"${gs.font}", sans-serif`;
+       
+       inner.innerHTML = '';
+       if (item.img) {
+         const img = document.createElement('img'); img.src = item.img; inner.appendChild(img);
+       } else if (/\$|\\\(/.test(item.text)) {
+         inner.innerHTML = item.text; if (window.MathJax?.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
+       } else {
+         inner.textContent = item.text;
+       }
+    }
   });
 
   const fbt = document.getElementById('fb-txt-drag-box');
@@ -1037,50 +1134,6 @@ function applyLiveStyles() {
     imgPrev.style.display = 'none';
     if(imgPlace) imgPlace.style.display = 'flex';
   }
-}
-
-function buildConfig() {
-  const gs = getGlobalStyle();
-  gs.feedback.img = resources.fbImg;
-
-  return {
-    language: langSel.value,
-    font:     gs.font,
-    bg:       resources.bg,
-    sounds: {
-      correct: resources.sndCorrect,
-      wrong:   resources.sndWrong,
-      win:     resources.sndWin
-    },
-    style: {
-      animHover:        gs.animHover,
-      animClick:        gs.animClick,
-      effMatch:         gs.effMatch,
-      effMismatch:      gs.effMismatch,
-      effMismatchEmoji: gs.effMismatchEmoji,
-      glowColor:        gs.glowColor,
-      matchedOpacity:   gs.matchedOpacity,
-      left:             gs.left,
-      right:            gs.right,
-      tooltip:          gs.tooltip,
-      line:             gs.line
-    },
-    feedback: gs.feedback,
-    items: items.map(item => ({
-      id:        item.id,
-      side:      item.side,
-      pairIndex: item.pairIndex,
-      text:      item.text,
-      img:       item.img,
-      x:         Math.round(item.x),
-      y:         Math.round(item.y),
-      w:         Math.round(item.w),
-      h:         Math.round(item.h),
-      rot:       item.rot,
-      fontSize:  item.fontSize,
-      tooltip:   item.tooltip
-    }))
-  };
 }
 
 document.getElementById('btn-test').addEventListener('click', () => {
@@ -1112,7 +1165,6 @@ document.getElementById('btn-publish').addEventListener('click', async () => {
     const res = await fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type':'application/json', 'X-Publish-Key': PUBLISH_KEY }, body: JSON.stringify({id, mode:'json', folder:'data', content:JSON.stringify(cfg, null, 2)}) });
     if (!res.ok) throw new Error(await res.text().catch(() => res.statusText));
     
-    // Обертка DIV добавлена для Genially 
     document.getElementById('code-output').value = `<div style="width:100%;height:100%;"><iframe src="${BASE_GAME}?id=${encodeURIComponent(id)}" width="100%" height="100%" style="border:0;width:100%;height:100%;" allow="autoplay" allowfullscreen></iframe></div>`;
     
     status.innerHTML = '✅ Готово!<br><span style="color:#ffcc00;">Внимание: GitHub обновит данные в течение 30–60 секунд. Если в игре будет загрузка, просто подождите.</span>';
@@ -1178,6 +1230,12 @@ function buildGameHtml(cfg) {
     + '@keyframes distort{0%,100%{transform:skew(0deg)}25%{transform:skew(6deg,2deg)}75%{transform:skew(-6deg,-2deg)}}\n'
     + '@keyframes scaleUp{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}\n'
     + '@keyframes scaleDown{0%,100%{transform:scale(1)}50%{transform:scale(.88)}}\n'
+    + '.dot-marker { width: var(--d-size); height: var(--d-size); background: var(--d-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: calc(var(--d-size) * 0.8); box-shadow: 0 0 10px var(--d-color); pointer-events: none; }\n'
+    + '.dot-square { border-radius: 4px; }\n'
+    + '.dot-pulse { animation: dotPulse 1.5s infinite; }\n'
+    + '.dot-glow { box-shadow: 0 0 20px var(--d-color), inset 0 0 10px #fff; }\n'
+    + '.dot-star { background: transparent; box-shadow: none; text-shadow: 0 0 10px var(--d-color); }\n'
+    + '@keyframes dotPulse { 0% { box-shadow: 0 0 0 0 var(--d-color); } 70% { box-shadow: 0 0 0 calc(var(--d-size)*0.5) transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }\n'
     + '<\/style></head><body>\n'
     + '<div id="loader-screen"><div class="loader-box"><div class="spinner"></div><div id="loader-text" style="font-weight:bold;font-size:16px;">Без паники — игра загружается.<br><span style="font-size:12px;color:#aaa;">Минутку... ожидаем ответ</span></div></div></div>\n'
     + '<div id="bg"></div>\n'
@@ -1259,21 +1317,34 @@ function buildGameHtml(cfg) {
     + '  card.style.width=item.w+"px";\n'
     + '  card.style.height=item.h+"px";\n'
     + '  card.style.transform="rotate("+(item.rot||0)+"deg)";\n'
-    + '  card.style.background=hexToRgba(side.bgColor,side.bgOpacity);\n'
-    + '  card.style.border=(side.borderWidth||0)+"px solid "+side.borderColor;\n'
-    + '  card.style.color=side.textColor;\n'
-    + '  card.style.fontSize=(item.fontSize||18)+"px";\n'
-    + '  card.style.fontFamily=\'"\'+font+\'", sans-serif\';\n'
-    + '  if(item.img){\n'
-    + '    const img=document.createElement("img");\n'
-    + '    img.src=item.img;\n'
-    + '    img.style.cssText="width:100%;height:100%;object-fit:contain;pointer-events:none";\n'
-    + '    card.appendChild(img);\n'
-    + '  } else if(/\\$|\\\\\\(/.test(item.text)){\n'
-    + '    card.innerHTML=item.text;\n'
-    + '    if(window.MathJax&&MathJax.typesetPromise) MathJax.typesetPromise([card]).catch(()=>{});\n'
+    + '  const isEmpty = !item.text && !item.img;\n'
+    + '  if (isEmpty) {\n'
+    + '    card.style.background = "transparent";\n'
+    + '    card.style.border = "none";\n'
+    + '    card.style.boxShadow = "none";\n'
+    + '    const dot = document.createElement("div");\n'
+    + '    dot.className = "dot-marker dot-" + (st.dot?.style || "circle");\n'
+    + '    dot.style.setProperty("--d-color", st.dot?.color || "#00ffcc");\n'
+    + '    dot.style.setProperty("--d-size", (st.dot?.size || 30) + "px");\n'
+    + '    if (st.dot?.style === "star") dot.textContent = "⭐";\n'
+    + '    card.appendChild(dot);\n'
     + '  } else {\n'
-    + '    card.textContent=item.text;\n'
+    + '    card.style.background=hexToRgba(side.bgColor,side.bgOpacity);\n'
+    + '    card.style.border=(side.borderWidth||0)+"px solid "+side.borderColor;\n'
+    + '    card.style.color=side.textColor;\n'
+    + '    card.style.fontSize=(item.fontSize||18)+"px";\n'
+    + '    card.style.fontFamily=\'"\'+font+\'", sans-serif\';\n'
+    + '    if(item.img){\n'
+    + '      const img=document.createElement("img");\n'
+    + '      img.src=item.img;\n'
+    + '      img.style.cssText="width:100%;height:100%;object-fit:contain;pointer-events:none";\n'
+    + '      card.appendChild(img);\n'
+    + '    } else if(/\\$|\\\\\\(/.test(item.text)){\n'
+    + '      card.innerHTML=item.text;\n'
+    + '      if(window.MathJax&&MathJax.typesetPromise) MathJax.typesetPromise([card]).catch(()=>{});\n'
+    + '    } else {\n'
+    + '      card.textContent=item.text;\n'
+    + '    }\n'
     + '  }\n'
     + '  card.addEventListener("mouseenter",e=>{\n'
     + '    if(card.classList.contains("matched")) return;\n'
