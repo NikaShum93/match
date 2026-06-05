@@ -862,6 +862,51 @@ function getGlobalStyle() {
   };
 }
 
+function buildConfig() {
+  const gs = getGlobalStyle();
+  gs.feedback.img = resources.fbImg;
+
+  return {
+    language: langSel.value,
+    font:     gs.font,
+    bg:       resources.bg,
+    sounds: {
+      correct: resources.sndCorrect,
+      wrong:   resources.sndWrong,
+      win:     resources.sndWin
+    },
+    style: {
+      animHover:        gs.animHover,
+      animClick:        gs.animClick,
+      effMatch:         gs.effMatch,
+      effMismatch:      gs.effMismatch,
+      effMismatchEmoji: gs.effMismatchEmoji,
+      glowColor:        gs.glowColor,
+      matchedOpacity:   gs.matchedOpacity,
+      left:             gs.left,
+      right:            gs.right,
+      tooltip:          gs.tooltip,
+      line:             gs.line,
+      dot:              gs.dot
+    },
+    feedback: gs.feedback,
+    items: items.map(item => ({
+      id:        item.id,
+      side:      item.side,
+      pairIndex: item.pairIndex,
+      text:      item.text,
+      img:       item.img,
+      x:         Math.round(item.x),
+      y:         Math.round(item.y),
+      w:         Math.round(item.w),
+      h:         Math.round(item.h),
+      rot:       item.rot,
+      fontSize:  item.fontSize,
+      tooltip:   item.tooltip
+    }))
+  };
+}
+
 document.getElementById('btn-generate').addEventListener('click', generateElements);
 
 function getLinesData(listId, ttId) {
@@ -959,7 +1004,7 @@ function renderItem(item, gs) {
     if (item.img) {
       const img = document.createElement('img'); img.src = item.img; inner.appendChild(img);
     } else if (/\$|\\\(/.test(item.text)) {
-      inner.innerHTML = item.text; if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
+      inner.innerHTML = item.text; if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
     } else {
       inner.textContent = item.text;
     }
@@ -1105,7 +1150,7 @@ function applyLiveStyles() {
        if (item.img) {
          const img = document.createElement('img'); img.src = item.img; inner.appendChild(img);
        } else if (/\$|\\\(/.test(item.text)) {
-         inner.innerHTML = item.text; if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
+         inner.innerHTML = item.text; if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
        } else {
          inner.textContent = item.text;
        }
