@@ -296,7 +296,7 @@ button.action-btn:hover { background: #555; }
         <option value="wobble">Тряска</option>
         <option value="glitch">Глитч</option>
         <option value="distort">Искажение</option>
-    </select>
+      </select>
     </div>
     <div class="control-group">
       <label>При клике (Состояние Выбора):</label>
@@ -959,7 +959,7 @@ function renderItem(item, gs) {
     if (item.img) {
       const img = document.createElement('img'); img.src = item.img; inner.appendChild(img);
     } else if (/\$|\\\(/.test(item.text)) {
-      inner.innerHTML = item.text; if (window.MathJax?.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
+      inner.innerHTML = item.text; if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
     } else {
       inner.textContent = item.text;
     }
@@ -1035,7 +1035,8 @@ document.addEventListener('click', e => {
   if (!e.target.closest('#item-toolbar') && !e.target.closest('.drag-item') && !e.target.closest('.fb-drag-box') && e.target.id !== 'btn-toggle-fb-drag') {
     toolbar.style.display = 'none';
     if (selectedId) {
-      document.getElementById('el_' + selectedId)?.classList.remove('editor-selected');
+      const el = document.getElementById('el_' + selectedId);
+      if(el) el.classList.remove('editor-selected');
       selectedId = null;
     }
   }
@@ -1104,7 +1105,7 @@ function applyLiveStyles() {
        if (item.img) {
          const img = document.createElement('img'); img.src = item.img; inner.appendChild(img);
        } else if (/\$|\\\(/.test(item.text)) {
-         inner.innerHTML = item.text; if (window.MathJax?.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
+         inner.innerHTML = item.text; if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([inner]).catch(()=>{});
        } else {
          inner.textContent = item.text;
        }
@@ -1135,41 +1136,6 @@ function applyLiveStyles() {
     if(imgPlace) imgPlace.style.display = 'flex';
   }
 }
-
-function showTT(e,tt){
-  const ts=getGlobalStyle().tooltip||{};
-  const ttbox=document.getElementById("ttbox");
-  ttbox.innerHTML="";
-  ttbox.style.background=ts.bg||"#222";
-  ttbox.style.color=ts.color||"#00ffcc";
-  ttbox.style.borderRadius=(ts.radius||8)+"px";
-  ttbox.style.boxShadow="0 0 16px "+(ts.glow||"#00ffcc");
-  ttbox.style.border="1px solid "+(ts.glow||"#00ffcc")+"55";
-  if(tt.text){
-    const d=document.createElement("div");
-    if(/\$|\\\(/.test(tt.text)){
-      d.innerHTML=tt.text;
-      if(window.MathJax&&MathJax.typesetPromise) MathJax.typesetPromise([d]).catch(()=>{});
-    } else {
-      d.textContent=tt.text;
-    }
-    ttbox.appendChild(d);
-  }
-  if(tt.img){const i=document.createElement("img");i.src=tt.img;ttbox.appendChild(i);}
-  ttbox.style.display="block";
-  moveTT(e);
-}
-
-function moveTT(e){
-  const ttbox=document.getElementById("ttbox");
-  let x=e.clientX+14,y=e.clientY+14;
-  if(x+270>innerWidth)  x=e.clientX-280;
-  if(y+200>innerHeight) y=e.clientY-210;
-  ttbox.style.left=x+"px";ttbox.style.top=y+"px";
-}
-
-function hideTT(){document.getElementById("ttbox").style.display="none";}
-
 
 document.getElementById('btn-test').addEventListener('click', () => {
   if (!items.length) { alert('Сначала сгенерируй элементы.'); return; }
@@ -1358,10 +1324,10 @@ function buildGameHtml(cfg) {
     + '    card.style.border = "none";\n'
     + '    card.style.boxShadow = "none";\n'
     + '    const dot = document.createElement("div");\n'
-    + '    dot.className = "dot-marker dot-" + (st.dot?.style || "circle");\n'
-    + '    dot.style.setProperty("--d-color", st.dot?.color || "#00ffcc");\n'
-    + '    dot.style.setProperty("--d-size", (st.dot?.size || 30) + "px");\n'
-    + '    if (st.dot?.style === "star") dot.textContent = "⭐";\n'
+    + '    dot.className = "dot-marker dot-" + (st.dot && st.dot.style ? st.dot.style : "circle");\n'
+    + '    dot.style.setProperty("--d-color", st.dot && st.dot.color ? st.dot.color : "#00ffcc");\n'
+    + '    dot.style.setProperty("--d-size", (st.dot && st.dot.size ? st.dot.size : 30) + "px");\n'
+    + '    if (st.dot && st.dot.style === "star") dot.textContent = "⭐";\n'
     + '    card.appendChild(dot);\n'
     + '  } else {\n'
     + '    card.style.background=hexToRgba(side.bgColor,side.bgOpacity);\n'
@@ -1376,7 +1342,7 @@ function buildGameHtml(cfg) {
     + '      card.appendChild(img);\n'
     + '    } else if(/\\$|\\\\\\(/.test(item.text)){\n'
     + '      card.innerHTML=item.text;\n'
-    + '      if(window.MathJax&&MathJax.typesetPromise) MathJax.typesetPromise([card]).catch(()=>{});\n'
+    + '      if(window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise([card]).catch(()=>{});\n'
     + '    } else {\n'
     + '      card.textContent=item.text;\n'
     + '    }\n'
@@ -1653,7 +1619,7 @@ function buildGameHtml(cfg) {
     + '    const d=document.createElement("div");\n'
     + '    if(/\\$|\\\\\\(/.test(tt.text)){\n'
     + '      d.innerHTML=tt.text;\n'
-    + '      if(window.MathJax&&MathJax.typesetPromise) MathJax.typesetPromise([d]).catch(()=>{});\n'
+    + '      if(window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise([d]).catch(()=>{});\n'
     + '    } else {\n'
     + '      d.textContent=tt.text;\n'
     + '    }\n'
@@ -1707,7 +1673,7 @@ function buildGameHtml(cfg) {
     + '    txtEl.style.fontFamily = fb.font ? "\\"" + fb.font + "\\", sans-serif" : (CFG.font ? "\\"" + CFG.font + "\\", sans-serif" : "sans-serif");\n'
     + '    txtBox.style.display = "flex";\n'
     + '    txtBox.style.animation = animStr;\n'
-    + '    if (/\\$|\\\\\\(/.test(txtEl.textContent) && window.MathJax?.typesetPromise) {\n'
+    + '    if (/\\$|\\\\\\(/.test(txtEl.textContent) && window.MathJax && window.MathJax.typesetPromise) {\n'
     + '      MathJax.typesetPromise([txtEl]).catch(()=>{});\n'
     + '    }\n'
     + '  }\n'
