@@ -115,6 +115,26 @@ body, html {
   position: fixed; inset: 0; background: #fff; z-index: 40000; opacity: 0; pointer-events: none;
 }
 @keyframes flashFx { 0% { opacity: 0.8; } 20% { opacity: 0; } 40% { opacity: 0.5; } 100% { opacity: 0; } }
+
+/* CSS для точек-маркеров */
+.dot-marker {
+  width: var(--d-size); height: var(--d-size);
+  background: var(--d-color);
+  border-radius: 50%;
+  display: flex; justify-content: center; align-items: center;
+  font-size: calc(var(--d-size) * 0.8);
+  box-shadow: 0 0 10px var(--d-color);
+  pointer-events: none;
+}
+.dot-square { border-radius: 4px; }
+.dot-pulse { animation: dotPulse 1.5s infinite; }
+.dot-glow { box-shadow: 0 0 20px var(--d-color), inset 0 0 10px #fff; }
+.dot-star { background: transparent; box-shadow: none; text-shadow: 0 0 10px var(--d-color); }
+@keyframes dotPulse {
+  0% { box-shadow: 0 0 0 0 var(--d-color); }
+  70% { box-shadow: 0 0 0 calc(var(--d-size)*0.5) transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
 </style>
 </head>
 <body>
@@ -155,6 +175,24 @@ let totalPairs   = 0;
 let sounds       = {};
 let activeLines  = []; 
 
+// Утилиты для парсинга картинок
+function cleanUrl(val) {
+  return val.trim().replace(/\s+/g, '');
+}
+function isImageUrl(val) {
+  if (!val) return false;
+  let s = cleanUrl(val);
+  if (/^https?:\/\//i.test(s) || /^data:image\//i.test(s)) return true;
+  if (/\.(jpeg|jpg|gif|png|webp|svg)(\?.*)?$/i.test(s) && !/\s/.test(s)) return true;
+  return false;
+}
+function renderMath(el, txt) {
+  el.innerHTML = txt;
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    window.MathJax.typesetPromise([el]).catch(function(){});
+  }
+}
+
 async function init() {
   const params = new URLSearchParams(location.search);
   const id      = params.get('id');
@@ -164,7 +202,7 @@ async function init() {
 
   if (preview) {
     window.addEventListener('message', e => {
-      if (e.data?.type === 'LOAD_CONFIG') {
+      if (e.data && e.data.type === 'LOAD_CONFIG') {
         CONFIG = e.data.config;
         startGame();
       }
@@ -308,25 +346,39 @@ function renderCards() {
     card.style.height    = item.h + 'px';
     card.style.transform = `rotate(${item.rot || 0}deg)`;
 
-    card.style.background  = hexToRgba(side.bgColor, side.bgOpacity);
-    card.style.border      = `${side.borderWidth}px solid ${side.borderColor}`;
-    card.style.color       = side.textColor;
-    card.style.fontSize    = (item.fontSize || 18) + 'px';
-    card.style.fontFamily  = `"${font}", sans-serif`;
-    card.style.fontWeight  = '700';
-
-    if (item.img) {
-      const img = document.createElement('img');
-      img.src   = item.img;
-      img.style.cssText = 'width:100%;height:100%;object-fit:contain;pointer-events:none;';
-      card.appendChild(img);
+    const isEmpty = !item.text && !item.img;
+    
+    if (isEmpty) {
+      card.style.background = 'transparent';
+      card.style.border = 'none';
+      card.style.boxShadow = 'none';
+      const dot = document.createElement('div');
+      const dotStyle = (st.dot && st.dot.style) ? st.dot.style : 'circle';
+      dot.className = 'dot-marker dot-' + dotStyle;
+      dot.style.setProperty('--d-color', (st.dot && st.dot.color) ? st.dot.color : '#00ffcc');
+      dot.style.setProperty('--d-size', ((st.dot && st.dot.size) ? st.dot.size : 30) + 'px');
+      if (dotStyle === 'star') dot.textContent = '⭐';
+      card.appendChild(dot);
     } else {
-      const needsMath = /\$|\\\(/.test(item.text);
-      if (needsMath) {
-        card.innerHTML = item.text;
-        if (window.MathJax?.typesetPromise) {
-          MathJax.typesetPromise([card]).catch(() => {});
-        }
+      card.style.background  = hexToRgba(side.bgColor, side.bgOpacity);
+      card.style.border      = `${side.borderWidth || 0}px solid ${side.borderColor}`;
+      card.style.color       = side.textColor;
+      card.style.fontSize    = (item.fontSize || 18) + 'px';
+      card.style.fontFamily  = `"${font}", sans-serif`;
+      card.style.fontWeight  = '700';
+
+      if (item.img) {
+        const img = document.createElement('img');
+        img.src   = item.img;
+        img.style.cssText = 'width:100%;height:100%;object-fit:contain;pointer-events:none;';
+        card.appendChild(img);
+      } else if (isImageUrl(item.text)) {
+        const img = document.createElement('img');
+        img.src   = cleanUrl(item.text);
+        img.style.cssText = 'width:100%;height:100%;object-fit:contain;pointer-events:none;';
+        card.appendChild(img);
+      } else if (/\$|\\\(/.test(item.text)) {
+        renderMath(card, item.text);
       } else {
         card.textContent = item.text;
       }
@@ -335,15 +387,18 @@ function renderCards() {
     const animHover = st.animHover || 'none';
     const glowColor = st.glowColor || '#00ffcc';
 
-    card.addEventListener('mouseenter', () => {
+    card.addEventListener('mouseenter', e => {
       if (card.classList.contains('matched')) return;
       applyAnim(card, animHover, glowColor);
+      if (item.tooltip && (item.tooltip.text || item.tooltip.img)) showTooltip(e, card);
     });
     
+    card.addEventListener('mousemove',  e => moveTooltip(e));
     card.addEventListener('mouseleave', () => {
       if (!card.classList.contains('matched') && selectedCard !== card) {
         clearAnim(card);
       }
+      hideTooltip();
     });
 
     card.addEventListener('click', (e) => { 
@@ -354,9 +409,6 @@ function renderCards() {
     if (item.tooltip && (item.tooltip.text || item.tooltip.img)) {
       card.dataset.ttText = item.tooltip.text || '';
       card.dataset.ttImg  = item.tooltip.img  || '';
-      card.addEventListener('mouseenter', e => showTooltip(e, card));
-      card.addEventListener('mousemove',  e => moveTooltip(e));
-      card.addEventListener('mouseleave', hideTooltip);
     }
 
     layer.appendChild(card);
@@ -444,13 +496,13 @@ function onMatch(a, b) {
 
   createMatchFx(a, b, st.effMatch || 'fireworks');
 
-  // Рисуем линию только если карточки не исчезают полностью
   if (matchedOpacity > 0) {
     const ra = a.getBoundingClientRect();
     const rb = b.getBoundingClientRect();
     
     const wrapper = document.getElementById("game-wrapper");
-    const scale = parseFloat(wrapper.style.transform.match(/scale\(([^)]+)\)/)?.[1]) || 1;
+    const scaleMatch = wrapper.style.transform.match(/scale\(([^)]+)\)/);
+    const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
     const rectW = wrapper.getBoundingClientRect();
     
     const ax = ((a.dataset.side === 'left' ? ra.right : ra.left) - rectW.left) / scale;
@@ -671,13 +723,14 @@ function drawComplexLine(L, time) {
   ctx.restore();
 }
 
-const tooltipBox = document.getElementById('tooltip-box');
-function showTooltip(e, card) {
-  const tt = CONFIG.style?.tooltip || {};
+function showTT(e, card) {
+  const st = CONFIG.style || {};
+  const tt = st.tooltip || {};
   const txt = card.dataset.ttText || '';
-  const img = card.dataset.ttImg  || '';
-  if (!txt && !img) return;
+  const imgStr = card.dataset.ttImg  || '';
+  if (!txt && !imgStr) return;
 
+  const tooltipBox = document.getElementById('tooltip-box');
   tooltipBox.innerHTML = '';
   tooltipBox.style.background   = tt.bg     || '#222';
   tooltipBox.style.color        = tt.color  || '#00ffcc';
@@ -686,13 +739,21 @@ function showTooltip(e, card) {
   tooltipBox.style.border       = `1px solid ${tt.glow || '#00ffcc'}55`;
 
   if (txt) {
-    const span = document.createElement('div');
-    span.textContent = txt;
-    tooltipBox.appendChild(span);
+    const d = document.createElement('div');
+    if (isImageUrl(txt)) {
+        d.innerHTML = '<img src="' + cleanUrl(txt) + '" style="max-width:100%;max-height:200px;object-fit:contain;border-radius:6px;display:block;margin:0 auto;">';
+    } else if (/\$|\\\(/.test(txt)) {
+        renderMath(d, txt);
+    } else {
+        d.textContent = txt;
+    }
+    tooltipBox.appendChild(d);
   }
-  if (img) {
+  
+  if (imgStr) {
     const i = document.createElement('img');
-    i.src = img;
+    i.src = imgStr;
+    i.style.cssText = 'max-width:100%;max-height:200px;object-fit:contain;border-radius:6px;display:block;margin:6px auto 0;';
     tooltipBox.appendChild(i);
   }
 
@@ -701,6 +762,7 @@ function showTooltip(e, card) {
 }
 
 function moveTooltip(e) {
+  const tooltipBox = document.getElementById('tooltip-box');
   let x = e.clientX + 14;
   let y = e.clientY + 14;
   if (x + 270 > window.innerWidth)  x = e.clientX - 280;
@@ -710,7 +772,7 @@ function moveTooltip(e) {
 }
 
 function hideTooltip() {
-  tooltipBox.style.display = 'none';
+  document.getElementById('tooltip-box').style.display = 'none';
 }
 
 function showFeedback() {
@@ -748,17 +810,22 @@ function showFeedback() {
     txtBox.style.borderRadius = (fb.radius || 16) + 'px';
     txtBox.style.boxShadow = `0 0 30px ${fb.glowColor || '#00ffcc'}`;
 
-    txtEl.textContent = fb.text || '🎉 Отлично!';
-    txtEl.style.color = fb.textColor || '#fff';
+    let fbTextContent = fb.text || '🎉 Отлично!';
+    if (isImageUrl(fbTextContent)) {
+        txtEl.innerHTML = '<img src="' + cleanUrl(fbTextContent) + '" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:' + (fb.radius || 16) + 'px;">';
+    } else if (/\$|\\\(/.test(fbTextContent)) {
+        renderMath(txtEl, fbTextContent);
+        txtEl.style.color = fb.textColor || '#fff';
+    } else {
+        txtEl.textContent = fbTextContent;
+        txtEl.style.color = fb.textColor || '#fff';
+    }
+    
     txtEl.style.fontSize = (fb.fontSize || 28) + 'px';
     txtEl.style.fontFamily = fb.font ? `"${fb.font}", sans-serif` : (CONFIG.font ? `"${CONFIG.font}", sans-serif` : 'sans-serif');
     
     txtBox.style.display = 'flex';
     txtBox.style.animation = animStr;
-    
-    if (/\$|\\\(/.test(txtEl.textContent) && window.MathJax?.typesetPromise) {
-      MathJax.typesetPromise([txtEl]).catch(()=>{});
-    }
   }
 }
 
