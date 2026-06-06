@@ -116,7 +116,7 @@ body, html {
 }
 @keyframes flashFx { 0% { opacity: 0.8; } 20% { opacity: 0; } 40% { opacity: 0.5; } 100% { opacity: 0; } }
 
-/* CSS для точек-маркеров */
+/* ---- CSS для точек-маркеров ---- */
 .dot-marker {
   width: var(--d-size); height: var(--d-size);
   background: var(--d-color);
@@ -125,6 +125,7 @@ body, html {
   font-size: calc(var(--d-size) * 0.8);
   box-shadow: 0 0 10px var(--d-color);
   pointer-events: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, text-shadow 0.15s ease;
 }
 .dot-square { border-radius: 4px; }
 .dot-pulse { animation: dotPulse 1.5s infinite; }
@@ -134,6 +135,33 @@ body, html {
   0% { box-shadow: 0 0 0 0 var(--d-color); }
   70% { box-shadow: 0 0 0 calc(var(--d-size)*0.5) transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ---- Выделение точки при клике ---- */
+.card.selected .dot-marker {
+  box-shadow: 0 0 0 3px var(--glow, #00ffcc), 0 0 20px var(--glow, #00ffcc);
+  transform: scale(1.2);
+}
+.card.selected .dot-star {
+  text-shadow: 0 0 20px var(--glow, #00ffcc), 0 0 40px var(--glow, #00ffcc);
+  transform: scale(1.2);
+}
+
+/* ---- Анимации точки при выборе (anim-sel-*) ---- */
+.anim-sel-float .dot-marker,
+.anim-sel-float .dot-star { animation: selFloat 2s ease-in-out infinite; }
+
+.anim-sel-pulse .dot-marker,
+.anim-sel-pulse .dot-star { animation: selPulse 1s ease infinite; }
+
+.anim-sel-shake .dot-marker,
+.anim-sel-shake .dot-star { animation: selShake 0.5s ease infinite; }
+
+.anim-sel-glow .dot-marker {
+  box-shadow: 0 0 0 3px var(--glow, #00ffcc), 0 0 25px var(--glow, #00ffcc), inset 0 0 10px rgba(255,255,255,0.3);
+}
+.anim-sel-glow .dot-star {
+  text-shadow: 0 0 20px var(--glow, #00ffcc), 0 0 40px var(--glow, #00ffcc), 0 0 60px var(--glow, #00ffcc);
 }
 </style>
 </head>
@@ -426,25 +454,58 @@ function renderCards() {
 function applyAnim(card, anim, glowColor) {
   if (selectedCard === card) return; 
   card.style.removeProperty('animation');
-  void card.offsetWidth; 
+  void card.offsetWidth;
+
+  const dot = card.querySelector('.dot-marker');
 
   switch (anim) {
     case 'glow':
-      card.style.filter = `drop-shadow(0 0 8px ${glowColor}) drop-shadow(0 0 20px ${glowColor})`;
+      if (dot) {
+        dot.style.boxShadow = `0 0 8px ${glowColor}, 0 0 20px ${glowColor}`;
+        if (dot.classList.contains('dot-star')) {
+          dot.style.textShadow = `0 0 20px ${glowColor}, 0 0 40px ${glowColor}`;
+        }
+      } else {
+        card.style.filter = `drop-shadow(0 0 8px ${glowColor}) drop-shadow(0 0 20px ${glowColor})`;
+      }
       break;
-    case 'scaleUp': card.style.animation = 'scaleUp 0.4s ease infinite'; break;
-    case 'scaleDown': card.style.animation = 'scaleDown 0.4s ease infinite'; break;
-    case 'pulse': card.style.animation = 'pulse 0.6s ease infinite'; break;
-    case 'wobble': card.style.animation = 'wobble 0.5s ease infinite'; break;
-    case 'glitch': card.style.animation = 'glitch 0.4s steps(1) infinite'; break;
-    case 'distort': card.style.animation = 'distort 0.5s ease infinite'; break;
+    case 'scaleUp':
+      if (dot) dot.style.animation = 'scaleUp 0.4s ease infinite';
+      else card.style.animation = 'scaleUp 0.4s ease infinite';
+      break;
+    case 'scaleDown':
+      if (dot) dot.style.animation = 'scaleDown 0.4s ease infinite';
+      else card.style.animation = 'scaleDown 0.4s ease infinite';
+      break;
+    case 'pulse':
+      if (dot) dot.style.animation = 'pulse 0.6s ease infinite';
+      else card.style.animation = 'pulse 0.6s ease infinite';
+      break;
+    case 'wobble':
+      if (dot) dot.style.animation = 'wobble 0.5s ease infinite';
+      else card.style.animation = 'wobble 0.5s ease infinite';
+      break;
+    case 'glitch':
+      if (dot) dot.style.animation = 'glitch 0.4s steps(1) infinite';
+      else card.style.animation = 'glitch 0.4s steps(1) infinite';
+      break;
+    case 'distort':
+      if (dot) dot.style.animation = 'distort 0.5s ease infinite';
+      else card.style.animation = 'distort 0.5s ease infinite';
+      break;
   }
 }
 
 function clearAnim(card) {
   card.style.animation  = '';
   card.style.boxShadow  = '';
-  card.style.filter     = ''; 
+  card.style.filter     = '';
+  const dot = card.querySelector('.dot-marker');
+  if (dot) {
+    dot.style.animation  = '';
+    dot.style.boxShadow  = '';
+    dot.style.textShadow = '';
+  }
 }
 
 function onCardClick(card) {
@@ -543,12 +604,22 @@ function onMismatch(a, b) {
 
   [a, b].forEach(card => {
     card.className = card.className.replace(/anim-sel-\w+/g, '').trim();
-    card.style.animation = 'wobble 0.4s ease';
-    setTimeout(() => {
-      card.style.animation = '';
-      card.classList.remove('selected');
-      clearAnim(card);
-    }, 420);
+    const dot = card.querySelector('.dot-marker');
+    if (dot) {
+      dot.style.animation = 'wobble 0.4s ease';
+      setTimeout(() => {
+        dot.style.animation = '';
+        card.classList.remove('selected');
+        clearAnim(card);
+      }, 420);
+    } else {
+      card.style.animation = 'wobble 0.4s ease';
+      setTimeout(() => {
+        card.style.animation = '';
+        card.classList.remove('selected');
+        clearAnim(card);
+      }, 420);
+    }
   });
 }
 
@@ -564,8 +635,10 @@ function createMatchFx(a, b, fxType) {
       const p = document.createElement('div'); p.className = 'fx-particle';
       p.textContent = emojis[Math.floor(Math.random()*emojis.length)];
       const angle = Math.random() * Math.PI * 2; const dist = 60 + Math.random() * 120;
-      p.style.setProperty('--dx', Math.cos(angle)*dist + 'px'); p.style.setProperty('--dy', Math.sin(angle)*dist + 'px');
-      p.style.setProperty('--rot', (Math.random()*360 - 180) + 'deg'); p.style.setProperty('--dur', (0.6 + Math.random()*0.6) + 's');
+          p.style.setProperty('--dx', Math.cos(angle)*dist + 'px');
+      p.style.setProperty('--dy', Math.sin(angle)*dist + 'px');
+      p.style.setProperty('--rot', (Math.random()*360 - 180) + 'deg');
+      p.style.setProperty('--dur', (0.6 + Math.random()*0.6) + 's');
       p.style.setProperty('--s', 0.5 + Math.random());
       p.style.left = c.x + 'px'; p.style.top = c.y + 'px';
       document.body.appendChild(p); setTimeout(()=>p.remove(), 1200);
@@ -633,10 +706,8 @@ function renderCanvasLoop() {
     ctx.translate(window.gameOffsetX, window.gameOffsetY);
     ctx.scale(window.gameScale, window.gameScale);
   }
-  
   const time = performance.now() * 0.001;
   activeLines.forEach(line => drawComplexLine(line, time));
-  
   if(window.gameScale) ctx.restore();
   requestAnimationFrame(renderCanvasLoop);
 }
@@ -671,7 +742,8 @@ function drawComplexLine(L, time) {
   } 
   else if (style === 'dashed' || style === 'dotted') {
     ctx.shadowColor = color; ctx.shadowBlur = 8;
-    if(style === 'dotted') { ctx.setLineDash([thickness, thickness*2]); ctx.lineCap = 'round'; } else { ctx.setLineDash([thickness*3, thickness*3]); }
+    if(style === 'dotted') { ctx.setLineDash([thickness, thickness*2]); ctx.lineCap = 'round'; }
+    else { ctx.setLineDash([thickness*3, thickness*3]); }
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, x2, y2); ctx.stroke();
   }
   else if (style === 'gradient') {
@@ -711,8 +783,12 @@ function drawComplexLine(L, time) {
     const px2 = Math.pow(1-tE,3)*x1 + 3*Math.pow(1-tE,2)*tE*cx1 + 3*(1-tE)*tE*tE*cx2 + Math.pow(tE,3)*x2;
     const py2 = Math.pow(1-tE,3)*y1 + 3*Math.pow(1-tE,2)*tE*cy1 + 3*(1-tE)*tE*tE*cy2 + Math.pow(tE,3)*y2;
     ctx.fillStyle = color;
-    ctx.save(); ctx.translate(x1,y1); ctx.rotate(Math.atan2(y1-py1, x1-px1)); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-thickness*4, thickness*2); ctx.lineTo(-thickness*4, -thickness*2); ctx.closePath(); ctx.fill(); ctx.restore();
-    ctx.save(); ctx.translate(x2,y2); ctx.rotate(Math.atan2(y2-py2, x2-px2)); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-thickness*4, thickness*2); ctx.lineTo(-thickness*4, -thickness*2); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(x1,y1); ctx.rotate(Math.atan2(y1-py1, x1-px1));
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-thickness*4, thickness*2); ctx.lineTo(-thickness*4, -thickness*2);
+    ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(x2,y2); ctx.rotate(Math.atan2(y2-py2, x2-px2));
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-thickness*4, thickness*2); ctx.lineTo(-thickness*4, -thickness*2);
+    ctx.closePath(); ctx.fill(); ctx.restore();
   }
   else {
     ctx.shadowColor = color; ctx.shadowBlur = 18; ctx.strokeStyle = color+"55"; ctx.lineWidth = thickness*3;
