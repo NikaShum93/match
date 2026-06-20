@@ -660,11 +660,21 @@ const ENDPOINT    = "https://server-kjnn.onrender.com/publish";
 const PUBLISH_KEY = "nika_read_pub_2025";
 const BASE_GAME   = "https://nikashum93.github.io/match/game.html";
 
-// Массив данных заданий
+// ПЕРЕМЕЩЕНО В НАЧАЛО ДЛЯ ИСПРАВЛЕНИЯ ОШИБКИ ИНИЦИАЛИЗАЦИИ!
 let tasksData = [
   { lText: "Apple", lTt: "", rText: "Яблоко", rTt: "" },
   { lText: "$x^2$", lTt: "", rText: "Икс в квадрате", rTt: "" }
 ];
+let resources = { 
+  bg: '', 
+  sndCorrect: 'https://nikashum93.github.io/match/correct.mp3', 
+  sndWrong: 'https://nikashum93.github.io/match/wrong.mp3', 
+  sndWin: 'https://nikashum93.github.io/match/win.mp3', 
+  fbImg: '' 
+};
+let items = [], selectedId = null;
+const fbImgDragBox = document.getElementById('fb-img-drag-box');
+const fbTxtDragBox = document.getElementById('fb-txt-drag-box');
 
 function resizeEditorWorkspace() {
   const wa = document.getElementById('game-area');
@@ -734,13 +744,6 @@ document.getElementById('settings-btn').addEventListener('click', () =>
   document.getElementById('settings-panel').classList.toggle('open'));
 
 const gameArea = document.getElementById('game-area');
-let resources = { 
-  bg: '', 
-  sndCorrect: 'https://nikashum93.github.io/match/correct.mp3', 
-  sndWrong: 'https://nikashum93.github.io/match/wrong.mp3', 
-  sndWin: 'https://nikashum93.github.io/match/win.mp3', 
-  fbImg: '' 
-};
 
 function fileToBase64(file, cb) {
   if (!file) return;
@@ -790,9 +793,6 @@ document.getElementById('btn-clr-snd-wrong').addEventListener('click', () => { d
 document.getElementById('btn-clr-snd-win').addEventListener('click', () => { document.getElementById('snd-win-file').value = ''; resources.sndWin = ''; saveLocalState(); });
 document.getElementById('btn-clr-fb-img').addEventListener('click', () => { document.getElementById('fb-img-url').value = ''; document.getElementById('fb-img-file').value = ''; resources.fbImg = ''; applyLiveStyles(); });
 
-const fbImgDragBox = document.getElementById('fb-img-drag-box');
-const fbTxtDragBox = document.getElementById('fb-txt-drag-box');
-
 document.getElementById('btn-toggle-fb-drag').addEventListener('click', () => {
   const isHidden = fbImgDragBox.style.display === 'none' || fbImgDragBox.style.display === '';
   fbImgDragBox.style.display = isHidden ? 'flex' : 'none';
@@ -828,8 +828,6 @@ function attachDragAndResize(box) {
 }
 attachDragAndResize(fbImgDragBox);
 attachDragAndResize(fbTxtDragBox);
-
-let items = [], selectedId = null;
 
 function hexToRgba(hex, alpha) {
   const h = (hex || '#000000').replace('#','');
@@ -911,14 +909,14 @@ function getGlobalStyle() {
       blur: readInt('fb-blur', 0),
       anim: document.getElementById('fb-anim').value,
       img: resources.fbImg,
-      imgX: parseInt(fbImgDragBox.style.left) || 480,
-      imgY: parseInt(fbImgDragBox.style.top) || 100,
-      imgW: parseInt(fbImgDragBox.style.width) || 320,
-      imgH: parseInt(fbImgDragBox.style.height) || 240,
-      txtX: parseInt(fbTxtDragBox.style.left) || 440,
-      txtY: parseInt(fbTxtDragBox.style.top) || 400,
-      txtW: parseInt(fbTxtDragBox.style.width) || 400,
-      txtH: parseInt(fbTxtDragBox.style.height) || 150
+      imgX: parseInt(document.getElementById('fb-img-drag-box')?.style.left) || 480,
+      imgY: parseInt(document.getElementById('fb-img-drag-box')?.style.top) || 100,
+      imgW: parseInt(document.getElementById('fb-img-drag-box')?.style.width) || 320,
+      imgH: parseInt(document.getElementById('fb-img-drag-box')?.style.height) || 240,
+      txtX: parseInt(document.getElementById('fb-txt-drag-box')?.style.left) || 440,
+      txtY: parseInt(document.getElementById('fb-txt-drag-box')?.style.top) || 400,
+      txtW: parseInt(document.getElementById('fb-txt-drag-box')?.style.width) || 400,
+      txtH: parseInt(document.getElementById('fb-txt-drag-box')?.style.height) || 150
     }
   };
 }
@@ -1279,7 +1277,7 @@ document.getElementById('btn-reset-text').addEventListener('click', () => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', () => { applyLiveStyles(); saveLocalState(); });
 });
-['fb-transparent-bg', 'fb-img-glow-enabled'].forEach(id => {
+['fb-transparent-bg', 'fb-img-glow-enabled', 'fb-sparks'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('change', () => { applyLiveStyles(); saveLocalState(); });
 });
