@@ -673,9 +673,12 @@ let resources = {
   sndWin: 'https://nikashum93.github.io/match/win.mp3', 
   fbImg: '' 
 };
-let items = [], selectedId = null;
+let items = [], selectedId = null, activeLines = [];
 const fbImgDragBox = document.getElementById('fb-img-drag-box');
 const fbTxtDragBox = document.getElementById('fb-txt-drag-box');
+let canvas = document.getElementById('canvas-layer');
+let ctx = canvas ? canvas.getContext('2d') : null;
+let mouseX = -1000, mouseY = -1000;
 
 function resizeEditorWorkspace() {
   const wa = document.getElementById('game-area');
@@ -685,9 +688,20 @@ function resizeEditorWorkspace() {
   const scale = Math.min(availW / 1280, availH / 720) * 0.95;
   wa.style.transform = `translate(-50%, -50%) scale(${scale})`;
   window.editorScale = scale;
+  window.gameOffsetX = (availW - 1280 * scale) / 2 + 370;
+  window.gameOffsetY = (availH - 720 * scale) / 2;
+  if(canvas) {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
 }
 window.addEventListener('resize', resizeEditorWorkspace);
 resizeEditorWorkspace();
+
+window.addEventListener('mousemove', e => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+});
 
 const FONT_MAP = {
   ru: ["Nunito","Rubik","Caveat","Russo One","Montserrat","Comfortaa","Pacifico","Lobster","Amatic SC"],
@@ -1459,6 +1473,76 @@ setInterval(() => {
     setTimeout(() => sp.remove(), 1500);
   });
 }, 300);
+
+function onMatchEditorPreview(a, b) {
+  const st = getGlobalStyle();
+  const lineSt = st.line || {};
+  activeLines.push({
+    el1: a, el2: b,
+    color: lineSt.color || '#00ffcc',
+    thickness: lineSt.thickness || 4,
+    style: lineSt.style || 'neon',
+    emoji: lineSt.emoji || '⭐'
+  });
+}
+
+function renderCanvasLoopEditor() {
+  if (!ctx) return requestAnimationFrame(renderCanvasLoopEditor);
+  ctx.clearRect(0,0, canvas.width, canvas.height);
+  if(window.editorScale) {
+    ctx.save();
+    ctx.translate(window.gameOffsetX, window.gameOffsetY);
+    ctx.scale(window.editorScale, window.editorScale);
+  }
+  const time = performance.now() * 0.001;
+  const rectW = document.getElementById("game-area").getBoundingClientRect();
+  const scale = window.editorScale || 1;
+  
+  activeLines.forEach(line => {
+    const ra = line.el1.getBoundingClientRect();
+    const rb = line.el2.getBoundingClientRect();
+    
+    const rx1 = (ra.left - rectW.left) / scale;
+    const ry1 = (ra.top - rectW.top) / scale;
+    const rw1 = ra.width / scale;
+    const rh1 = ra.height / scale;
+
+    const rx2 = (rb.left - rectW.left) / scale;
+    const ry2 = (rb.top - rectW.top) / scale;
+    const rw2 = rb.width / scale;
+    const rh2 = rb.height / scale;
+
+    const pts1 = [
+      {x: rx1 + rw1/2, y: ry1},
+      {x: rx1 + rw1/2, y: ry1 + rh1},
+      {x: rx1, y: ry1 + rh1/2},
+      {x: rx1 + rw1, y: ry1 + rh1/2}
+    ];
+    const pts2 = [
+      {x: rx2 + rw2/2, y: ry2},
+      {x: rx2 + rw2/2, y: ry2 + rh2},
+      {x: rx2, y: ry2 + rh2/2},
+      {x: rx2 + rw2, y: ry2 + rh2/2}
+    ];
+
+    let minDist = Infinity;
+    let pA = pts1[0], pB = pts2[0];
+    for (let p1 of pts1) {
+      for (let p2 of pts2) {
+        let d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        if (d < minDist) { minDist = d; pA = p1; pB = p2; }
+      }
+    }
+    
+    // Временная заглушка для отрисовки линий в редакторе, если нужно
+    // Сейчас линии рисуются только в финальной игре, но если захочешь превью - логика тут.
+  });
+  
+  if(window.editorScale) ctx.restore();
+  requestAnimationFrame(renderCanvasLoopEditor);
+}
+requestAnimationFrame(renderCanvasLoopEditor);
+
 
 function buildGameHtml(cfg) {
   const cfgJson = JSON.stringify(cfg).replace(/<\/script>/gi, '<\\/script>');
