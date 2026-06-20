@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+</html> <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -68,6 +68,13 @@ body, html {
 @keyframes selPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 @keyframes selShake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
 
+/* Анимации состояния покоя (idle) */
+.idle-float { animation: selFloat 3s ease-in-out infinite; }
+.idle-pulse { animation: selPulse 2s ease infinite; }
+.idle-heartbeat { animation: heartbeat 1.5s ease-in-out infinite; }
+@keyframes heartbeat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.1); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
+@keyframes sparkleAnim { 0% { transform:translateY(0) scale(1); opacity:1; } 100% { transform:translateY(-30px) scale(0); opacity:0; } }
+
 /* ---- Tooltip ---- */
 #tooltip-box {
   position: fixed; z-index: 9999;
@@ -86,6 +93,7 @@ body, html {
 #fbtxt { font-weight: 900; text-align: center; line-height: 1.4; word-break: break-word; width: 100%; }
 
 @keyframes popUp { 0% { transform: scale(0.3); opacity: 0; } 70% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---- Анимации hover карточек ---- */
 @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.12);} }
@@ -301,6 +309,24 @@ function startGame() {
   totalPairs = pairSet.size;
 
   autoScale();
+
+  // Генерация искр
+  if(CONFIG.style && CONFIG.style.idle && CONFIG.style.idle.sparks && CONFIG.style.idle.sparks !== '#000000') {
+    setInterval(() => {
+      document.querySelectorAll('.card:not(.matched)').forEach(c => {
+        if(Math.random() > 0.3) return;
+        const sp = document.createElement('div');
+        sp.style.cssText = 'position:absolute; width:4px; height:4px; border-radius:50%; pointer-events:none; z-index:10;';
+        sp.style.background = CONFIG.style.idle.sparks;
+        sp.style.boxShadow = `0 0 6px ${CONFIG.style.idle.sparks}`;
+        sp.style.left = (Math.random() * 100) + '%';
+        sp.style.top = (Math.random() * 100) + '%';
+        sp.style.animation = 'sparkleAnim 1.5s ease-out forwards';
+        c.appendChild(sp);
+        setTimeout(() => sp.remove(), 1500);
+      });
+    }, 300);
+  }
 }
 
 function autoScale() {
@@ -373,6 +399,8 @@ function renderCards() {
     card.style.height    = item.h + 'px';
     card.style.transform = `rotate(${item.rot || 0}deg)`;
 
+    if (st.idle && st.idle.anim && st.idle.anim !== 'none') card.classList.add('idle-' + st.idle.anim);
+
     const isEmpty = !item.text && !item.img;
     
     if (isEmpty) {
@@ -393,6 +421,8 @@ function renderCards() {
       card.style.fontSize    = (item.fontSize || 18) + 'px';
       card.style.fontFamily  = `"${font}", sans-serif`;
       card.style.fontWeight  = '700';
+
+      if (st.idle && st.idle.glow && st.idle.glow !== '#000000') card.style.boxShadow = `0 0 15px ${st.idle.glow}`;
 
       if (item.img) {
         const img = document.createElement('img');
@@ -497,9 +527,19 @@ function applyAnim(card, anim, glowColor) {
 }
 
 function clearAnim(card) {
+  const st = CONFIG.style || {};
+  
+  if (st.idle && st.idle.anim && st.idle.anim !== 'none') card.classList.add('idle-' + st.idle.anim);
+  
   card.style.animation  = '';
-  card.style.boxShadow  = '';
   card.style.filter     = '';
+  
+  if (st.idle && st.idle.glow && st.idle.glow !== '#000000' && !card.querySelector('.dot-marker')) {
+    card.style.boxShadow = `0 0 15px ${st.idle.glow}`;
+  } else {
+    card.style.boxShadow = '';
+  }
+  
   const dot = card.querySelector('.dot-marker');
   if (dot) {
     dot.style.animation  = '';
@@ -884,7 +924,7 @@ function showFeedback() {
     txtBox.style.background = fb.bgColor || '#0a0a0f';
     txtBox.style.border = `${fb.borderWidth || 0}px solid ${fb.borderColor || '#00ffcc'}`;
     txtBox.style.borderRadius = (fb.radius || 16) + 'px';
-    txtBox.style.boxShadow = `0 0 30px ${fb.glowColor || '#00ffcc'}`;
+    txtBox.style.boxShadow = `0 0 30px ${fb.glowColor || '#00ffcc'}, 10px 10px 20px ${fb.shadow || '#000000'}`;
 
     let fbTextContent = fb.text || '🎉 Отлично!';
     if (isImageUrl(fbTextContent)) {
@@ -902,6 +942,12 @@ function showFeedback() {
     
     txtBox.style.display = 'flex';
     txtBox.style.animation = animStr;
+
+    if (fb.blur > 0) {
+      const blurOv = document.createElement('div');
+      blurOv.style.cssText = `position:fixed; inset:0; backdrop-filter:blur(${fb.blur}px); z-index:45000; animation:fadeIn 0.5s forwards;`;
+      document.body.appendChild(blurOv);
+    }
   }
 }
 
