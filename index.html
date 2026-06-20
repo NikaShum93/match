@@ -1098,12 +1098,9 @@ function generateElements() {
 const container = document.getElementById('elements-container');
 
 function renderAll() {
-  const fbImgBox = document.getElementById('fb-img-drag-box');
-  const fbTxtBox = document.getElementById('fb-txt-drag-box');
-  container.innerHTML = '';
-  container.appendChild(document.getElementById('ttbox'));
-  container.appendChild(fbImgBox); container.appendChild(fbTxtBox);
-  selectedId = null; document.getElementById('item-toolbar').style.display = 'none';
+  container.innerHTML = ''; // Очищаем только карточки (они внутри container)
+  selectedId = null; 
+  document.getElementById('item-toolbar').style.display = 'none';
   const gs = getGlobalStyle();
   items.forEach(item => renderItem(item, gs));
 }
