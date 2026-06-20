@@ -612,33 +612,9 @@ function onMatch(a, b) {
   createMatchFx(a, b, st.effMatch || 'fireworks');
 
   if (matchedOpacity > 0) {
-    const ra = a.getBoundingClientRect();
-    const rb = b.getBoundingClientRect();
-    const scale = window.gameScale || 1;
-    const rectW = document.getElementById("game-wrapper").getBoundingClientRect();
-    
-    const rx1 = (ra.left - rectW.left) / scale;
-    const ry1 = (ra.top - rectW.top) / scale;
-    const rw1 = ra.width / scale;
-    const rh1 = ra.height / scale;
-
-    const rx2 = (rb.left - rectW.left) / scale;
-    const ry2 = (rb.top - rectW.top) / scale;
-    const rw2 = rb.width / scale;
-    const rh2 = rb.height / scale;
-
-    const cx1 = rx1 + rw1/2; const cy1 = ry1 + rh1/2;
-    const cx2 = rx2 + rw2/2; const cy2 = ry2 + rh2/2;
-
-    const ax = Math.max(rx1, Math.min(rx1 + rw1, cx2));
-    const ay = Math.max(ry1, Math.min(ry1 + rh1, cy2));
-    const bx = Math.max(rx2, Math.min(rx2 + rw2, cx1));
-    const by = Math.max(ry2, Math.min(ry2 + rh2, cy1));
-
     const lineSt = st.line || {};
     activeLines.push({
-      x1: ax, y1: ay,
-      x2: bx, y2: by,
+      el1: a, el2: b,
       color: lineSt.color || '#00ffcc',
       thickness: lineSt.thickness || 4,
       style: lineSt.style || 'neon',
@@ -772,7 +748,50 @@ function renderCanvasLoop() {
     ctx.scale(window.gameScale, window.gameScale);
   }
   const time = performance.now() * 0.001;
-  activeLines.forEach(line => drawComplexLine(line, time));
+  const rectW = document.getElementById("game-wrapper").getBoundingClientRect();
+  const scale = window.gameScale || 1;
+  
+  activeLines.forEach(line => {
+    const ra = line.el1.getBoundingClientRect();
+    const rb = line.el2.getBoundingClientRect();
+    
+    const rx1 = (ra.left - rectW.left) / scale;
+    const ry1 = (ra.top - rectW.top) / scale;
+    const rw1 = ra.width / scale;
+    const rh1 = ra.height / scale;
+
+    const rx2 = (rb.left - rectW.left) / scale;
+    const ry2 = (rb.top - rectW.top) / scale;
+    const rw2 = rb.width / scale;
+    const rh2 = rb.height / scale;
+
+    const pts1 = [
+      {x: rx1 + rw1/2, y: ry1},
+      {x: rx1 + rw1/2, y: ry1 + rh1},
+      {x: rx1, y: ry1 + rh1/2},
+      {x: rx1 + rw1, y: ry1 + rh1/2}
+    ];
+    const pts2 = [
+      {x: rx2 + rw2/2, y: ry2},
+      {x: rx2 + rw2/2, y: ry2 + rh2},
+      {x: rx2, y: ry2 + rh2/2},
+      {x: rx2 + rw2, y: ry2 + rh2/2}
+    ];
+
+    let minDist = Infinity;
+    let pA = pts1[0], pB = pts2[0];
+    for (let p1 of pts1) {
+      for (let p2 of pts2) {
+        let d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        if (d < minDist) { minDist = d; pA = p1; pB = p2; }
+      }
+    }
+    
+    line.x1 = pA.x; line.y1 = pA.y;
+    line.x2 = pB.x; line.y2 = pB.y;
+    drawComplexLine(line, time);
+  });
+
   if(window.gameScale) ctx.restore();
   requestAnimationFrame(renderCanvasLoop);
 }
@@ -955,7 +974,8 @@ function showFeedback() {
     txtBox.style.background = fb.transparentBg ? 'transparent' : (fb.bgColor || '#0a0a0f');
     txtBox.style.border = fb.transparentBg ? 'none' : `${fb.borderWidth || 0}px solid ${fb.borderColor || '#00ffcc'}`;
     txtBox.style.borderRadius = (fb.radius || 16) + 'px';
-    txtBox.style.boxShadow = `0 0 30px ${fb.glowColor || '#00ffcc'}, 10px 10px 20px ${fb.shadow || '#000000'}`;
+    txtBox.style.boxShadow = fb.transparentBg ? 'none' : `0 0 30px ${fb.glowColor || '#00ffcc'}, 10px 10px 20px ${fb.shadow || '#000000'}`;
+    txtEl.style.textShadow = fb.fbTextGlow ? `0 0 15px ${fb.glowColor || '#00ffcc'}, 0 0 30px ${fb.glowColor || '#00ffcc'}` : 'none';
 
     let fbTextContent = fb.text || '🎉 Отлично!';
     if (isImageUrl(fbTextContent)) {
