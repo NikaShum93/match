@@ -163,6 +163,29 @@ button.action-btn:hover { background: #555; }
 #item-toolbar label { font-size: 10px; color: #aaa; text-transform: uppercase; margin-bottom: 3px; display: block; }
 #item-toolbar input[type="number"] { width: 80px; }
 #item-toolbar input[type="text"], #item-toolbar input[type="url"] { width: 100%; }
+
+/* МОДАЛЬНОЕ ОКНО ЗАДАНИЙ */
+#tasks-modal {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+  z-index: 100005; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+}
+.tasks-content {
+  background: #1a1a1a; width: 95vw; max-width: 1100px; height: 85vh;
+  border-radius: 12px; border: 1px solid #333; display: flex; flex-direction: column;
+  box-shadow: 0 0 50px rgba(0,255,204,0.2); padding: 20px;
+}
+.tasks-header-row { display: flex; gap: 10px; font-weight: bold; color: var(--primary); margin-bottom: 10px; padding: 0 45px 0 35px; text-align: center; }
+.tasks-header-row > div { flex: 1; font-size: 12px; text-transform: uppercase; }
+#tasks-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px; }
+#tasks-container::-webkit-scrollbar { width: 6px; }
+#tasks-container::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+.task-row { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; border: 1px solid #333; }
+.task-row input { flex: 1; min-width: 0; padding: 8px; background: #000; border: 1px solid #444; color: #fff; border-radius: 4px; font-size: 13px; }
+.task-row input:focus { border-color: var(--primary); outline: none; }
+.task-num { width: 25px; text-align: center; font-weight: bold; color: #666; font-size: 14px; }
+.btn-del-task { background: rgba(255,50,50,0.2); border: 1px solid #ff3333; color: #ffaaaa; width: 35px; height: 35px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+.btn-del-task:hover { background: rgba(255,50,50,0.5); color: #fff; }
+
 #output-modal {
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,0.9); z-index: 100000;
@@ -266,17 +289,24 @@ button.action-btn:hover { background: #555; }
         <input type="file" accept="image/*" id="bg-file">
       </div>
     </div>
-    <div class="row">
-      <div class="control-group"><label>Столбец 1 (левый):</label><textarea id="list-left">Apple&#10;$x^2$</textarea></div>
-      <div class="control-group"><label>Подсказка 1 (URL/Текст):</label><textarea id="tt-left"></textarea></div>
+    
+    <button id="btn-open-tasks" class="action-btn" style="background:#00ffcc; color:#000; font-size:14px; padding:12px; margin-bottom:15px; border:none; box-shadow:0 0 15px rgba(0,255,204,0.3);">📝 Редактировать Задания</button>
+    <button id="btn-generate" class="action-btn" style="display:none;">⟳ Сгенерировать элементы</button> <h4 class="section-title">Состояние покоя (Idle)</h4>
+    <div class="control-group">
+      <label>Анимация в покое:</label>
+      <select id="idle-anim">
+        <option value="none" selected>Нет</option>
+        <option value="float">Парение</option>
+        <option value="pulse">Пульсация</option>
+        <option value="heartbeat">Heartbeat</option>
+      </select>
     </div>
     <div class="row">
-      <div class="control-group"><label>Столбец 2 (правый):</label><textarea id="list-right">Яблоко&#10;Икс в квадрате</textarea></div>
-      <div class="control-group"><label>Подсказка 2 (URL/Текст):</label><textarea id="tt-right"></textarea></div>
+      <div class="control-group"><label>Свечение (Цвет):</label><input type="color" id="idle-glow-color" value="#000000"></div>
+      <div class="control-group"><label>Маг. Искры (Цвет):</label><input type="color" id="idle-sparks-color" value="#000000"></div>
     </div>
-    <button id="btn-generate" class="action-btn">⟳ Сгенерировать элементы</button>
 
-    <h4 class="section-title">Анимации</h4>
+    <h4 class="section-title">Анимации карточек</h4>
     <div class="control-group">
       <label>При наведении:</label>
       <select id="anim-hover">
@@ -474,6 +504,10 @@ button.action-btn:hover { background: #555; }
         <div class="control-group"><label>Скругление (px):</label><input type="number" id="fb-radius" value="16" min="0"></div>
         <div class="control-group"><label>Цвет неона:</label><input type="color" id="fb-glow-color" value="#00ffcc"></div>
       </div>
+      <div class="row">
+        <div class="control-group"><label>Тень (Цвет):</label><input type="color" id="fb-shadow-color" value="#000000"></div>
+        <div class="control-group"><label>Размытие фона:</label><input type="number" id="fb-blur" value="0" min="0" max="30"></div>
+      </div>
       <div class="control-group">
         <label>Анимация появления:</label>
         <select id="fb-anim">
@@ -497,6 +531,9 @@ button.action-btn:hover { background: #555; }
         </div>
       </div>
     </div>
+    <div style="text-align:center; padding:20px 10px; border-top:1px solid #333; margin-top:20px; font-size:12px;">
+      <a href="https://vk.com/teachy_witchy" target="_blank" style="color:#00ffcc; text-decoration:none;">Вероника Шумайлова 2026 | КОТ</a>
+    </div>
     <div style="height:60px;"></div>
   </div>
 
@@ -506,13 +543,17 @@ button.action-btn:hover { background: #555; }
       <div><label>Угол (°)</label><input type="number" id="tool-rot" value="0"></div>
     </div>
     <div style="border-top:1px dashed #555;padding-top:8px;">
-      <label>КАРТИНКА (вместо текста):</label>
+      <label>ТЕКСТ:</label>
+      <input type="text" id="tool-text" placeholder="Введите текст">
+      <label style="margin-top:5px;">ПОДСКАЗКА (ТЕКСТ ИЛИ URL):</label>
+      <input type="text" id="tool-tt" placeholder="Текст подсказки">
+      <label style="margin-top:5px;">ИЛИ КАРТИНКА КАРТОЧКИ (URL):</label>
       <div class="img-input-wrap">
         <input type="url" id="tool-img-url" placeholder="https://... (ссылка)">
       </div>
       <button class="action-btn" id="btn-reset-text"
         style="padding:5px;font-size:11px;margin-top:5px;background:rgba(255,50,50,0.2);border-color:#ff3333;color:#ffaaaa;">
-        ✕ Вернуть текст
+        ✕ Вернуть текст вместо картинки
       </button>
     </div>
   </div>
@@ -527,6 +568,23 @@ button.action-btn:hover { background: #555; }
     <div id="fb-txt-drag-box" class="fb-drag-box">
       <div id="fb-txt-preview" style="text-align:center; width:100%; word-break:break-word; pointer-events:none;">БЛОК ТЕКСТА</div>
       <div class="resize-handle" style="background: linear-gradient(135deg, transparent 50%, #ff00cc 50%);"></div>
+    </div>
+  </div>
+</div>
+
+<div id="tasks-modal">
+  <div class="tasks-content">
+    <h3 style="color:var(--primary);margin:0 0 15px 0;text-align:center;">Редактор Заданий (Пар)</h3>
+    <div class="tasks-header-row">
+      <div style="color:#ff9944;">Элемент 1 (Левый)</div>
+      <div style="color:#ff9944;">Подсказка 1</div>
+      <div style="color:#44aaff;">Элемент 2 (Правый)</div>
+      <div style="color:#44aaff;">Подсказка 2</div>
+    </div>
+    <div id="tasks-container"></div>
+    <div style="display:flex; justify-content:space-between; margin-top:15px; padding-top:15px; border-top:1px solid #333;">
+      <button id="btn-add-task" class="action-btn" style="width:200px; margin:0;">+ Добавить строку</button>
+      <button id="btn-save-tasks" class="action-btn" style="width:250px; margin:0; background:var(--primary); color:#000;">✓ Сохранить и Применить</button>
     </div>
   </div>
 </div>
@@ -562,6 +620,12 @@ button.action-btn:hover { background: #555; }
 const ENDPOINT    = "https://server-kjnn.onrender.com/publish";
 const PUBLISH_KEY = "nika_read_pub_2025";
 const BASE_GAME   = "https://nikashum93.github.io/match/game.html";
+
+// Массив данных заданий
+let tasksData = [
+  { lText: "Apple", lTt: "", rText: "Яблоко", rTt: "" },
+  { lText: "$x^2$", lTt: "", rText: "Икс в квадрате", rTt: "" }
+];
 
 function resizeEditorWorkspace() {
   const wa = document.getElementById('game-area');
@@ -742,6 +806,11 @@ function getGlobalStyle() {
     effMismatch: document.getElementById('eff-mismatch').value,
     effMismatchEmoji: document.getElementById('eff-mismatch-emoji').value,
     glowColor: document.getElementById('anim-glow-color').value,
+    idle: {
+      anim: document.getElementById('idle-anim').value,
+      glow: document.getElementById('idle-glow-color').value,
+      sparks: document.getElementById('idle-sparks-color').value
+    },
     left: {
       bgColor: document.getElementById('card-bg-color-left').value,
       bgOpacity: parseFloat(document.getElementById('card-bg-opacity-left').value),
@@ -785,6 +854,8 @@ function getGlobalStyle() {
       borderWidth: readInt('fb-border-width', 0),
       radius: readInt('fb-radius', 16),
       glowColor: document.getElementById('fb-glow-color').value,
+      shadow: document.getElementById('fb-shadow-color').value,
+      blur: readInt('fb-blur', 0),
       anim: document.getElementById('fb-anim').value,
       img: resources.fbImg,
       imgX: parseInt(fbImgDragBox.style.left) || 480,
@@ -807,7 +878,7 @@ function buildConfig() {
     style: {
       animHover: gs.animHover, animClick: gs.animClick,
       effMatch: gs.effMatch, effMismatch: gs.effMismatch, effMismatchEmoji: gs.effMismatchEmoji,
-      glowColor: gs.glowColor, matchedOpacity: gs.matchedOpacity,
+      glowColor: gs.glowColor, idle: gs.idle, matchedOpacity: gs.matchedOpacity,
       left: gs.left, right: gs.right, tooltip: gs.tooltip, line: gs.line, dot: gs.dot
     },
     feedback: gs.feedback,
@@ -820,24 +891,73 @@ function buildConfig() {
   };
 }
 
-document.getElementById('btn-generate').addEventListener('click', generateElements);
+// РЕДАКТОР ЗАДАНИЙ (MODAL & СТРОКИ)
+const tasksModal = document.getElementById('tasks-modal');
+document.getElementById('btn-open-tasks').addEventListener('click', () => {
+  renderTasksModal();
+  tasksModal.style.display = 'flex';
+});
+document.getElementById('btn-save-tasks').addEventListener('click', () => {
+  tasksModal.style.display = 'none';
+  generateElements();
+});
+document.getElementById('btn-add-task').addEventListener('click', () => {
+  tasksData.push({ lText: "", lTt: "", rText: "", rTt: "" });
+  renderTasksModal();
+});
 
-function getLinesData(listId, ttId) {
-  const listRaw = document.getElementById(listId).value.split('\n');
-  const ttRaw = document.getElementById(ttId).value.split('\n');
-  const data = [];
-  for(let i=0; i<Math.max(listRaw.length, ttRaw.length); i++) {
-    const text = (listRaw[i] || '').trim(); const tt = (ttRaw[i] || '').trim();
-    if(text || tt) data.push({ text, tt });
-  }
-  return data;
+function handleTaskPaste(e, colKey, startIndex) {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  const lines = text.split(/\r?\n/).map(s => s.trim()).filter(s => s);
+  lines.forEach((line, i) => {
+    const rowIdx = startIndex + i;
+    if (!tasksData[rowIdx]) tasksData.push({ lText: '', lTt: '', rText: '', rTt: '' });
+    tasksData[rowIdx][colKey] = line;
+  });
+  renderTasksModal();
 }
 
+function renderTasksModal() {
+  const container = document.getElementById('tasks-container');
+  container.innerHTML = '';
+  tasksData.forEach((task, i) => {
+    const row = document.createElement('div');
+    row.className = 'task-row';
+    
+    const num = document.createElement('div'); num.className = 'task-num'; num.textContent = i + 1;
+    
+    const inpL = document.createElement('input'); inpL.placeholder = "Текст или URL картинки"; inpL.value = task.lText;
+    inpL.addEventListener('input', e => tasksData[i].lText = e.target.value);
+    inpL.addEventListener('paste', e => handleTaskPaste(e, 'lText', i));
+
+    const inpLtt = document.createElement('input'); inpLtt.placeholder = "Подсказка 1"; inpLtt.value = task.lTt;
+    inpLtt.addEventListener('input', e => tasksData[i].lTt = e.target.value);
+    inpLtt.addEventListener('paste', e => handleTaskPaste(e, 'lTt', i));
+
+    const inpR = document.createElement('input'); inpR.placeholder = "Текст или URL картинки"; inpR.value = task.rText;
+    inpR.addEventListener('input', e => tasksData[i].rText = e.target.value);
+    inpR.addEventListener('paste', e => handleTaskPaste(e, 'rText', i));
+
+    const inpRtt = document.createElement('input'); inpRtt.placeholder = "Подсказка 2"; inpRtt.value = task.rTt;
+    inpRtt.addEventListener('input', e => tasksData[i].rTt = e.target.value);
+    inpRtt.addEventListener('paste', e => handleTaskPaste(e, 'rTt', i));
+
+    const btnDel = document.createElement('button'); btnDel.className = 'btn-del-task'; btnDel.innerHTML = '✕'; btnDel.title = 'Удалить';
+    btnDel.addEventListener('click', () => { tasksData.splice(i, 1); renderTasksModal(); });
+
+    row.appendChild(num); row.appendChild(inpL); row.appendChild(inpLtt); row.appendChild(inpR); row.appendChild(inpRtt); row.appendChild(btnDel);
+    container.appendChild(row);
+  });
+}
+
+document.getElementById('btn-generate').addEventListener('click', generateElements);
+
 function generateElements() {
-  const leftData = getLinesData('list-left', 'tt-left');
-  const rightData = getLinesData('list-right', 'tt-right');
-  const count = Math.max(leftData.length, rightData.length);
-  if (!count) return;
+  const validTasks = tasksData.filter(t => t.lText.trim() || t.rText.trim() || t.lTt.trim() || t.rTt.trim());
+  tasksData = validTasks.length ? validTasks : [{ lText: "", lTt: "", rText: "", rTt: "" }];
+  
+  const count = tasksData.length;
   items = [];
   const W = 1280, H = 720;
   const leftX = W * 0.15, rightX = W * 0.60;
@@ -847,16 +967,19 @@ function generateElements() {
   for (let i = 0; i < count; i++) {
     const jitter = () => (Math.random() - 0.5) * 20;
     const y = startY + i * stepY;
+    const t = tasksData[i];
+    
     let lText = '', lImg = '', lTtText = '', lTtImg = '';
-    if (leftData[i]) {
-      if (isImageUrl(leftData[i].text)) lImg = cleanUrl(leftData[i].text); else lText = leftData[i].text;
-      if (isImageUrl(leftData[i].tt)) lTtImg = cleanUrl(leftData[i].tt); else lTtText = leftData[i].tt;
+    if (t.lText || t.lTt) {
+      if (isImageUrl(t.lText)) lImg = cleanUrl(t.lText); else lText = t.lText;
+      if (isImageUrl(t.lTt)) lTtImg = cleanUrl(t.lTt); else lTtText = t.lTt;
       items.push({ id:`L${i}`, side:'left', pairIndex:i, text:lText, img:lImg, x:leftX+jitter(), y:y+jitter(), w:cardW, h:cardH, rot:0, fontSize:18, tooltip:{text:lTtText,img:lTtImg} });
     }
+    
     let rText = '', rImg = '', rTtText = '', rTtImg = '';
-    if (rightData[i]) {
-      if (isImageUrl(rightData[i].text)) rImg = cleanUrl(rightData[i].text); else rText = rightData[i].text;
-      if (isImageUrl(rightData[i].tt)) rTtImg = cleanUrl(rightData[i].tt); else rTtText = rightData[i].tt;
+    if (t.rText || t.rTt) {
+      if (isImageUrl(t.rText)) rImg = cleanUrl(t.rText); else rText = t.rText;
+      if (isImageUrl(t.rTt)) rTtImg = cleanUrl(t.rTt); else rTtText = t.rTt;
       items.push({ id:`R${i}`, side:'right', pairIndex:i, text:rText, img:rImg, x:rightX+jitter(), y:y+jitter(), w:cardW, h:cardH, rot:0, fontSize:18, tooltip:{text:rTtText,img:rTtImg} });
     }
   }
@@ -960,9 +1083,12 @@ function selectItem(id) {
   if (tx + 310 > window.innerWidth) tx = rect.left - 312;
   if (ty + 340 > window.innerHeight) ty = window.innerHeight - 345;
   toolbar.style.left = Math.max(5, tx) + 'px'; toolbar.style.top = Math.max(5, ty) + 'px';
+  
   document.getElementById('tool-font').value    = item.fontSize;
   document.getElementById('tool-rot').value     = item.rot;
-document.getElementById('tool-img-url').value = (item.img || '').startsWith('data:') ? '' : (item.img || '');
+  document.getElementById('tool-text').value    = item.text || '';
+  document.getElementById('tool-tt').value      = item.tooltip.img || item.tooltip.text || '';
+  document.getElementById('tool-img-url').value = (item.img || '').startsWith('data:') ? '' : (item.img || '');
 }
 
 document.addEventListener('click', e => {
@@ -978,32 +1104,47 @@ document.addEventListener('click', e => {
 });
 
 document.getElementById('tool-font').addEventListener('input', e => {
-  if (!selectedId) return;
-  items.find(i => i.id === selectedId).fontSize = parseInt(e.target.value) || 18;
-  applyLiveStyles();
+  if (!selectedId) return; items.find(i => i.id === selectedId).fontSize = parseInt(e.target.value) || 18; applyLiveStyles();
 });
 document.getElementById('tool-rot').addEventListener('input', e => {
-  if (!selectedId) return;
-  items.find(i => i.id === selectedId).rot = parseFloat(e.target.value) || 0;
+  if (!selectedId) return; items.find(i => i.id === selectedId).rot = parseFloat(e.target.value) || 0;
   document.getElementById('el_' + selectedId).style.transform = `rotate(${e.target.value}deg)`;
+});
+document.getElementById('tool-text').addEventListener('input', e => {
+  if (!selectedId) return; 
+  const item = items.find(i => i.id === selectedId);
+  item.text = e.target.value; item.img = ''; document.getElementById('tool-img-url').value = '';
+  if(tasksData[item.pairIndex]) tasksData[item.pairIndex][item.side==='left'?'lText':'rText'] = item.text;
+  applyLiveStyles();
+});
+document.getElementById('tool-tt').addEventListener('input', e => {
+  if (!selectedId) return; 
+  const item = items.find(i => i.id === selectedId);
+  const v = e.target.value;
+  if(isImageUrl(v)) { item.tooltip.img = v; item.tooltip.text = ''; } else { item.tooltip.text = v; item.tooltip.img = ''; }
+  if(tasksData[item.pairIndex]) tasksData[item.pairIndex][item.side==='left'?'lTt':'rTt'] = v;
+  applyLiveStyles();
 });
 document.getElementById('tool-img-url').addEventListener('change', e => {
   if (!selectedId) return;
-  items.find(i => i.id === selectedId).img = e.target.value.trim();
+  const item = items.find(i => i.id === selectedId);
+  item.img = e.target.value.trim(); item.text = ''; document.getElementById('tool-text').value = '';
+  if(tasksData[item.pairIndex]) tasksData[item.pairIndex][item.side==='left'?'lText':'rText'] = item.img;
   applyLiveStyles();
 });
 document.getElementById('btn-reset-text').addEventListener('click', () => {
   if (!selectedId) return;
-  items.find(i => i.id === selectedId).img = '';
-  document.getElementById('tool-img-url').value = '';
+  const item = items.find(i => i.id === selectedId);
+  item.img = ''; document.getElementById('tool-img-url').value = '';
+  if(tasksData[item.pairIndex]) tasksData[item.pairIndex][item.side==='left'?'lText':'rText'] = item.text;
   applyLiveStyles();
 });
 
 [
   'card-bg-color-left','card-bg-opacity-left','border-color-left','border-width-left','text-color-left',
   'card-bg-color-right','card-bg-opacity-right','border-color-right','border-width-right','text-color-right',
-  'fb-text','fb-text-color','fb-bg-color','fb-border-color','fb-border-width','fb-radius','fb-glow-color','fb-font-size',
-  'dot-color','dot-size','dot-style'
+  'fb-text','fb-text-color','fb-bg-color','fb-border-color','fb-border-width','fb-radius','fb-glow-color','fb-font-size','fb-shadow-color',
+  'dot-color','dot-size','dot-style', 'idle-glow-color', 'idle-anim'
 ].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', applyLiveStyles);
@@ -1041,7 +1182,7 @@ function applyLiveStyles() {
   fbt.style.background    = gs.feedback.bgColor;
   fbt.style.border        = `${gs.feedback.borderWidth}px solid ${gs.feedback.borderColor}`;
   fbt.style.borderRadius  = `${gs.feedback.radius}px`;
-  fbt.style.boxShadow     = `0 0 30px ${gs.feedback.glowColor}`;
+  fbt.style.boxShadow     = `0 0 30px ${gs.feedback.glowColor}, 5px 5px 20px ${gs.feedback.shadow}`;
   const fbp = document.getElementById('fb-txt-preview');
   let fbTextContent = gs.feedback.text || "🎉 Отлично!";
   if (isImageUrl(fbTextContent)) {
@@ -1157,6 +1298,11 @@ function buildGameHtml(cfg) {
     + '@keyframes distort{0%,100%{transform:skew(0deg)}25%{transform:skew(6deg,2deg)}75%{transform:skew(-6deg,-2deg)}}'
     + '@keyframes scaleUp{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}'
     + '@keyframes scaleDown{0%,100%{transform:scale(1)}50%{transform:scale(.88)}}'
+    + '.idle-float { animation: selFloat 3s ease-in-out infinite; }'
+    + '.idle-pulse { animation: selPulse 2s ease infinite; }'
+    + '.idle-heartbeat { animation: heartbeat 1.5s ease-in-out infinite; }'
+    + '@keyframes heartbeat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.1); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }'
+    + '@keyframes sparkleAnim { 0% { transform:translateY(0) scale(1); opacity:1; } 100% { transform:translateY(-30px) scale(0); opacity:0; } }'
     /* ---- DOT CSS с улучшениями ---- */
     + '.dot-marker{width:var(--d-size);height:var(--d-size);background:var(--d-color);border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:calc(var(--d-size)*.8);box-shadow:0 0 10px var(--d-color);pointer-events:none;transition:transform .15s ease,box-shadow .15s ease,text-shadow .15s ease}'
     + '.dot-square{border-radius:4px}'
@@ -1200,6 +1346,7 @@ function buildGameHtml(cfg) {
     + 'const card=document.createElement("div");card.className="card";'
     + 'card.dataset.id=item.id;card.dataset.pairIndex=item.pairIndex;card.dataset.side=item.side;'
     + 'card.style.left=item.x+"px";card.style.top=item.y+"px";card.style.width=item.w+"px";card.style.height=item.h+"px";card.style.transform="rotate("+(item.rot||0)+"deg)";'
+    + 'if(st.idle && st.idle.anim && st.idle.anim !== "none") card.classList.add("idle-"+st.idle.anim);'
     + 'const isEmpty=!item.text&&!item.img;'
     + 'if(isEmpty){'
     + 'card.style.background="transparent";card.style.border="none";card.style.boxShadow="none";'
@@ -1214,6 +1361,7 @@ function buildGameHtml(cfg) {
     + 'card.style.border=(side.borderWidth||0)+"px solid "+side.borderColor;'
     + 'card.style.color=side.textColor;card.style.fontSize=(item.fontSize||18)+"px";'
     + 'card.style.fontFamily="\\""+font+"\\", sans-serif";'
+    + 'if(st.idle && st.idle.glow && st.idle.glow !== "#000000") card.style.boxShadow="0 0 15px "+st.idle.glow;'
     + 'if(item.img){const img=document.createElement("img");img.src=item.img;img.style.cssText="width:100%;height:100%;object-fit:contain;pointer-events:none";card.appendChild(img);}'
     + 'else if(/\\$|\\\\\\(/.test(item.text)){card.innerHTML=item.text;if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([card]).catch(()=>{});}'
     + 'else{card.textContent=item.text;}'
@@ -1223,6 +1371,8 @@ function buildGameHtml(cfg) {
     + 'card.addEventListener("mouseleave",()=>{if(!card.classList.contains("matched")&&selected!==card)clearAnim(card);hideTT();});'
     + 'card.addEventListener("click",(e)=>{e.stopPropagation();onCardClick(card);});'
     + 'layer.appendChild(card);});'
+    /* ---- idle sparks ---- */
+    + 'if(st.idle && st.idle.sparks && st.idle.sparks !== "#000000") { setInterval(()=>{ document.querySelectorAll(".card:not(.matched)").forEach(c=>{ if(Math.random()>0.3)return; const sp=document.createElement("div"); sp.style.cssText="position:absolute;width:4px;height:4px;border-radius:50%;pointer-events:none;z-index:10;"; sp.style.background=st.idle.sparks; sp.style.boxShadow="0 0 6px "+st.idle.sparks; sp.style.left=(Math.random()*100)+"%"; sp.style.top=(Math.random()*100)+"%"; sp.style.animation="sparkleAnim 1.5s ease-out forwards"; c.appendChild(sp); setTimeout(()=>sp.remove(),1500); }); }, 300); }'
     /* ---- deselect on bg click ---- */
     + 'document.addEventListener("click",()=>{if(selected){selected.classList.remove("selected");selected.className=selected.className.replace(/anim-sel-\\w+/g,"").trim();clearAnim(selected);selected=null;}});'
     /* ---- applyAnim (с поддержкой dot) ---- */
@@ -1242,7 +1392,9 @@ function buildGameHtml(cfg) {
     + '}}'
     /* ---- clearAnim (с поддержкой dot) ---- */
     + 'function clearAnim(card){'
-    + 'card.style.animation="";card.style.boxShadow="";card.style.filter="";'
+    + 'if(st.idle && st.idle.anim && st.idle.anim !== "none") card.classList.add("idle-"+st.idle.anim);'
+    + 'card.style.animation="";card.style.filter="";'
+    + 'if(st.idle && st.idle.glow && st.idle.glow !== "#000000" && !card.querySelector(".dot-marker")) card.style.boxShadow="0 0 15px "+st.idle.glow; else card.style.boxShadow="";'
     + 'const dot=card.querySelector(".dot-marker");'
     + 'if(dot){dot.style.animation="";dot.style.boxShadow="";dot.style.textShadow="";}'
     + '}'
@@ -1266,7 +1418,7 @@ function buildGameHtml(cfg) {
     + 'function showTT(e,tt){const ts=st.tooltip||{};ttbox.innerHTML="";ttbox.style.background=ts.bg||"#222";ttbox.style.color=ts.color||"#00ffcc";ttbox.style.borderRadius=(ts.radius||8)+"px";ttbox.style.boxShadow="0 0 16px "+(ts.glow||"#00ffcc");ttbox.style.border="1px solid "+(ts.glow||"#00ffcc")+"55";if(tt.text){const d=document.createElement("div");if(/\\$|\\\\\\(/.test(tt.text)){d.innerHTML=tt.text;if(window.MathJax&&MathJax.typesetPromise)MathJax.typesetPromise([d]).catch(()=>{});}else{d.textContent=tt.text;}ttbox.appendChild(d);}if(tt.img){const i=document.createElement("img");i.src=tt.img;i.style.maxWidth="100%";i.style.borderRadius="6px";ttbox.appendChild(i);}ttbox.style.display="block";moveTT(e);}'
     + 'function moveTT(e){let x=e.clientX+14,y=e.clientY+14;if(x+270>innerWidth)x=e.clientX-280;if(y+200>innerHeight)y=e.clientY-210;ttbox.style.left=x+"px";ttbox.style.top=y+"px";}function hideTT(){ttbox.style.display="none";}'
     /* ---- showFeedback ---- */
-    + 'function showFeedback(){playSound("win");const fb=CFG.feedback||{};if(!fb.mode||fb.mode==="none")return;const imgBox=document.getElementById("fb-img-box");const txtBox=document.getElementById("fb-txt-box");const imgEl=document.getElementById("fbimg");const txtEl=document.getElementById("fbtxt");const anim=fb.anim||"popUp";const animStr=anim!=="none"?anim+" 0.55s cubic-bezier(0.34,1.56,0.64,1) both":"none";if((fb.mode==="both"||fb.mode==="image")&&fb.img){imgBox.style.left=(fb.imgX||480)+"px";imgBox.style.top=(fb.imgY||100)+"px";imgBox.style.width=(fb.imgW||320)+"px";imgBox.style.height=(fb.imgH||240)+"px";imgEl.src=fb.img;imgBox.style.display="block";imgBox.style.animation=animStr;}if(fb.mode==="both"||fb.mode==="text"){txtBox.style.left=(fb.txtX||440)+"px";txtBox.style.top=(fb.txtY||400)+"px";txtBox.style.width=(fb.txtW||400)+"px";txtBox.style.height=(fb.txtH||150)+"px";txtBox.style.background=fb.bgColor||"#0a0a0f";txtBox.style.border=(fb.borderWidth||0)+"px solid "+(fb.borderColor||"#00ffcc");txtBox.style.borderRadius=(fb.radius||16)+"px";txtBox.style.boxShadow="0 0 30px "+(fb.glowColor||"#00ffcc");let fbTextContent=fb.text||"🎉 Отлично!";if(isImageUrl(fbTextContent)){txtEl.innerHTML="<img src=\\""+cleanUrl(fbTextContent)+"\\" style=\\"max-width:100%;max-height:100%;object-fit:contain;border-radius:"+(fb.radius||16)+"px;\\">";}else if(/\\$|\\\\\\(/.test(fbTextContent)){txtEl.innerHTML=fbTextContent;if(window.MathJax&&MathJax.typesetPromise){MathJax.typesetPromise([txtEl]).catch(()=>{});}txtEl.style.color=fb.textColor||"#fff";}else{txtEl.textContent=fbTextContent;txtEl.style.color=fb.textColor||"#fff";}txtEl.style.fontSize=(fb.fontSize||28)+"px";txtEl.style.fontFamily=fb.font?"\\""+fb.font+"\\", sans-serif":(CFG.font?"\\""+CFG.font+"\\", sans-serif":"sans-serif");txtBox.style.display="flex";txtBox.style.animation=animStr;}}'
+    + 'function showFeedback(){playSound("win");const fb=CFG.feedback||{};if(!fb.mode||fb.mode==="none")return;const imgBox=document.getElementById("fb-img-box");const txtBox=document.getElementById("fb-txt-box");const imgEl=document.getElementById("fbimg");const txtEl=document.getElementById("fbtxt");const anim=fb.anim||"popUp";const animStr=anim!=="none"?anim+" 0.55s cubic-bezier(0.34,1.56,0.64,1) both":"none";if((fb.mode==="both"||fb.mode==="image")&&fb.img){imgBox.style.left=(fb.imgX||480)+"px";imgBox.style.top=(fb.imgY||100)+"px";imgBox.style.width=(fb.imgW||320)+"px";imgBox.style.height=(fb.imgH||240)+"px";imgEl.src=fb.img;imgBox.style.display="block";imgBox.style.animation=animStr;}if(fb.mode==="both"||fb.mode==="text"){txtBox.style.left=(fb.txtX||440)+"px";txtBox.style.top=(fb.txtY||400)+"px";txtBox.style.width=(fb.txtW||400)+"px";txtBox.style.height=(fb.txtH||150)+"px";txtBox.style.background=fb.bgColor||"#0a0a0f";txtBox.style.border=(fb.borderWidth||0)+"px solid "+(fb.borderColor||"#00ffcc");txtBox.style.borderRadius=(fb.radius||16)+"px";txtBox.style.boxShadow="0 0 30px "+(fb.glowColor||"#00ffcc")+", 10px 10px 20px "+(fb.shadow||"#000000");let fbTextContent=fb.text||"🎉 Отлично!";if(isImageUrl(fbTextContent)){txtEl.innerHTML="<img src=\\""+cleanUrl(fbTextContent)+"\\" style=\\"max-width:100%;max-height:100%;object-fit:contain;border-radius:"+(fb.radius||16)+"px;\\">";}else if(/\\$|\\\\\\(/.test(fbTextContent)){txtEl.innerHTML=fbTextContent;if(window.MathJax&&MathJax.typesetPromise){MathJax.typesetPromise([txtEl]).catch(()=>{});}txtEl.style.color=fb.textColor||"#fff";}else{txtEl.textContent=fbTextContent;txtEl.style.color=fb.textColor||"#fff";}txtEl.style.fontSize=(fb.fontSize||28)+"px";txtEl.style.fontFamily=fb.font?"\\""+fb.font+"\\", sans-serif":(CFG.font?"\\""+CFG.font+"\\", sans-serif":"sans-serif");txtBox.style.display="flex";txtBox.style.animation=animStr;if(fb.blur>0){const ov=document.createElement("div");ov.style.cssText="position:fixed;inset:0;backdrop-filter:blur("+fb.blur+"px);z-index:45000;animation:fadeIn 0.5s forwards;";document.body.appendChild(ov);}}}'
     + '<\/script></body></html>';
 
   return html;
@@ -1275,4 +1427,4 @@ function buildGameHtml(cfg) {
 generateElements();
 </script>
 </body>
-</html>
+</html> 
