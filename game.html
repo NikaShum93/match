@@ -77,7 +77,7 @@ body, html {
 
 /* ---- Tooltip ---- */
 #tooltip-box {
-  position: fixed; z-index: 9999;
+  position: absolute; z-index: 9999;
   padding: 10px 14px; border-radius: 8px;
   font-size: 14px; font-weight: bold;
   pointer-events: none; display: none;
@@ -188,7 +188,7 @@ body, html {
 
 <div id="game-wrapper" style="width: 1280px; height: 720px; position: absolute; left: 50%; top: 50%; transform-origin: center; transform: translate(-50%, -50%); overflow: hidden; z-index: 20;">
   <div id="layer" style="position:absolute; inset:0; z-index:20;"></div>
-  
+  <div id="tooltip-box"></div>
   <div id="fb-img-box">
     <img id="fbimg" src="" alt="">
   </div>
@@ -198,7 +198,6 @@ body, html {
 </div>
 
 <canvas id="canvas-layer"></canvas>
-<div id="tooltip-box"></div>
 <div id="flash-overlay"></div>
 
 <script>
@@ -311,9 +310,10 @@ function startGame() {
   autoScale();
 
   // Генерация искр
-  if(CONFIG.style && CONFIG.style.idle && CONFIG.style.idle.sparks && CONFIG.style.idle.sparks !== '#000000') {
+  if(CONFIG.style && CONFIG.style.idle && CONFIG.style.idle.sparksEnabled && CONFIG.style.idle.sparks !== '#000000') {
     setInterval(() => {
       document.querySelectorAll('.card:not(.matched)').forEach(c => {
+        if(CONFIG.style.idle.target !== 'both' && CONFIG.style.idle.target !== c.dataset.side) return;
         if(Math.random() > 0.3) return;
         const sp = document.createElement('div');
         sp.style.cssText = 'position:absolute; width:4px; height:4px; border-radius:50%; pointer-events:none; z-index:10;';
@@ -399,7 +399,12 @@ function renderCards() {
     card.style.height    = item.h + 'px';
     card.style.transform = `rotate(${item.rot || 0}deg)`;
 
-    if (st.idle && st.idle.anim && st.idle.anim !== 'none') card.classList.add('idle-' + st.idle.anim);
+    if (st.idle && st.idle.anim && st.idle.anim !== 'none') {
+       if (st.idle.target === 'both' || st.idle.target === item.side) {
+          card.classList.add('idle-' + st.idle.anim);
+          card.style.animationDelay = -(Math.random() * 5).toFixed(2) + 's';
+       }
+    }
 
     const isEmpty = !item.text && !item.img;
     
@@ -422,7 +427,11 @@ function renderCards() {
       card.style.fontFamily  = `"${font}", sans-serif`;
       card.style.fontWeight  = '700';
 
-      if (st.idle && st.idle.glow && st.idle.glow !== '#000000') card.style.boxShadow = `0 0 15px ${st.idle.glow}`;
+      if (st.idle && st.idle.glowEnabled && st.idle.glow !== '#000000') {
+         if (st.idle.target === 'both' || st.idle.target === item.side) {
+            card.style.boxShadow = `0 0 15px ${st.idle.glow}`;
+         }
+      }
 
       if (item.img) {
         const img = document.createElement('img');
@@ -458,7 +467,7 @@ function renderCards() {
     card.addEventListener('mousemove',  e => moveTT(e));
     card.addEventListener('mouseleave', () => {
       if (!card.classList.contains('matched') && selectedCard !== card) {
-        clearAnim(card);
+        clearAnim(card, item.side);
       }
       hideTT();
     });
@@ -475,7 +484,7 @@ function renderCards() {
     if (selectedCard) {
       selectedCard.classList.remove('selected');
       selectedCard.className = selectedCard.className.replace(/anim-sel-\w+/g, '').trim();
-      clearAnim(selectedCard);
+      clearAnim(selectedCard, selectedCard.dataset.side);
       selectedCard = null;
     }
   });
@@ -526,16 +535,22 @@ function applyAnim(card, anim, glowColor) {
   }
 }
 
-function clearAnim(card) {
+function clearAnim(card, side) {
   const st = CONFIG.style || {};
   
-  if (st.idle && st.idle.anim && st.idle.anim !== 'none') card.classList.add('idle-' + st.idle.anim);
+  if (st.idle && st.idle.anim && st.idle.anim !== 'none') {
+     if(st.idle.target === 'both' || st.idle.target === side) {
+        card.classList.add('idle-' + st.idle.anim);
+     }
+  }
   
   card.style.animation  = '';
   card.style.filter     = '';
   
-  if (st.idle && st.idle.glow && st.idle.glow !== '#000000' && !card.querySelector('.dot-marker')) {
-    card.style.boxShadow = `0 0 15px ${st.idle.glow}`;
+  if (st.idle && st.idle.glowEnabled && st.idle.glow !== '#000000' && !card.querySelector('.dot-marker')) {
+    if(st.idle.target === 'both' || st.idle.target === side) {
+       card.style.boxShadow = `0 0 15px ${st.idle.glow}`;
+    } else { card.style.boxShadow = ''; }
   } else {
     card.style.boxShadow = '';
   }
@@ -558,7 +573,7 @@ function onCardClick(card) {
   if (selectedCard === card) {
     card.classList.remove('selected');
     card.className = card.className.replace(/anim-sel-\w+/g, '').trim();
-    clearAnim(card);
+    clearAnim(card, card.dataset.side);
     selectedCard = null;
     return;
   }
@@ -599,16 +614,26 @@ function onMatch(a, b) {
   if (matchedOpacity > 0) {
     const ra = a.getBoundingClientRect();
     const rb = b.getBoundingClientRect();
+    const scale = window.gameScale || 1;
+    const rectW = document.getElementById("game-wrapper").getBoundingClientRect();
     
-    const wrapper = document.getElementById("game-wrapper");
-    const scaleMatch = wrapper.style.transform.match(/scale$([^)]+)$/);
-    const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
-    const rectW = wrapper.getBoundingClientRect();
-    
-    const ax = ((a.dataset.side === 'left' ? ra.right : ra.left) - rectW.left) / scale;
-    const ay = ((ra.top + ra.height / 2) - rectW.top) / scale;
-    const bx = ((b.dataset.side === 'left' ? rb.right : rb.left) - rectW.left) / scale;
-    const by = ((rb.top + rb.height / 2) - rectW.top) / scale;
+    const rx1 = (ra.left - rectW.left) / scale;
+    const ry1 = (ra.top - rectW.top) / scale;
+    const rw1 = ra.width / scale;
+    const rh1 = ra.height / scale;
+
+    const rx2 = (rb.left - rectW.left) / scale;
+    const ry2 = (rb.top - rectW.top) / scale;
+    const rw2 = rb.width / scale;
+    const rh2 = rb.height / scale;
+
+    const cx1 = rx1 + rw1/2; const cy1 = ry1 + rh1/2;
+    const cx2 = rx2 + rw2/2; const cy2 = ry2 + rh2/2;
+
+    const ax = Math.max(rx1, Math.min(rx1 + rw1, cx2));
+    const ay = Math.max(ry1, Math.min(ry1 + rh1, cy2));
+    const bx = Math.max(rx2, Math.min(rx2 + rw2, cx1));
+    const by = Math.max(ry2, Math.min(ry2 + rh2, cy1));
 
     const lineSt = st.line || {};
     activeLines.push({
@@ -625,7 +650,7 @@ function onMatch(a, b) {
     card.classList.remove('selected');
     card.className = card.className.replace(/anim-sel-\w+/g, '').trim();
     card.classList.add('matched');
-    clearAnim(card);
+    clearAnim(card, card.dataset.side);
     card.style.opacity   = matchedOpacity;
     card.style.filter = `drop-shadow(0 0 10px ${glowColor})`;
   });
@@ -650,14 +675,14 @@ function onMismatch(a, b) {
       setTimeout(() => {
         dot.style.animation = '';
         card.classList.remove('selected');
-        clearAnim(card);
+        clearAnim(card, card.dataset.side);
       }, 420);
     } else {
       card.style.animation = 'wobble 0.4s ease';
       setTimeout(() => {
         card.style.animation = '';
         card.classList.remove('selected');
-        clearAnim(card);
+        clearAnim(card, card.dataset.side);
       }, 420);
     }
   });
@@ -879,12 +904,15 @@ function showTT(e, card) {
 
 function moveTT(e) {
   const tooltipBox = document.getElementById('tooltip-box');
-  let x = e.clientX + 14;
-  let y = e.clientY + 14;
-  if (x + 270 > window.innerWidth)  x = e.clientX - 280;
-  if (y + 200 > window.innerHeight) y = e.clientY - 210;
-  tooltipBox.style.left = x + 'px';
-  tooltipBox.style.top  = y + 'px';
+  if (tooltipBox.style.display === 'none') return;
+  const scale = window.gameScale || 1;
+  const rect = document.getElementById('game-wrapper').getBoundingClientRect();
+  
+  let localX = (e.clientX - rect.left) / scale;
+  let localY = (e.clientY - rect.top) / scale;
+  
+  tooltipBox.style.left = (localX + 15) + 'px';
+  tooltipBox.style.top  = (localY + 15) + 'px';
 }
 
 function hideTT() {
@@ -913,6 +941,9 @@ function showFeedback() {
     imgEl.src = fb.img;
     imgBox.style.display = 'block';
     imgBox.style.animation = animStr;
+    if (fb.imgGlow) {
+      imgBox.style.filter = `drop-shadow(0 0 20px ${fb.glowColor || '#00ffcc'})`;
+    }
   }
 
   if (fb.mode === 'both' || fb.mode === 'text') {
@@ -921,8 +952,8 @@ function showFeedback() {
     txtBox.style.width = (fb.txtW || 400) + 'px';
     txtBox.style.height = (fb.txtH || 150) + 'px';
     
-    txtBox.style.background = fb.bgColor || '#0a0a0f';
-    txtBox.style.border = `${fb.borderWidth || 0}px solid ${fb.borderColor || '#00ffcc'}`;
+    txtBox.style.background = fb.transparentBg ? 'transparent' : (fb.bgColor || '#0a0a0f');
+    txtBox.style.border = fb.transparentBg ? 'none' : `${fb.borderWidth || 0}px solid ${fb.borderColor || '#00ffcc'}`;
     txtBox.style.borderRadius = (fb.radius || 16) + 'px';
     txtBox.style.boxShadow = `0 0 30px ${fb.glowColor || '#00ffcc'}, 10px 10px 20px ${fb.shadow || '#000000'}`;
 
@@ -942,12 +973,27 @@ function showFeedback() {
     
     txtBox.style.display = 'flex';
     txtBox.style.animation = animStr;
+  }
 
-    if (fb.blur > 0) {
-      const blurOv = document.createElement('div');
-      blurOv.style.cssText = `position:fixed; inset:0; backdrop-filter:blur(${fb.blur}px); z-index:45000; animation:fadeIn 0.5s forwards;`;
-      document.body.appendChild(blurOv);
-    }
+  if (fb.blur > 0) {
+    const blurOv = document.createElement('div');
+    blurOv.style.cssText = `position:fixed; inset:0; backdrop-filter:blur(${fb.blur}px); z-index:45000; animation:fadeIn 0.5s forwards;`;
+    document.body.appendChild(blurOv);
+  }
+
+  if (fb.sparks) {
+    setInterval(() => {
+      [imgBox, txtBox].forEach(b => {
+        if (b.style.display === 'none' || b.style.display === '') return;
+        if (Math.random() > 0.5) return;
+        const sp = document.createElement('div');
+        sp.style.cssText = 'position:absolute; width:6px; height:6px; background:#fff; border-radius:50%; box-shadow:0 0 10px #fff; animation:sparkleAnim 1.5s ease-out forwards; pointer-events:none; z-index:9999;';
+        sp.style.left = (Math.random() * 100) + '%';
+        sp.style.top = (Math.random() * 100) + '%';
+        b.appendChild(sp);
+        setTimeout(() => sp.remove(), 1500);
+      });
+    }, 200);
   }
 }
 
