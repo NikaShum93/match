@@ -785,9 +785,6 @@ document.getElementById('bg-url').addEventListener('change', e => {
 document.getElementById('snd-correct-file').addEventListener('change', e => fileToBase64(e.target.files[0], b64 => { resources.sndCorrect = b64; saveLocalState(); }));
 document.getElementById('snd-wrong-file').addEventListener('change', e => fileToBase64(e.target.files[0], b64 => { resources.sndWrong = b64; saveLocalState(); }));
 document.getElementById('snd-win-file').addEventListener('change', e => fileToBase64(e.target.files[0], b64 => { resources.sndWin = b64; saveLocalState(); }));
-document.getElementById('fb-img-file').addEventListener('change', e => {
-  fileToBase64(e.target.files[0], b64 => { resources.fbImg = b64; document.getElementById('fb-img-url').value = ''; applyLiveStyles(); });
-});
 document.getElementById('fb-img-url').addEventListener('change', e => {
   const url = e.target.value.trim(); if (url) { resources.fbImg = url; applyLiveStyles(); }
 });
@@ -795,7 +792,7 @@ document.getElementById('btn-clr-bg').addEventListener('click', () => { document
 document.getElementById('btn-clr-snd-correct').addEventListener('click', () => { document.getElementById('snd-correct-file').value = ''; resources.sndCorrect = ''; saveLocalState(); });
 document.getElementById('btn-clr-snd-wrong').addEventListener('click', () => { document.getElementById('snd-wrong-file').value = ''; resources.sndWrong = ''; saveLocalState(); });
 document.getElementById('btn-clr-snd-win').addEventListener('click', () => { document.getElementById('snd-win-file').value = ''; resources.sndWin = ''; saveLocalState(); });
-document.getElementById('btn-clr-fb-img').addEventListener('click', () => { document.getElementById('fb-img-url').value = ''; document.getElementById('fb-img-file').value = ''; resources.fbImg = ''; applyLiveStyles(); });
+document.getElementById('btn-clr-fb-img').addEventListener('click', () => { document.getElementById('fb-img-url').value = ''; resources.fbImg = ''; applyLiveStyles(); });
 
 document.getElementById('btn-toggle-fb-drag').addEventListener('click', () => {
   const isHidden = fbImgDragBox.style.display === 'none' || fbImgDragBox.style.display === '';
