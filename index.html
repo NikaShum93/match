@@ -562,22 +562,18 @@ button.action-btn:hover { background: #555; }
       </div>
     </div>
     
-    <div id="fb-image-block">
-      <div class="control-group">
-        <label class="checkbox-label" style="color:#00ffcc;"><input type="checkbox" id="fb-img-glow-enabled"> Добавить свечение картинке</label>
-      </div>
-      <div class="control-group">
-        <label>Картинка фидбека (Без фона, чистая картинка):</label>
-        <div class="img-input-wrap">
-          <div style="display:flex; gap:5px;">
-            <input type="url" id="fb-img-url" placeholder="https://... (ссылка на GIF/PNG)">
-            <button class="btn-clear" id="btn-clr-fb-img" title="Сбросить картинку">✕</button>
-          </div>
-          <div class="or-label">— или загрузи файл —</div>
-          <input type="file" accept="image/*" id="fb-img-file">
-        </div>
-      </div>
+  <div id="fb-image-block">
+  <div class="control-group">
+    <label class="checkbox-label" style="color:#00ffcc;"><input type="checkbox" id="fb-img-glow-enabled"> Добавить свечение картинке</label>
+  </div>
+  <div class="control-group">
+    <label>Картинка фидбека (Без фона, чистая картинка):</label>
+    <div style="display:flex; gap:5px;">
+      <input type="url" id="fb-img-url" placeholder="https://... (ссылка на GIF/PNG)">
+      <button class="btn-clear" id="btn-clr-fb-img" title="Сбросить картинку">✕</button>
     </div>
+  </div>
+</div>
     <div style="text-align:center; padding:20px 10px; border-top:1px solid #333; margin-top:20px; font-size:12px;">
       <a href="https://vk.com/teachy_witchy" target="_blank" style="color:#00ffcc; text-decoration:none;">Вероника Шумайлова 2026 | КОТ</a>
     </div>
@@ -1836,7 +1832,7 @@ function buildGameHtml(cfg) {
     + '#flash-overlay{position:fixed;inset:0;background:#fff;z-index:40000;opacity:0;pointer-events:none}'
     + '@keyframes flashFx{0%{opacity:.8}20%{opacity:0}40%{opacity:.5}100%{opacity:0}}'
     + '#ttbox{position:absolute;z-index:9999;padding:10px 14px;border-radius:8px;font-size:14px;font-weight:700;pointer-events:none;display:none;max-width:260px;text-align:center}'
-    + '#fb-img-box,#fb-txt-box{position:absolute;z-index:50000;display:none}'
+    + '#fb-img-box,#fb-txt-box{position:absolute;z-index:50000;display:none;justify-content:center;align-items:center;}'
     + '#fbimg{display:block;width:100%;height:100%;object-fit:contain}'
     + '#fbtxt{font-weight:900;text-align:center;line-height:1.4;word-break:break-word;width:100%}'
     + '@keyframes popUp{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}'
