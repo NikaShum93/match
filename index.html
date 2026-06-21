@@ -39,6 +39,14 @@ body, html {
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
+  z-index: 1; /* Чтобы карточки были над канвасом */
+}
+#canvas-layer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0; /* Под карточками */
 }
 #settings-btn {
   position: absolute; top: 15px; left: 15px; z-index: 10000;
@@ -128,11 +136,14 @@ button.action-btn:hover { background: #555; }
 .drag-item {
   position: absolute; user-select: none;
   pointer-events: auto; z-index: 50;
+  transition: opacity 0.5s ease, filter 0.5s ease;
 }
 .drag-item.editor-selected .item-inner {
   outline: 2px dashed var(--primary); outline-offset: -2px;
   box-shadow: inset 0 0 10px rgba(0,255,204,0.5);
 }
+.drag-item.matched { pointer-events: none; }
+.drag-item.selected { z-index: 100; }
 .item-inner {
   width: 100%; height: 100%; display: flex;
   justify-content: center; align-items: center;
@@ -273,6 +284,12 @@ button.action-btn:hover { background: #555; }
   70% { box-shadow: 0 0 0 calc(var(--d-size)*0.5) transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
+
+.anim-sel-float .dot-marker,.anim-sel-float .dot-star{animation:selFloat 2s ease-in-out infinite}
+.anim-sel-pulse .dot-marker,.anim-sel-pulse .dot-star{animation:selPulse 1s ease infinite}
+.anim-sel-shake .dot-marker,.anim-sel-shake .dot-star{animation:selShake .5s ease infinite}
+.anim-sel-glow .dot-marker{box-shadow:0 0 0 3px var(--glow,#00ffcc),0 0 25px var(--glow,#00ffcc),inset 0 0 10px rgba(255,255,255,.3)}
+.anim-sel-glow .dot-star{text-shadow:0 0 20px var(--glow,#00ffcc),0 0 40px var(--glow,#00ffcc),0 0 60px var(--glow,#00ffcc)}
 </style>
 </head>
 <body>
@@ -598,6 +615,7 @@ button.action-btn:hover { background: #555; }
   </div>
 
   <div id="game-area">
+    <canvas id="canvas-layer"></canvas>
     <div id="elements-container"></div>
     <div id="ttbox"></div>
     <div id="fb-img-drag-box" class="fb-drag-box">
@@ -661,7 +679,6 @@ const ENDPOINT    = "https://server-kjnn.onrender.com/publish";
 const PUBLISH_KEY = "nika_read_pub_2025";
 const BASE_GAME   = "https://nikashum93.github.io/match/game.html";
 
-// ПЕРЕМЕЩЕНО В НАЧАЛО ДЛЯ ИСПРАВЛЕНИЯ ОШИБКИ ИНИЦИАЛИЗАЦИИ!
 let tasksData = [
   { lText: "Apple", lTt: "", rText: "Яблоко", rTt: "" },
   { lText: "$x^2$", lTt: "", rText: "Икс в квадрате", rTt: "" }
@@ -674,8 +691,6 @@ let resources = {
   fbImg: '' 
 };
 let items = [], selectedId = null, activeLines = [];
-const fbImgDragBox = document.getElementById('fb-img-drag-box');
-const fbTxtDragBox = document.getElementById('fb-txt-drag-box');
 let canvas = document.getElementById('canvas-layer');
 let ctx = canvas ? canvas.getContext('2d') : null;
 let mouseX = -1000, mouseY = -1000;
@@ -688,19 +703,22 @@ function resizeEditorWorkspace() {
   const scale = Math.min(availW / 1280, availH / 720) * 0.95;
   wa.style.transform = `translate(-50%, -50%) scale(${scale})`;
   window.editorScale = scale;
-  window.gameOffsetX = (availW - 1280 * scale) / 2 + 370;
-  window.gameOffsetY = (availH - 720 * scale) / 2;
+  
   if(canvas) {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = 1280;
+    canvas.height = 720;
   }
 }
 window.addEventListener('resize', resizeEditorWorkspace);
 resizeEditorWorkspace();
 
 window.addEventListener('mousemove', e => {
-  mouseX = e.clientX;
-  mouseY = e.clientY;
+  const wa = document.getElementById('game-area');
+  if(!wa) return;
+  const rect = wa.getBoundingClientRect();
+  const scale = window.editorScale || 1;
+  mouseX = (e.clientX - rect.left) / scale;
+  mouseY = (e.clientY - rect.top) / scale;
 });
 
 const FONT_MAP = {
@@ -1173,7 +1191,13 @@ function renderItem(item, gs) {
   el.appendChild(inner); el.appendChild(badge); el.appendChild(handle);
   container.appendChild(el);
   makeDraggableItem(el, item, handle); makeResizableItem(el, item, handle);
-  el.addEventListener('click', e => { e.stopPropagation(); selectItem(item.id); });
+  
+  // Добавляем логику клика для предпросмотра соединений прямо в редакторе!
+  el.addEventListener('click', e => { 
+    e.stopPropagation(); 
+    selectItem(item.id); 
+    onCardClickEditor(el, item, gs);
+  });
 }
 
 function makeDraggableItem(el, item, handle) {
@@ -1212,7 +1236,10 @@ function makeResizableItem(el, item, handle) {
 const toolbar = document.getElementById('item-toolbar');
 
 function selectItem(id) {
-  if (selectedId) document.getElementById('el_' + selectedId)?.classList.remove('editor-selected');
+  if (selectedId && selectedId !== id) {
+     const oldEl = document.getElementById('el_' + selectedId);
+     if(oldEl && !oldEl.classList.contains('matched')) oldEl.classList.remove('editor-selected');
+  }
   selectedId = id;
   const el = document.getElementById('el_' + id); if (!el) return;
   el.classList.add('editor-selected');
@@ -1237,11 +1264,190 @@ document.addEventListener('click', e => {
     toolbar.style.display = 'none';
     if (selectedId) {
       const el = document.getElementById('el_' + selectedId);
-      if(el) el.classList.remove('editor-selected');
+      if(el && !el.classList.contains('matched')) el.classList.remove('editor-selected');
       selectedId = null;
+      editorSelectedCard = null; // Сброс логики предпросмотра соединения
     }
   }
 });
+
+// ЛОГИКА ПРЕДПРОСМОТРА СОЕДИНЕНИЙ ПРЯМО В РЕДАКТОРЕ
+let editorSelectedCard = null;
+function onCardClickEditor(el, item, gs) {
+  if (el.classList.contains('matched')) return;
+
+  if (editorSelectedCard === el) {
+    editorSelectedCard = null;
+    return;
+  }
+
+  if (!editorSelectedCard) {
+    editorSelectedCard = el;
+    return;
+  }
+
+  const firstEl = editorSelectedCard;
+  const secondEl = el;
+  editorSelectedCard = null;
+
+  const firstItem = items.find(i => i.id === firstEl.id.replace('el_', ''));
+  const secondItem = item;
+
+  const sameIndex = firstItem.pairIndex === secondItem.pairIndex;
+  const sameSide  = firstItem.side === secondItem.side;
+
+  if (sameIndex && !sameSide) {
+    const l = gs.line || {};
+    activeLines.push({
+      el1: firstEl, el2: secondEl,
+      color: l.color || '#00ffcc',
+      thickness: l.thickness || 4,
+      style: l.style || 'neon',
+      emoji: l.emoji || '⭐'
+    });
+
+    const opacity = gs.matchedOpacity !== undefined ? parseFloat(gs.matchedOpacity) : 0.35;
+    [firstEl, secondEl].forEach(card => {
+      card.classList.remove('editor-selected');
+      card.classList.add('matched');
+      if (opacity > 0) {
+         card.style.opacity = opacity;
+      } else {
+         card.style.opacity = 0;
+      }
+    });
+  } else {
+    // Ошибка в редакторе (просто тряска для визуала)
+    [firstEl, secondEl].forEach(card => {
+      card.style.animation = 'wobble 0.4s ease';
+      setTimeout(() => {
+        card.style.animation = '';
+        card.classList.remove('editor-selected');
+      }, 420);
+    });
+  }
+}
+
+function drawComplexLineEditor(L, time) {
+  if(!ctx) return;
+  const{x1,y1,x2,y2,color,thickness,style,emoji}=L;
+  const mx=(x1+x2)/2;let cx1=mx,cy1=y1,cx2=mx,cy2=y2;
+  
+  if(style==="rope"){cy1+=Math.sin(time*3)*20;cy2+=Math.cos(time*3)*20;}
+  else if(style!=="circuit"&&style!=="arrow"){
+    const distToMouse=Math.hypot(mx-mouseX,(y1+y2)/2-mouseY);
+    if(distToMouse<150){const rep=(150-distToMouse)*0.3;cx1+=rep*(mx>mouseX?1:-1);cy1+=rep*((y1+y2)/2>mouseY?1:-1);cx2=cx1;cy2=cy1;}
+  }
+
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=thickness;ctx.lineCap="round";ctx.lineJoin="round";
+  
+  if(style==="circuit"){
+    ctx.shadowColor=color;ctx.shadowBlur=10;ctx.beginPath();ctx.moveTo(x1,y1);const midX=x1+(x2-x1)*0.5;
+    ctx.lineTo(midX,y1);ctx.lineTo(midX,y2);ctx.lineTo(x2,y2);ctx.stroke();
+    ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(x1,y1,thickness*1.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(midX,y1,thickness,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(midX,y2,thickness,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x2,y2,thickness*1.5,0,Math.PI*2);ctx.fill();
+  }
+  else if(style==="dashed"||style==="dotted"){
+    ctx.shadowColor=color;ctx.shadowBlur=8;
+    if(style==="dotted"){ctx.setLineDash([thickness,thickness*2]);ctx.lineCap="round";}else{ctx.setLineDash([thickness*3,thickness*3]);}
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();
+  }
+  else if(style==="gradient"){
+    const grad=ctx.createLinearGradient(x1,y1,x2,y2);grad.addColorStop(0,color);grad.addColorStop(0.5,"#fff");grad.addColorStop(1,color);
+    ctx.strokeStyle=grad;ctx.shadowColor="#fff";ctx.shadowBlur=15;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();
+  }
+  else if(style==="emoji"||style==="magic"||style==="nature"||style==="sparkle"){
+    ctx.strokeStyle=color+"44";ctx.lineWidth=thickness*0.5;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();
+    const e=style==="magic"?"⭐":style==="nature"?"🦋":style==="sparkle"?"✨":emoji;
+    const steps=style==="sparkle"?12:8;
+    for(let i=0;i<=steps;i++){
+      const t=i/steps;const bx=Math.pow(1-t,3)*x1+3*Math.pow(1-t,2)*t*cx1+3*(1-t)*t*t*cx2+Math.pow(t,3)*x2;
+      const by=Math.pow(1-t,3)*y1+3*Math.pow(1-t,2)*t*cy1+3*(1-t)*t*t*cy2+Math.pow(t,3)*y2;
+      if(style==="sparkle"){
+        const pulse=Math.abs(Math.sin(time*5+i));ctx.fillStyle=`rgba(255,255,255,${pulse})`;ctx.shadowColor=color;ctx.shadowBlur=15;
+        ctx.beginPath();ctx.arc(bx,by,thickness*(1+pulse),0,Math.PI*2);ctx.fill();
+      }else{
+        ctx.font=`${thickness*3+10}px sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.shadowColor=color;ctx.shadowBlur=10;
+        ctx.fillText(e,bx,by+Math.sin(time*2+i)*5);
+      }
+    }
+  }
+  else if(style==="arrow"){
+    ctx.shadowColor=color;ctx.shadowBlur=15;ctx.strokeStyle=color+"88";ctx.lineWidth=thickness*2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();
+    ctx.strokeStyle=color;ctx.lineWidth=thickness;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();
+    const tS=0.05,tE=0.95;
+    const px1=Math.pow(1-tS,3)*x1+3*Math.pow(1-tS,2)*tS*cx1+3*(1-tS)*tS*tS*cx2+Math.pow(tS,3)*x2;
+    const py1=Math.pow(1-tS,3)*y1+3*Math.pow(1-tS,2)*tS*cy1+3*(1-tS)*tS*tS*cy2+Math.pow(tS,3)*y2;
+    const px2=Math.pow(1-tE,3)*x1+3*Math.pow(1-tE,2)*tE*cx1+3*(1-tE)*tE*tE*cx2+Math.pow(tE,3)*x2;
+    const py2=Math.pow(1-tE,3)*y1+3*Math.pow(1-tE,2)*tE*cy1+3*(1-tE)*tE*tE*cy2+Math.pow(tE,3)*y2;
+    ctx.fillStyle=color;ctx.save();ctx.translate(x1,y1);ctx.rotate(Math.atan2(y1-py1,x1-px1));ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-thickness*4,thickness*2);ctx.lineTo(-thickness*4,-thickness*2);ctx.closePath();ctx.fill();ctx.restore();
+    ctx.save();ctx.translate(x2,y2);ctx.rotate(Math.atan2(y2-py2,x2-px2));ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-thickness*4,thickness*2);ctx.lineTo(-thickness*4,-thickness*2);ctx.closePath();ctx.fill();ctx.restore();
+  }
+  else{
+    ctx.shadowColor=color;ctx.shadowBlur=18;ctx.strokeStyle=color+"55";ctx.lineWidth=thickness*3;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();
+    ctx.strokeStyle=color;ctx.lineWidth=thickness;ctx.shadowBlur=8;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function renderCanvasLoopEditor() {
+  if (!ctx) return requestAnimationFrame(renderCanvasLoopEditor);
+  ctx.clearRect(0,0, canvas.width, canvas.height);
+  if(window.editorScale) {
+    ctx.save();
+    ctx.translate(window.gameOffsetX, window.gameOffsetY);
+    ctx.scale(window.editorScale, window.editorScale);
+  }
+  const time = performance.now() * 0.001;
+  const rectW = document.getElementById("game-area").getBoundingClientRect();
+  const scale = window.editorScale || 1;
+  
+  activeLines.forEach(line => {
+    const ra = line.el1.getBoundingClientRect();
+    const rb = line.el2.getBoundingClientRect();
+    
+    const rx1 = (ra.left - rectW.left) / scale;
+    const ry1 = (ra.top - rectW.top) / scale;
+    const rw1 = ra.width / scale;
+    const rh1 = ra.height / scale;
+
+    const rx2 = (rb.left - rectW.left) / scale;
+    const ry2 = (rb.top - rectW.top) / scale;
+    const rw2 = rb.width / scale;
+    const rh2 = rb.height / scale;
+
+    const pts1 = [
+      {x: rx1 + rw1/2, y: ry1},
+      {x: rx1 + rw1/2, y: ry1 + rh1},
+      {x: rx1, y: ry1 + rh1/2},
+      {x: rx1 + rw1, y: ry1 + rh1/2}
+    ];
+    const pts2 = [
+      {x: rx2 + rw2/2, y: ry2},
+      {x: rx2 + rw2/2, y: ry2 + rh2},
+      {x: rx2, y: ry2 + rh2/2},
+      {x: rx2 + rw2, y: ry2 + rh2/2}
+    ];
+
+    let minDist = Infinity;
+    let pA = pts1[0], pB = pts2[0];
+    for (let p1 of pts1) {
+      for (let p2 of pts2) {
+        let d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        if (d < minDist) { minDist = d; pA = p1; pB = p2; }
+      }
+    }
+    
+    line.x1 = pA.x; line.y1 = pA.y;
+    line.x2 = pB.x; line.y2 = pB.y;
+    drawComplexLineEditor(line, time);
+  });
+  
+  if(window.editorScale) ctx.restore();
+  requestAnimationFrame(renderCanvasLoopEditor);
+}
+requestAnimationFrame(renderCanvasLoopEditor);
 
 document.getElementById('tool-font').addEventListener('input', e => {
   if (!selectedId) return; items.find(i => i.id === selectedId).fontSize = parseInt(e.target.value) || 18; applyLiveStyles(); saveLocalState();
@@ -1299,10 +1505,13 @@ function applyLiveStyles() {
   items.forEach(item => {
     const el = document.getElementById('el_' + item.id); if (!el) return;
     
-    el.className = 'drag-item' + (selectedId === item.id ? ' editor-selected' : '');
-    if (gs.idle && gs.idle.anim && gs.idle.anim !== "none") {
-       if (gs.idle.target === 'both' || gs.idle.target === item.side) {
-          el.classList.add("idle-"+gs.idle.anim);
+    // Не перезаписываем классы полностью, если элемент сматчен
+    if(!el.classList.contains('matched')) {
+       el.className = 'drag-item' + (selectedId === item.id ? ' editor-selected' : '');
+       if (gs.idle && gs.idle.anim && gs.idle.anim !== "none") {
+          if (gs.idle.target === 'both' || gs.idle.target === item.side) {
+             el.classList.add("idle-"+gs.idle.anim);
+          }
        }
     }
 
@@ -1413,6 +1622,10 @@ function hideTT() { document.getElementById('ttbox').style.display = 'none'; }
 
 document.getElementById('btn-test').addEventListener('click', () => {
   if (!items.length) { alert('Сначала сгенерируй элементы.'); return; }
+  
+  // Сбрасываем линии перед открытием теста
+  activeLines = [];
+  
   const cfg  = buildConfig();
   const html = buildGameHtml(cfg);
   const modal  = document.getElementById('test-modal');
@@ -1424,6 +1637,18 @@ document.getElementById('btn-test').addEventListener('click', () => {
 document.getElementById('test-modal-close').addEventListener('click', () => {
   document.getElementById('test-modal').classList.remove('open');
   document.getElementById('test-iframe').srcdoc = '';
+  
+  // При закрытии окна теста сбрасываем состояние карточек в самом редакторе (чтобы снять matched)
+  activeLines = [];
+  items.forEach(item => {
+     const el = document.getElementById('el_' + item.id);
+     if(el) {
+         el.classList.remove('matched', 'editor-selected');
+         el.style.pointerEvents = 'auto';
+         el.style.opacity = '1';
+     }
+  });
+  applyLiveStyles();
 });
 
 document.getElementById('btn-publish').addEventListener('click', async () => {
@@ -1458,7 +1683,7 @@ function copyIframe() {
 setInterval(() => {
   const gs = getGlobalStyle();
   if(!gs.idle || !gs.idle.sparksEnabled) return;
-  document.querySelectorAll('.drag-item:not(.editor-selected)').forEach(el => {
+  document.querySelectorAll('.drag-item:not(.editor-selected):not(.matched)').forEach(el => {
     const item = items.find(i => i.id === el.id.replace('el_',''));
     if(!item || (gs.idle.target !== 'both' && gs.idle.target !== item.side)) return;
     if(Math.random() > 0.3) return;
@@ -1473,76 +1698,6 @@ setInterval(() => {
     setTimeout(() => sp.remove(), 1500);
   });
 }, 300);
-
-function onMatchEditorPreview(a, b) {
-  const st = getGlobalStyle();
-  const lineSt = st.line || {};
-  activeLines.push({
-    el1: a, el2: b,
-    color: lineSt.color || '#00ffcc',
-    thickness: lineSt.thickness || 4,
-    style: lineSt.style || 'neon',
-    emoji: lineSt.emoji || '⭐'
-  });
-}
-
-function renderCanvasLoopEditor() {
-  if (!ctx) return requestAnimationFrame(renderCanvasLoopEditor);
-  ctx.clearRect(0,0, canvas.width, canvas.height);
-  if(window.editorScale) {
-    ctx.save();
-    ctx.translate(window.gameOffsetX, window.gameOffsetY);
-    ctx.scale(window.editorScale, window.editorScale);
-  }
-  const time = performance.now() * 0.001;
-  const rectW = document.getElementById("game-area").getBoundingClientRect();
-  const scale = window.editorScale || 1;
-  
-  activeLines.forEach(line => {
-    const ra = line.el1.getBoundingClientRect();
-    const rb = line.el2.getBoundingClientRect();
-    
-    const rx1 = (ra.left - rectW.left) / scale;
-    const ry1 = (ra.top - rectW.top) / scale;
-    const rw1 = ra.width / scale;
-    const rh1 = ra.height / scale;
-
-    const rx2 = (rb.left - rectW.left) / scale;
-    const ry2 = (rb.top - rectW.top) / scale;
-    const rw2 = rb.width / scale;
-    const rh2 = rb.height / scale;
-
-    const pts1 = [
-      {x: rx1 + rw1/2, y: ry1},
-      {x: rx1 + rw1/2, y: ry1 + rh1},
-      {x: rx1, y: ry1 + rh1/2},
-      {x: rx1 + rw1, y: ry1 + rh1/2}
-    ];
-    const pts2 = [
-      {x: rx2 + rw2/2, y: ry2},
-      {x: rx2 + rw2/2, y: ry2 + rh2},
-      {x: rx2, y: ry2 + rh2/2},
-      {x: rx2 + rw2, y: ry2 + rh2/2}
-    ];
-
-    let minDist = Infinity;
-    let pA = pts1[0], pB = pts2[0];
-    for (let p1 of pts1) {
-      for (let p2 of pts2) {
-        let d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-        if (d < minDist) { minDist = d; pA = p1; pB = p2; }
-      }
-    }
-    
-    // Временная заглушка для отрисовки линий в редакторе, если нужно
-    // Сейчас линии рисуются только в финальной игре, но если захочешь превью - логика тут.
-  });
-  
-  if(window.editorScale) ctx.restore();
-  requestAnimationFrame(renderCanvasLoopEditor);
-}
-requestAnimationFrame(renderCanvasLoopEditor);
-
 
 function buildGameHtml(cfg) {
   const cfgJson = JSON.stringify(cfg).replace(/<\/script>/gi, '<\\/script>');
@@ -1702,7 +1857,7 @@ function buildGameHtml(cfg) {
     /* ---- canvas loop (Динамические линии) ---- */
     + 'function renderCanvasLoop(){if(!ctx){requestAnimationFrame(renderCanvasLoop);return;}ctx.clearRect(0,0,canvas.width,canvas.height);if(window.gameScale){ctx.save();ctx.translate(window.gameOffsetX,window.gameOffsetY);ctx.scale(window.gameScale,window.gameScale);}const time=performance.now()*0.001;const rectW=document.getElementById("game-wrapper").getBoundingClientRect();const scale=window.gameScale||1;activeLines.forEach(line=>{const el1=document.getElementById(line.id1);const el2=document.getElementById(line.id2);if(!el1||!el2)return;const ra=el1.getBoundingClientRect();const rb=el2.getBoundingClientRect();const rx1=(ra.left-rectW.left)/scale;const ry1=(ra.top-rectW.top)/scale;const rw1=ra.width/scale;const rh1=ra.height/scale;const rx2=(rb.left-rectW.left)/scale;const ry2=(rb.top-rectW.top)/scale;const rw2=rb.width/scale;const rh2=rb.height/scale;const pts1=[{x:rx1+rw1/2,y:ry1},{x:rx1+rw1/2,y:ry1+rh1},{x:rx1,y:ry1+rh1/2},{x:rx1+rw1,y:ry1+rh1/2}];const pts2=[{x:rx2+rw2/2,y:ry2},{x:rx2+rw2/2,y:ry2+rh2},{x:rx2,y:ry2+rh2/2},{x:rx2+rw2,y:ry2+rh2/2}];let minDist=Infinity;let pA=pts1[0],pB=pts2[0];for(let p1 of pts1){for(let p2 of pts2){let d=Math.hypot(p1.x-p2.x,p1.y-p2.y);if(d<minDist){minDist=d;pA=p1;pB=p2;}}}line.x1=pA.x;line.y1=pA.y;line.x2=pB.x;line.y2=pB.y;drawComplexLine(line,time);});if(window.gameScale)ctx.restore();requestAnimationFrame(renderCanvasLoop);}'
     /* ---- drawComplexLine ---- */
-    + 'function drawComplexLine(L,time){const{x1,y1,x2,y2,color,thickness,style,emoji}=L;const mx=(x1+x2)/2;let cx1=mx,cy1=y1,cx2=mx,cy2=y2;if(style==="rope"){cy1+=Math.sin(time*3)*20;cy2+=Math.cos(time*3)*20;}else if(style!=="circuit"&&style!=="arrow"){const distToMouse=Math.hypot(mx-mouseX,(y1+y2)/2-mouseY);if(distToMouse<150){const rep=(150-distToMouse)*0.3;cx1+=rep*(mx>mouseX?1:-1);cy1+=rep*((y1+y2)/2>mouseY?1:-1);cx2=cx1;cy2=cy1;}}ctx.save();ctx.strokeStyle=color;ctx.lineWidth=thickness;ctx.lineCap="round";ctx.lineJoin="round";if(style==="circuit"){ctx.shadowColor=color;ctx.shadowBlur=10;ctx.beginPath();ctx.moveTo(x1,y1);const midX=x1+(x2-x1)*0.5;ctx.lineTo(midX,y1);ctx.lineTo(midX,y2);ctx.lineTo(x2,y2);ctx.stroke();ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(x1,y1,thickness*1.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(midX,y1,thickness,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(midX,y2,thickness,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(x2,y2,thickness*1.5,0,Math.PI*2);ctx.fill();}else if(style==="dashed"||style==="dotted"){ctx.shadowColor=color;ctx.shadowBlur=8;if(style==="dotted"){ctx.setLineDash([thickness,thickness*2]);ctx.lineCap="round";}else{ctx.setLineDash([thickness*3,thickness*3]);}ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();}else if(style==="gradient"){const grad=ctx.createLinearGradient(x1,y1,x2,y2);grad.addColorStop(0,color);grad.addColorStop(0.5,"#fff");grad.addColorStop(1,color);ctx.strokeStyle=grad;ctx.shadowColor="#fff";ctx.shadowBlur=15;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();}else if(style==="emoji"||style==="magic"||style==="nature"||style==="sparkle"){ctx.strokeStyle=color+"44";ctx.lineWidth=thickness*0.5;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();const e=style==="magic"?"⭐":style==="nature"?"🦋":style==="sparkle"?"✨":emoji;const steps=style==="sparkle"?12:8;for(let i=0;i<=steps;i++){const t=i/steps;const bx=Math.pow(1-t,3)*x1+3*Math.pow(1-t,2)*t*cx1+3*(1-t)*t*t*cx2+Math.pow(t,3)*x2;const by=Math.pow(1-t,3)*y1+3*Math.pow(1-t,2)*t*cy1+3*(1-t)*t*t*cy2+Math.pow(t,3)*y2;if(style==="sparkle"){const pulse=Math.abs(Math.sin(time*5+i));ctx.fillStyle="rgba(255,255,255,"+pulse+")";ctx.shadowColor=color;ctx.shadowBlur=15;ctx.beginPath();ctx.arc(bx,by,thickness*(1+pulse),0,Math.PI*2);ctx.fill();}else{ctx.font=(thickness*3+10)+"px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.shadowColor=color;ctx.shadowBlur=10;ctx.fillText(e,bx,by+Math.sin(time*2+i)*5);}}}else if(style==="arrow"){ctx.shadowColor=color;ctx.shadowBlur=15;ctx.strokeStyle=color+"88";ctx.lineWidth=thickness*2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();ctx.strokeStyle=color;ctx.lineWidth=thickness;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();const tS=0.05,tE=0.95;const px1=Math.pow(1-tS,3)*x1+3*Math.pow(1-tS,2)*tS*cx1+3*(1-tS)*tS*tS*cx2+Math.pow(tS,3)*x2;const py1=Math.pow(1-tS,3)*y1+3*Math.pow(1-tS,2)*tS*cy1+3*(1-tS)*tS*tS*cy2+Math.pow(tS,3)*y2;const px2=Math.pow(1-tE,3)*x1+3*Math.pow(1-tE,2)*tE*cx1+3*(1-tE)*tE*tE*cx2+Math.pow(tE,3)*x2;const py2=Math.pow(1-tE,3)*y1+3*Math.pow(1-tE,2)*tE*cy1+3*(1-tE)*tE*tE*cy2+Math.pow(tE,3)*y2;ctx.fillStyle=color;ctx.save();ctx.translate(x1,y1);ctx.rotate(Math.atan2(y1-py1,x1-px1));ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-thickness*4,thickness*2);ctx.lineTo(-thickness*4,-thickness*2);ctx.closePath();ctx.fill();ctx.restore();ctx.save();ctx.translate(x2,y2);ctx.rotate(Math.atan2(y2-py2,x2-px2));ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-thickness*4,thickness*2);ctx.lineTo(-thickness*4,-thickness*2);ctx.closePath();ctx.fill();ctx.restore();}else{ctx.shadowColor=color;ctx.shadowBlur=18;ctx.strokeStyle=color+"55";ctx.lineWidth=thickness*3;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();ctx.strokeStyle=color;ctx.lineWidth=thickness;ctx.shadowBlur=8;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();}ctx.restore();}'
+    + 'function drawComplexLine(L,time){const{x1,y1,x2,y2,color,thickness,style,emoji}=L;const mx=(x1+x2)/2;let cx1=mx,cy1=y1,cx2=mx,cy2=y2;if(style==="rope"){cy1+=Math.sin(time*3)*20;cy2+=Math.cos(time*3)*20;}else if(style!=="circuit"&&style!=="arrow"){const distToMouse=Math.hypot(mx-mouseX,(y1+y2)/2-mouseY);if(distToMouse<150){const rep=(150-distToMouse)*0.3;cx1+=rep*(mx>mouseX?1:-1);cy1+=rep*((y1+y2)/2>mouseY?1:-1);cx2=cx1;cy2=cy1;}}ctx.save();ctx.strokeStyle=color;ctx.lineWidth=thickness;ctx.lineCap="round";ctx.lineJoin="round";if(style==="circuit"){ctx.shadowColor=color;ctx.shadowBlur=10;ctx.beginPath();ctx.moveTo(x1,y1);const midX=x1+(x2-x1)*0.5;ctx.lineTo(midX,y1);ctx.lineTo(midX,y2);ctx.lineTo(x2,y2);ctx.stroke();ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(x1,y1,thickness*1.5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(midX,y1,thickness,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(midX,y2,thickness,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(x2,y2,thickness*1.5,0,Math.PI*2);ctx.fill();}else if(style==="dashed"||style==="dotted"){ctx.shadowColor=color;ctx.shadowBlur=8;if(style==="dotted"){ctx.setLineDash([thickness,thickness*2]);ctx.lineCap="round";}else{ctx.setLineDash([thickness*3,thickness*3]);}ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();}else if(style==="gradient"){const grad=ctx.createLinearGradient(x1,y1,x2,y2);grad.addColorStop(0,color);grad.addColorStop(0.5,"#fff");grad.addColorStop(1,color);ctx.strokeStyle=grad;ctx.shadowColor="#fff";ctx.shadowBlur=15;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();}else if(style==="emoji"||style==="magic"||style==="nature"||style==="sparkle"){ctx.strokeStyle=color+"44";ctx.lineWidth=thickness*0.5;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();const e=style==="magic"?"⭐":style==="nature"?"🦋":style==="sparkle"?"✨":emoji;const steps=style==="sparkle"?12:8;for(let i=0;i<=steps;i++){const t=i/steps;const bx=Math.pow(1-t,3)*x1+3*Math.pow(1-t,2)*t*cx1+3*(1-t)*t*t*cx2+Math.pow(t,3)*x2;const by=Math.pow(1-t,3)*y1+3*Math.pow(1-t,2)*t*cy1+3*(1-t)*t*t*cy2+Math.pow(t,3)*y2;if(style==="sparkle"){const pulse=Math.abs(Math.sin(time*5+i));ctx.fillStyle=`rgba(255,255,255,${pulse})`;ctx.shadowColor=color;ctx.shadowBlur=15;ctx.beginPath();ctx.arc(bx,by,thickness*(1+pulse),0,Math.PI*2);ctx.fill();}else{ctx.font=`${thickness*3+10}px sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.shadowColor=color;ctx.shadowBlur=10;ctx.fillText(e,bx,by+Math.sin(time*2+i)*5);}}}else if(style==="arrow"){ctx.shadowColor=color;ctx.shadowBlur=15;ctx.strokeStyle=color+"88";ctx.lineWidth=thickness*2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();ctx.strokeStyle=color;ctx.lineWidth=thickness;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();const tS=0.05,tE=0.95;const px1=Math.pow(1-tS,3)*x1+3*Math.pow(1-tS,2)*tS*cx1+3*(1-tS)*tS*tS*cx2+Math.pow(tS,3)*x2;const py1=Math.pow(1-tS,3)*y1+3*Math.pow(1-tS,2)*tS*cy1+3*(1-tS)*tS*tS*cy2+Math.pow(tS,3)*y2;const px2=Math.pow(1-tE,3)*x1+3*Math.pow(1-tE,2)*tE*cx1+3*(1-tE)*tE*tE*cx2+Math.pow(tE,3)*x2;const py2=Math.pow(1-tE,3)*y1+3*Math.pow(1-tE,2)*tE*cy1+3*(1-tE)*tE*tE*cy2+Math.pow(tE,3)*y2;ctx.fillStyle=color;ctx.save();ctx.translate(x1,y1);ctx.rotate(Math.atan2(y1-py1,x1-px1));ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-thickness*4,thickness*2);ctx.lineTo(-thickness*4,-thickness*2);ctx.closePath();ctx.fill();ctx.restore();ctx.save();ctx.translate(x2,y2);ctx.rotate(Math.atan2(y2-py2,x2-px2));ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-thickness*4,thickness*2);ctx.lineTo(-thickness*4,-thickness*2);ctx.closePath();ctx.fill();ctx.restore();}else{ctx.shadowColor=color;ctx.shadowBlur=18;ctx.strokeStyle=color+"55";ctx.lineWidth=thickness*3;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();ctx.strokeStyle=color;ctx.lineWidth=thickness;ctx.shadowBlur=8;ctx.beginPath();ctx.moveTo(x1,y1);ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2);ctx.stroke();}ctx.restore();}'
     /* ---- tooltip helpers ---- */
     + 'function cleanUrl(val){return val.trim().replace(/\\s+/g,"");}function isImageUrl(val){if(!val)return false;let s=cleanUrl(val);if(/^https?:\\/\\//i.test(s)||/^data:image\\//i.test(s))return true;if(/\\.(jpeg|jpg|gif|png|webp|svg)(\\?.*)?$/i.test(s)&&!/\\s/.test(s))return true;return false;}'
     + 'const ttbox=document.getElementById("ttbox");'
