@@ -39,14 +39,13 @@ body, html {
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
-  z-index: 1; /* Чтобы карточки были над канвасом */
 }
 #canvas-layer {
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
   pointer-events: none;
-  z-index: 0; /* Под карточками */
+  z-index: 0;
 }
 #settings-btn {
   position: absolute; top: 15px; left: 15px; z-index: 10000;
@@ -284,12 +283,6 @@ button.action-btn:hover { background: #555; }
   70% { box-shadow: 0 0 0 calc(var(--d-size)*0.5) transparent; }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
-
-.anim-sel-float .dot-marker,.anim-sel-float .dot-star{animation:selFloat 2s ease-in-out infinite}
-.anim-sel-pulse .dot-marker,.anim-sel-pulse .dot-star{animation:selPulse 1s ease infinite}
-.anim-sel-shake .dot-marker,.anim-sel-shake .dot-star{animation:selShake .5s ease infinite}
-.anim-sel-glow .dot-marker{box-shadow:0 0 0 3px var(--glow,#00ffcc),0 0 25px var(--glow,#00ffcc),inset 0 0 10px rgba(255,255,255,.3)}
-.anim-sel-glow .dot-star{text-shadow:0 0 20px var(--glow,#00ffcc),0 0 40px var(--glow,#00ffcc),0 0 60px var(--glow,#00ffcc)}
 </style>
 </head>
 <body>
@@ -615,7 +608,7 @@ button.action-btn:hover { background: #555; }
   </div>
 
   <div id="game-area">
-    <canvas id="canvas-layer"></canvas>
+    <canvas id="canvas-layer" width="1280" height="720"></canvas>
     <div id="elements-container"></div>
     <div id="ttbox"></div>
     <div id="fb-img-drag-box" class="fb-drag-box">
@@ -691,6 +684,8 @@ let resources = {
   fbImg: '' 
 };
 let items = [], selectedId = null, activeLines = [];
+const fbImgDragBox = document.getElementById('fb-img-drag-box');
+const fbTxtDragBox = document.getElementById('fb-txt-drag-box');
 let canvas = document.getElementById('canvas-layer');
 let ctx = canvas ? canvas.getContext('2d') : null;
 let mouseX = -1000, mouseY = -1000;
@@ -703,11 +698,6 @@ function resizeEditorWorkspace() {
   const scale = Math.min(availW / 1280, availH / 720) * 0.95;
   wa.style.transform = `translate(-50%, -50%) scale(${scale})`;
   window.editorScale = scale;
-  
-  if(canvas) {
-    canvas.width = 1280;
-    canvas.height = 720;
-  }
 }
 window.addEventListener('resize', resizeEditorWorkspace);
 resizeEditorWorkspace();
@@ -735,7 +725,7 @@ const FONT_MAP = {
 const LANG_NAMES = {
   ru:"Русский 🇷🇺", en:"English 🇬🇧", fr:"Français 🇫🇷",
   de:"Deutsch 🇩🇪", es:"Español 🇪🇸", it:"Italiano 🇮🇹",
-  zh:"中文 🇨🇳", ja:"日本語 🇯🇵", ko:"한국어 🇰🇷"
+  zh:"中文 🇨🇳", ja:"日本語 🇯ীব", ko:"한국어 🇰🇷"
 };
 
 const langSel   = document.getElementById('language');
@@ -1299,7 +1289,7 @@ function onCardClickEditor(el, item, gs) {
   if (sameIndex && !sameSide) {
     const l = gs.line || {};
     activeLines.push({
-      el1: firstEl, el2: secondEl,
+      id1: firstEl.id, id2: secondEl.id,
       color: l.color || '#00ffcc',
       thickness: l.thickness || 4,
       style: l.style || 'neon',
@@ -1394,28 +1384,32 @@ function drawComplexLineEditor(L, time) {
 function renderCanvasLoopEditor() {
   if (!ctx) return requestAnimationFrame(renderCanvasLoopEditor);
   ctx.clearRect(0,0, canvas.width, canvas.height);
-  if(window.editorScale) {
-    ctx.save();
-    ctx.translate(window.gameOffsetX, window.gameOffsetY);
-    ctx.scale(window.editorScale, window.editorScale);
-  }
+  
   const time = performance.now() * 0.001;
   const rectW = document.getElementById("game-area").getBoundingClientRect();
   const scale = window.editorScale || 1;
   
   activeLines.forEach(line => {
-    const ra = line.el1.getBoundingClientRect();
-    const rb = line.el2.getBoundingClientRect();
+    const el1 = document.getElementById(line.id1);
+    const el2 = document.getElementById(line.id2);
+    if (!el1 || !el2) return;
     
-    const rx1 = (ra.left - rectW.left) / scale;
-    const ry1 = (ra.top - rectW.top) / scale;
-    const rw1 = ra.width / scale;
-    const rh1 = ra.height / scale;
+    // В редакторе canvas находится не внутри game-wrapper, а покрывает окно,
+    // поэтому координаты берём напрямую из getBoundingClientRect
+    const ra = el1.getBoundingClientRect();
+    const rb = el2.getBoundingClientRect();
+    
+    // Поскольку canvas в редакторе растянут на window.innerWidth/Height,
+    // нам не нужно делить на scale, мы просто берём экранные координаты
+    const rx1 = ra.left;
+    const ry1 = ra.top;
+    const rw1 = ra.width;
+    const rh1 = ra.height;
 
-    const rx2 = (rb.left - rectW.left) / scale;
-    const ry2 = (rb.top - rectW.top) / scale;
-    const rw2 = rb.width / scale;
-    const rh2 = rb.height / scale;
+    const rx2 = rb.left;
+    const ry2 = rb.top;
+    const rw2 = rb.width;
+    const rh2 = rb.height;
 
     const pts1 = [
       {x: rx1 + rw1/2, y: ry1},
@@ -1444,7 +1438,6 @@ function renderCanvasLoopEditor() {
     drawComplexLineEditor(line, time);
   });
   
-  if(window.editorScale) ctx.restore();
   requestAnimationFrame(renderCanvasLoopEditor);
 }
 requestAnimationFrame(renderCanvasLoopEditor);
