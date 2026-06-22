@@ -46,7 +46,8 @@ body, html {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---- Карточка ---- */
-.card {
+.card 
+  {
   position: absolute;
   display: flex; justify-content: center; align-items: center;
   text-align: center; cursor: pointer;
@@ -54,6 +55,28 @@ body, html {
   word-break: break-word;
   transition: opacity 0.5s ease, transform 0.15s ease;
   user-select: none;
+}
+  .card::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  z-index: 999;
+  cursor: pointer;
+}
+  .glitch-anim::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: glitch 0.4s steps(1) infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.glitch-anim {
+  position: absolute;
 }
 .card.selected { z-index: 100; }
 .card.matched { pointer-events: none; cursor: default; }
@@ -551,7 +574,15 @@ function applyAnim(card, anim, glowColor) {
     case 'scaleDown': if (dot) dot.style.animation = 'scaleDown 0.4s ease infinite'; else card.style.animation = 'scaleDown 0.4s ease infinite'; break;
        case 'pulse':     if (dot) dot.style.animation = 'pulse 0.6s ease infinite';     else card.style.animation = 'pulse 0.6s ease infinite';     break;
     case 'wobble':    if (dot) dot.style.animation = 'wobble 0.5s ease infinite';    else card.style.animation = 'wobble 0.5s ease infinite';    break;
-    case 'glitch':    if (dot) dot.style.animation = 'glitch 0.4s steps(1) infinite'; else card.style.animation = 'glitch 0.4s steps(1) infinite'; break;
+  // СТАЛО — анимация только на визуальном псевдоэлементе, не на самой карточке:
+case 'glitch':
+  if (dot) {
+    dot.style.animation = 'glitch 0.4s steps(1) infinite';
+  } else {
+    card.style.setProperty('--glitch-on', '1');
+    card.classList.add('glitch-anim');
+  }
+  break;
     case 'distort':   if (dot) dot.style.animation = 'distort 0.5s ease infinite';   else card.style.animation = 'distort 0.5s ease infinite';   break;
   }
 }
@@ -565,6 +596,8 @@ function clearAnim(card, side) {
   }
   card.style.animation = '';
   card.style.filter    = '';
+   card.classList.remove('glitch-anim');        // ← добавь
+  card.style.removeProperty('--glitch-on'); 
   if (st.idle && st.idle.glowEnabled && st.idle.glow !== '#000000' && !card.querySelector('.dot-marker')) {
     if (st.idle.target === 'both' || st.idle.target === side) {
       card.style.boxShadow = `0 0 15px ${st.idle.glow}`;
