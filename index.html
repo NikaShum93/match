@@ -312,7 +312,7 @@ button.action-btn:hover { background: #555; }
     
     <button id="btn-open-tasks" class="action-btn" style="background:#00ffcc; color:#000; font-size:14px; padding:12px; margin-bottom:15px; border:none; box-shadow:0 0 15px rgba(0,255,204,0.3);">📝 Редактировать Задания</button>
     <button id="btn-generate" class="action-btn" style="display:none;">⟳ Сгенерировать элементы</button>
-
+<button id="btn-reset" class="action-btn" style="background:rgba(255,50,50,0.2);border:1px solid #ff3333;color:#ffaaaa;margin-top:5px;">🗑️ Сбросить всё</button>
     <h4 class="section-title">Состояние покоя (Idle)</h4>
     <div class="control-group">
       <label>Применять к:</label>
@@ -642,13 +642,12 @@ button.action-btn:hover { background: #555; }
       2. В Genially: <b>Insert → Others → Iframe</b> → вставь<br>
       3. Подожди <b>30–60 секунд</b> после публикации
     </div>
-    <label style="font-size:11px;color:#aaa;text-transform:uppercase;">КОД для Genially:</label>
-    <textarea id="code-output" readonly onclick="this.select()"></textarea>
-    <div id="pub-status"></div>
-    <div class="row" style="margin-top:15px;gap:10px;">
-      <button class="action-btn" onclick="copyIframe()" style="background:var(--primary);color:#000;flex:1;">📋 Скопировать</button>
-      <button class="action-btn" onclick="document.getElementById('output-modal').style.display='none'" style="flex:1;">✕ Закрыть</button>
-    </div>
+  <textarea id="code-output" readonly style="position:absolute;left:-9999px;top:-9999px;opacity:0;pointer-events:none;"></textarea>
+<div id="pub-status"></div>
+<div class="row" style="margin-top:15px;gap:10px;">
+  <button class="action-btn" id="btn-copy-iframe" style="background:var(--primary);color:#000;flex:1;font-size:16px;padding:14px;">📋 Скопировать код</button>
+  <button class="action-btn" onclick="document.getElementById('output-modal').style.display='none'" style="flex:1;">✕ Закрыть</button>
+</div>
   </div>
 </div>
 
@@ -1412,10 +1411,29 @@ document.getElementById('btn-publish').addEventListener('click', async () => {
 });
 
 function copyIframe() {
-  const ta = document.getElementById('code-output'); ta.select();
-  navigator.clipboard.writeText(ta.value).catch(() => document.execCommand('copy'));
+  const ta = document.getElementById('code-output');
+  const text = ta.value;
+  navigator.clipboard.writeText(text).then(function() {
+    const btn = document.getElementById('btn-copy-iframe');
+    const old = btn.textContent;
+    btn.textContent = '✅ Скопировано!';
+    btn.style.background = '#00ff88';
+    setTimeout(function() {
+      btn.textContent = old;
+      btn.style.background = 'var(--primary)';
+    }, 2000);
+  }).catch(function() {
+    const ta2 = document.getElementById('code-output');
+    ta2.style.position = 'static';
+    ta2.style.opacity = '1';
+    ta2.select();
+    document.execCommand('copy');
+    ta2.style.position = 'absolute';
+    ta2.style.opacity = '0';
+  });
 }
 
+document.getElementById('btn-copy-iframe').addEventListener('click', copyIframe);
 setInterval(() => {
   const gs = getGlobalStyle();
   if(!gs.idle || !gs.idle.sparksEnabled) return;
@@ -1870,6 +1888,34 @@ function buildGameHtml(cfg) {
 
   return html;
 }
+// ---- Защита от просмотра кода ----
+// Правая кнопка мыши
+document.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+  return false;
+});
+
+document.addEventListener('keydown', function(e) {
+  // Блокируем только если НЕ в поле ввода
+  var tag = document.activeElement ? document.activeElement.tagName : '';
+  var isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  
+  if (
+    e.key === 'F12' ||
+    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j')) ||
+    (!isInput && e.ctrlKey && (e.key === 'U' || e.key === 'u'))
+  ) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+document.getElementById('btn-reset').addEventListener('click', function() {
+  if (confirm('Сбросить всё? Все данные будут удалены!')) {
+    localStorage.removeItem('matchPairsState');
+    location.reload();
+  }
+});
 
 loadLocalState();
 generateElements();
