@@ -17,14 +17,14 @@ window.MathJax = {
 :root { --primary: #00ffcc; --panel-bg: rgba(20,20,25,0.98); }
 *, *::before, *::after { box-sizing: border-box; }
 body, html {
-  margin: 0; padding: 0; width: 100%; height: 100%;
-  font-family: 'Segoe UI', sans-serif;
-  background: repeating-conic-gradient(#1a1a1a 0% 25%, #111 0% 50%) 50%/20px 20px;
-  color: #fff; overflow: hidden;
+  min-height: 100vh;
+  height: auto;
+  overflow: auto;
 }
 #workspace {
-  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  background-size: cover; background-position: center; overflow: hidden;
+  position: relative;
+  min-height: 100vh;
+  overflow: visible;
 }
 #game-area {
   position: absolute;
@@ -460,6 +460,12 @@ button.action-btn:hover { background: #555; }
     </div>
 
     <h4 class="section-title">Линии</h4>
+    <div class="control-group">
+  <label class="checkbox-label">
+    <input type="checkbox" id="line-enabled" checked>
+    Показывать линии между парами
+  </label>
+</div>
     <div class="row">
       <div class="control-group"><label>Цвет:</label><input type="color" id="line-color" value="#00ffcc"></div>
       <div class="control-group"><label>Толщина:</label><input type="number" id="line-thickness" value="4" min="1"></div>
@@ -681,9 +687,11 @@ const fbTxtDragBox = document.getElementById('fb-txt-drag-box');
 
 function resizeEditorWorkspace() {
   const wa = document.getElementById('game-area');
-  if(!wa) return;
-  const availW = window.innerWidth - 370;
-  const availH = window.innerHeight;
+  if (!wa) return;
+  // Берём размер самого workspace, а не window
+  const ws = document.getElementById('workspace');
+  const availW = (ws.offsetWidth || window.innerWidth) - 370;
+  const availH = ws.offsetHeight || window.innerHeight;
   const scale = Math.min(availW / 1280, availH / 720) * 0.95;
   wa.style.transform = `translate(-50%, -50%) scale(${scale})`;
   window.editorScale = scale;
@@ -881,6 +889,7 @@ function getGlobalStyle() {
       radius: readInt('tt-radius', 8)
     },
     line: {
+       enabled: document.getElementById('line-enabled').checked,
       color: document.getElementById('line-color').value,
       thickness: readInt('line-thickness', 4),
       style: document.getElementById('line-style').value,
@@ -1635,8 +1644,8 @@ function buildGameHtml(cfg) {
     '  var opacity=st.matchedOpacity!==undefined?parseFloat(st.matchedOpacity):0.35;',
     '  var glow=st.glowColor||"#00ffcc";',
     '  createMatchFx(a,b,st.effMatch||"fireworks");',
-    '  var l=st.line||{};',
-    '  activeLines.push({id1:a.id,id2:b.id,color:l.color||"#00ffcc",thickness:l.thickness||4,style:l.style||"neon",emoji:l.emoji||"⭐"});',
+   '  var l=st.line||{};',
+'  if(l.enabled!==false){activeLines.push({id1:a.id,id2:b.id,color:l.color||"#00ffcc",thickness:l.thickness||4,style:l.style||"neon",emoji:l.emoji||"⭐"});}',
     '  [a,b].forEach(function(card){',
     '    card.classList.remove("selected");',
     '    card.className=card.className.replace(/anim-sel-\\w+/g,"").trim();',
