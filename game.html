@@ -28,8 +28,6 @@ body, html {
   position: fixed; inset: 0;
   pointer-events: none; z-index: 10;
 }
-
-/* ---- Loader ---- */
 #loader-screen {
   position: fixed; inset: 0; background: rgba(20, 20, 25, 0.4); backdrop-filter: blur(4px);
   z-index: 999999; display: none; flex-direction: column; justify-content: center; align-items: center;
@@ -44,8 +42,6 @@ body, html {
   border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* ---- Карточка ---- */
 .card {
   position: absolute;
   display: flex; justify-content: center; align-items: center;
@@ -62,31 +58,21 @@ body, html {
   z-index: 999;
   cursor: pointer;
 }
-
-/* ← ИСПРАВЛЕНО: убран position:absolute, глитч просто анимация */
-.card.glitch-anim {
-  animation: glitch 0.4s steps(1) infinite;
-}
-
+.card.glitch-anim { animation: glitch 0.4s steps(1) infinite; }
 .card.selected { z-index: 100; }
 .card.matched { pointer-events: none; cursor: default; }
-
 .anim-sel-float { animation: selFloat 2s ease-in-out infinite; }
 .anim-sel-pulse { animation: selPulse 1s ease infinite; }
 .anim-sel-shake { animation: selShake 0.5s ease infinite; }
 .anim-sel-glow  { filter: drop-shadow(0 0 15px var(--glow,#00ffcc)) brightness(1.2); }
-
 @keyframes selFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 @keyframes selPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 @keyframes selShake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
-
 .idle-float { animation: selFloat 3s ease-in-out infinite; }
 .idle-pulse { animation: selPulse 2s ease infinite; }
 .idle-heartbeat { animation: heartbeat 1.5s ease-in-out infinite; }
 @keyframes heartbeat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.1); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
 @keyframes sparkleAnim { 0% { transform:translateY(0) scale(1); opacity:1; } 100% { transform:translateY(-30px) scale(0); opacity:0; } }
-
-/* ---- Tooltip ---- */
 #tooltip-box {
   position: absolute; z-index: 9999;
   padding: 10px 14px; border-radius: 8px;
@@ -95,17 +81,11 @@ body, html {
   max-width: 260px; text-align: center;
   box-shadow: 0 0 20px rgba(0,0,0,0.6);
 }
-
-/* ---- Фидбек ---- */
-#fb-img-box, #fb-txt-box {
-  position: absolute; z-index: 50000; display: none;
-}
+#fb-img-box, #fb-txt-box { position: absolute; z-index: 50000; display: none; }
 #fbimg { display: block; width: 100%; height: 100%; object-fit: contain; }
 #fbtxt { font-weight: 900; text-align: center; line-height: 1.4; word-break: break-word; width: 100%; }
-
 @keyframes popUp { 0% { transform: scale(0.3); opacity: 0; } 70% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
 @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.12);} }
 @keyframes wobble { 0%,100%{transform:rotate(0deg);} 25%{transform:rotate(-6deg);} 75%{transform:rotate(6deg);} }
 @keyframes glitch {
@@ -118,7 +98,6 @@ body, html {
 @keyframes distort { 0%,100%{transform:skew(0deg,0deg);} 25%{transform:skew(6deg,2deg);} 75%{transform:skew(-6deg,-2deg);} }
 @keyframes scaleUp { 0%,100%{transform:scale(1);} 50%{transform:scale(1.18);} }
 @keyframes scaleDown { 0%,100%{transform:scale(1);} 50%{transform:scale(0.88);} }
-
 .fx-particle {
   position: fixed; pointer-events: none; z-index: 30000; font-size: 24px;
   animation: fxFly var(--dur, 1s) cubic-bezier(0.25,1,0.5,1) forwards;
@@ -132,12 +111,10 @@ body, html {
   animation: rainDrop 0.6s linear forwards;
 }
 @keyframes rainDrop { 0% { transform: translateY(-50px); opacity: 1; } 100% { transform: translateY(100vh); opacity: 0; } }
-
 #flash-overlay {
   position: fixed; inset: 0; background: #fff; z-index: 40000; opacity: 0; pointer-events: none;
 }
 @keyframes flashFx { 0% { opacity: 0.8; } 20% { opacity: 0; } 40% { opacity: 0.5; } 100% { opacity: 0; } }
-
 .dot-marker {
   width: var(--d-size); height: var(--d-size);
   background: var(--d-color); border-radius: 50%;
@@ -172,8 +149,6 @@ body, html {
 .anim-sel-glow .dot-star {
   text-shadow: 0 0 20px var(--glow, #00ffcc), 0 0 40px var(--glow, #00ffcc), 0 0 60px var(--glow, #00ffcc);
 }
-
-/* ---- Кнопка громкости ---- */
 #vol-btn {
   position: fixed; bottom: 18px; right: 18px; z-index: 99999;
   width: 36px; height: 36px; border-radius: 50%; border: none;
@@ -212,7 +187,8 @@ body, html {
   <div class="loader-box">
     <div class="spinner"></div>
     <div id="loader-text" style="font-weight:bold; font-size:16px;">
-      Без паники — игра публикуется.<br><span style="font-size:12px;color:#aaa;margin-top:8px;display:block;">Минутку... ожидаем ответ сервера</span>
+      Без паники — игра публикуется.<br>
+      <span style="font-size:12px;color:#aaa;margin-top:8px;display:block;">Минутку... ожидаем ответ сервера</span>
     </div>
   </div>
 </div>
@@ -231,7 +207,6 @@ body, html {
 <canvas id="canvas-layer"></canvas>
 <div id="flash-overlay"></div>
 
-<!-- Кнопка громкости -->
 <div id="vol-slider-wrap">
   <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1">
   <span id="vol-label">100%</span>
@@ -254,22 +229,16 @@ let matchedPairs = 0;
 let totalPairs   = 0;
 let sounds       = {};
 let activeLines  = [];
-
-/* ---- Громкость ---- */
 let globalVolume = 1;
-let volMuted = false;
+let volMuted     = false;
 
 function updateVolIcon() {
   const w1 = document.getElementById('vol-wave1');
   const w2 = document.getElementById('vol-wave2');
   const v = volMuted ? 0 : globalVolume;
-  if (v === 0) {
-    w1.style.display = 'none'; w2.style.display = 'none';
-  } else if (v < 0.5) {
-    w1.style.display = ''; w2.style.display = 'none';
-  } else {
-    w1.style.display = ''; w2.style.display = '';
-  }
+  if (v === 0) { w1.style.display = 'none'; w2.style.display = 'none'; }
+  else if (v < 0.5) { w1.style.display = ''; w2.style.display = 'none'; }
+  else { w1.style.display = ''; w2.style.display = ''; }
 }
 
 function applyVolume() {
@@ -303,7 +272,6 @@ document.addEventListener('click', e => {
   }
 });
 
-/* ---- Утилиты ---- */
 function cleanUrl(val) { return val.trim().replace(/\s+/g, ''); }
 function isImageUrl(val) {
   if (!val) return false;
@@ -319,7 +287,6 @@ function renderMath(el, txt) {
   }
 }
 
-/* ---- Init ---- */
 async function init() {
   const params  = new URLSearchParams(location.search);
   const id      = params.get('id');
@@ -349,11 +316,10 @@ async function init() {
         document.getElementById('loader-screen').style.display = 'none';
         startGame();
       } catch(err) {
-        document.getElementById('loader-text').innerHTML = `❌ Ошибка: Файл не найден.`;
+        document.getElementById('loader-text').innerHTML = '❌ Ошибка: Файл не найден.';
         document.querySelector('.spinner').style.display = 'none';
       }
     }
-    return;
   }
 }
 
@@ -397,11 +363,11 @@ function startGame() {
         if (Math.random() > 0.3) return;
         const sp = document.createElement('div');
         sp.style.cssText = 'position:absolute;width:4px;height:4px;border-radius:50%;pointer-events:none;z-index:10;';
-        sp.style.background = CONFIG.style.idle.sparks;
-        sp.style.boxShadow = `0 0 6px ${CONFIG.style.idle.sparks}`;
-        sp.style.left = (Math.random() * 100) + '%';
-        sp.style.top  = (Math.random() * 100) + '%';
-        sp.style.animation = 'sparkleAnim 1.5s ease-out forwards';
+        sp.style.background  = CONFIG.style.idle.sparks;
+        sp.style.boxShadow   = `0 0 6px ${CONFIG.style.idle.sparks}`;
+        sp.style.left        = (Math.random() * 100) + '%';
+        sp.style.top         = (Math.random() * 100) + '%';
+        sp.style.animation   = 'sparkleAnim 1.5s ease-out forwards';
         c.appendChild(sp);
         setTimeout(() => sp.remove(), 1500);
       });
@@ -463,21 +429,23 @@ function renderCards() {
     const side = item.side === 'left' ? st.left : st.right;
     if (!side) return;
     const card = document.createElement('div');
-    card.className = 'card';
+    card.className         = 'card';
     card.dataset.id        = item.id;
     card.dataset.pairIndex = item.pairIndex;
     card.dataset.side      = item.side;
-    card.style.left      = item.x + 'px';
-    card.style.top       = item.y + 'px';
-    card.style.width     = item.w + 'px';
-    card.style.height    = item.h + 'px';
-    card.style.transform = `rotate(${item.rot || 0}deg)`;
+    card.style.left        = item.x + 'px';
+    card.style.top         = item.y + 'px';
+    card.style.width       = item.w + 'px';
+    card.style.height      = item.h + 'px';
+    card.style.transform   = `rotate(${item.rot || 0}deg)`;
+
     if (st.idle && st.idle.anim && st.idle.anim !== 'none') {
       if (st.idle.target === 'both' || st.idle.target === item.side) {
         card.classList.add('idle-' + st.idle.anim);
         card.style.animationDelay = -(Math.random() * 5).toFixed(2) + 's';
       }
     }
+
     const isEmpty = !item.text && !item.img;
     if (isEmpty) {
       card.style.background = 'transparent';
@@ -487,7 +455,7 @@ function renderCards() {
       const dotStyle = (st.dot && st.dot.style) ? st.dot.style : 'circle';
       dot.className = 'dot-marker dot-' + dotStyle;
       dot.style.setProperty('--d-color', (st.dot && st.dot.color) ? st.dot.color : '#00ffcc');
-      dot.style.setProperty('--d-size', ((st.dot && st.dot.size) ? st.dot.size : 30) + 'px');
+      dot.style.setProperty('--d-size',  ((st.dot && st.dot.size) ? st.dot.size : 30) + 'px');
       if (dotStyle === 'star') dot.textContent = '⭐';
       card.appendChild(dot);
     } else {
@@ -518,17 +486,18 @@ function renderCards() {
         card.textContent = item.text;
       }
     }
-    const animHover = st.animHover || 'none';
-    /* ← ИСПРАВЛЕНО: читаем hoverTarget — на какую сторону применять hover */
+
+    const animHover  = st.animHover  || 'none';
     const hoverTarget = st.hoverTarget || 'both';
-    const glowColor = st.glowColor || '#00ffcc';
+    const glowColor  = st.glowColor  || '#00ffcc';
+
     if (item.tooltip && (item.tooltip.text || item.tooltip.img)) {
       card.dataset.ttText = item.tooltip.text || '';
       card.dataset.ttImg  = item.tooltip.img  || '';
     }
+
     card.addEventListener('mouseenter', e => {
       if (card.classList.contains('matched')) return;
-      /* ← ИСПРАВЛЕНО: проверяем сторону перед применением hover-анимации */
       if (selectedCard !== card && (hoverTarget === 'both' || hoverTarget === item.side)) {
         applyAnim(card, animHover, glowColor);
       }
@@ -565,7 +534,7 @@ function applyAnim(card, anim, glowColor) {
         if (dot.classList.contains('dot-star')) dot.style.textShadow = `0 0 20px ${glowColor}, 0 0 40px ${glowColor}`;
       } else { card.style.filter = `drop-shadow(0 0 8px ${glowColor}) drop-shadow(0 0 20px ${glowColor})`; }
       break;
-    case 'scaleUp':   if (dot) dot.style.animation = 'scaleUp 0.4s ease infinite';   else card.style.animation = 'scaleUp 0.4s ease infinite';   break;
+        case 'scaleUp':   if (dot) dot.style.animation = 'scaleUp 0.4s ease infinite';   else card.style.animation = 'scaleUp 0.4s ease infinite';   break;
     case 'scaleDown': if (dot) dot.style.animation = 'scaleDown 0.4s ease infinite';  else card.style.animation = 'scaleDown 0.4s ease infinite';  break;
     case 'pulse':     if (dot) dot.style.animation = 'pulse 0.6s ease infinite';      else card.style.animation = 'pulse 0.6s ease infinite';      break;
     case 'wobble':    if (dot) dot.style.animation = 'wobble 0.5s ease infinite';     else card.style.animation = 'wobble 0.5s ease infinite';     break;
@@ -595,7 +564,8 @@ function clearAnim(card, side) {
   const dot = card.querySelector('.dot-marker');
   if (dot) { dot.style.animation = ''; dot.style.boxShadow = ''; dot.style.textShadow = ''; }
 }
-  function onCardClick(card) {
+
+function onCardClick(card) {
   if (card.classList.contains('matched')) return;
   const st        = CONFIG.style || {};
   const selAnim   = st.animClick || 'none';
@@ -629,10 +599,10 @@ function onMatch(a, b) {
   if (lineSt.enabled !== false) {
     activeLines.push({
       el1: a, el2: b,
-      color: lineSt.color || '#00ffcc',
+      color:     lineSt.color     || '#00ffcc',
       thickness: lineSt.thickness || 4,
-      style: lineSt.style || 'neon',
-      emoji: lineSt.emoji || '⭐'
+      style:     lineSt.style     || 'neon',
+      emoji:     lineSt.emoji     || '⭐'
     });
   }
   [a, b].forEach(card => {
@@ -666,23 +636,31 @@ function onMismatch(a, b) {
 
 function createMatchFx(a, b, fxType) {
   if (fxType === 'none') return;
-  const ra = a.getBoundingClientRect(); const rb = b.getBoundingClientRect();
-  const centers = [{x: ra.left+ra.width/2, y: ra.top+ra.height/2}, {x: rb.left+rb.width/2, y: rb.top+rb.height/2}];
+  const ra = a.getBoundingClientRect();
+  const rb = b.getBoundingClientRect();
+  const centers = [
+    {x: ra.left + ra.width/2, y: ra.top + ra.height/2},
+    {x: rb.left + rb.width/2, y: rb.top + rb.height/2}
+  ];
   centers.forEach(c => {
     const count    = fxType==='fireworks'?20 : fxType==='confetti'?15 : fxType==='stars'?12 : 10;
     const emojiStr = fxType==='emoji-burst'?'🤩,🔥,🎉' : fxType==='hearts'?'💖,💕,💓' : fxType==='stars'?'⭐,✨,🌟' : '🎇,🧨,✨';
     const emojis   = emojiStr.split(',');
     for (let i = 0; i < count; i++) {
-      const p = document.createElement('div'); p.className = 'fx-particle';
-      p.textContent = emojis[Math.floor(Math.random()*emojis.length)];
-      const angle = Math.random()*Math.PI*2; const dist = 60+Math.random()*120;
-      p.style.setProperty('--dx',  Math.cos(angle)*dist + 'px');
-      p.style.setProperty('--dy',  Math.sin(angle)*dist + 'px');
-      p.style.setProperty('--rot', (Math.random()*360-180) + 'deg');
-      p.style.setProperty('--dur', (0.6+Math.random()*0.6) + 's');
-      p.style.setProperty('--s',   0.5+Math.random());
-      p.style.left = c.x + 'px'; p.style.top = c.y + 'px';
-      document.body.appendChild(p); setTimeout(() => p.remove(), 1200);
+      const p = document.createElement('div');
+      p.className = 'fx-particle';
+      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      const angle = Math.random() * Math.PI * 2;
+      const dist  = 60 + Math.random() * 120;
+      p.style.setProperty('--dx',  Math.cos(angle) * dist + 'px');
+      p.style.setProperty('--dy',  Math.sin(angle) * dist + 'px');
+      p.style.setProperty('--rot', (Math.random() * 360 - 180) + 'deg');
+      p.style.setProperty('--dur', (0.6 + Math.random() * 0.6) + 's');
+      p.style.setProperty('--s',   0.5 + Math.random());
+      p.style.left = c.x + 'px';
+      p.style.top  = c.y + 'px';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 1200);
     }
   });
 }
@@ -692,29 +670,33 @@ function createMismatchFx(fxType, emojiVal) {
   if (fxType === 'lightning') {
     const f = document.getElementById('flash-overlay');
     f.style.animation = 'flashFx 0.5s ease-out';
-    setTimeout(() => f.style.animation = '', 500); return;
+    setTimeout(() => f.style.animation = '', 500);
+    return;
   }
-  const isRain = fxType === 'rain'; const count = isRain ? 80 : 25;
-  const e = emojiVal || '💩';
+  const isRain = fxType === 'rain';
+  const count  = isRain ? 80 : 25;
+  const e      = emojiVal || '💩';
   for (let i = 0; i < count; i++) {
     const p = document.createElement('div');
     if (isRain) {
       p.className = 'fx-rain';
-      p.style.left = (Math.random()*window.innerWidth) + 'px';
-      p.style.top  = (Math.random()*-200) + 'px';
-      p.style.animationDuration = (0.4+Math.random()*0.3) + 's';
-      p.style.animationDelay    = (Math.random()*0.3) + 's';
+      p.style.left              = (Math.random() * window.innerWidth) + 'px';
+      p.style.top               = (Math.random() * -200) + 'px';
+      p.style.animationDuration = (0.4 + Math.random() * 0.3) + 's';
+      p.style.animationDelay    = (Math.random() * 0.3) + 's';
     } else {
-      p.className = 'fx-particle'; p.textContent = e;
-      p.style.left = (Math.random()*window.innerWidth) + 'px';
-      p.style.top  = '-50px';
-      p.style.setProperty('--dx',  (Math.random()*150-75) + 'px');
-      p.style.setProperty('--dy',  (window.innerHeight+100) + 'px');
-      p.style.setProperty('--rot', (Math.random()*360) + 'deg');
-      p.style.setProperty('--dur', (1.5+Math.random()) + 's');
-      p.style.setProperty('--s',   0.8+Math.random()*0.5);
+      p.className   = 'fx-particle';
+      p.textContent = e;
+      p.style.left  = (Math.random() * window.innerWidth) + 'px';
+      p.style.top   = '-50px';
+      p.style.setProperty('--dx',  (Math.random() * 150 - 75) + 'px');
+      p.style.setProperty('--dy',  (window.innerHeight + 100) + 'px');
+      p.style.setProperty('--rot', (Math.random() * 360) + 'deg');
+      p.style.setProperty('--dur', (1.5 + Math.random()) + 's');
+      p.style.setProperty('--s',   0.8 + Math.random() * 0.5);
     }
-    document.body.appendChild(p); setTimeout(() => p.remove(), 3000);
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 3000);
   }
 }
 
@@ -750,33 +732,46 @@ function renderCanvasLoop() {
   const rectW = document.getElementById("game-wrapper").getBoundingClientRect();
   const scale = window.gameScale || 1;
   activeLines.forEach(line => {
-    const ra = line.el1.getBoundingClientRect();
-    const rb = line.el2.getBoundingClientRect();
-    const rx1 = (ra.left-rectW.left)/scale, ry1 = (ra.top-rectW.top)/scale, rw1 = ra.width/scale, rh1 = ra.height/scale;
-    const rx2 = (rb.left-rectW.left)/scale, ry2 = (rb.top-rectW.top)/scale, rw2 = rb.width/scale, rh2 = rb.height/scale;
-    const isDot1 = !!line.el1.querySelector('.dot-marker');
-    const isDot2 = !!line.el2.querySelector('.dot-marker');
-    const center1 = {x: rx1+rw1/2, y: ry1+rh1/2};
-    const center2 = {x: rx2+rw2/2, y: ry2+rh2/2};
+    const ra  = line.el1.getBoundingClientRect();
+    const rb  = line.el2.getBoundingClientRect();
+    const rx1 = (ra.left - rectW.left) / scale, ry1 = (ra.top - rectW.top) / scale;
+    const rw1 = ra.width / scale,                rh1 = ra.height / scale;
+    const rx2 = (rb.left - rectW.left) / scale, ry2 = (rb.top - rectW.top) / scale;
+    const rw2 = rb.width / scale,                rh2 = rb.height / scale;
+    const isDot1  = !!line.el1.querySelector('.dot-marker');
+    const isDot2  = !!line.el2.querySelector('.dot-marker');
+    const center1 = {x: rx1 + rw1/2, y: ry1 + rh1/2};
+    const center2 = {x: rx2 + rw2/2, y: ry2 + rh2/2};
     let pA, pB;
     if (isDot1) {
       pA = center1;
     } else {
-      const pts1 = [{x:rx1+rw1/2,y:ry1},{x:rx1+rw1/2,y:ry1+rh1},{x:rx1,y:ry1+rh1/2},{x:rx1+rw1,y:ry1+rh1/2}];
+      const pts1 = [
+        {x: rx1+rw1/2, y: ry1},
+        {x: rx1+rw1/2, y: ry1+rh1},
+        {x: rx1,       y: ry1+rh1/2},
+        {x: rx1+rw1,   y: ry1+rh1/2}
+      ];
       pA = pts1.reduce((best, p) => {
-        const target = isDot2 ? center2 : {x:rx2+rw2/2, y:ry2+rh2/2};
+        const target = isDot2 ? center2 : {x: rx2+rw2/2, y: ry2+rh2/2};
         return Math.hypot(p.x-target.x, p.y-target.y) < Math.hypot(best.x-target.x, best.y-target.y) ? p : best;
       });
     }
     if (isDot2) {
       pB = center2;
     } else {
-      const pts2 = [{x:rx2+rw2/2,y:ry2},{x:rx2+rw2/2,y:ry2+rh2},{x:rx2,y:ry2+rh2/2},{x:rx2+rw2,y:ry2+rh2/2}];
+      const pts2 = [
+        {x: rx2+rw2/2, y: ry2},
+        {x: rx2+rw2/2, y: ry2+rh2},
+        {x: rx2,       y: ry2+rh2/2},
+        {x: rx2+rw2,   y: ry2+rh2/2}
+      ];
       pB = pts2.reduce((best, p) => {
         return Math.hypot(p.x-pA.x, p.y-pA.y) < Math.hypot(best.x-pA.x, best.y-pA.y) ? p : best;
       });
     }
-    line.x1=pA.x; line.y1=pA.y; line.x2=pB.x; line.y2=pB.y;
+    line.x1 = pA.x; line.y1 = pA.y;
+    line.x2 = pB.x; line.y2 = pB.y;
     drawComplexLine(line, time);
   });
   if (window.gameScale) ctx.restore();
@@ -788,19 +783,23 @@ function drawComplexLine(L, time) {
   const mx = (x1+x2)/2;
   let cx1=mx, cy1=y1, cx2=mx, cy2=y2;
   if (style === 'rope') {
-    cy1 += Math.sin(time*3)*20; cy2 += Math.cos(time*3)*20;
+    cy1 += Math.sin(time*3)*20;
+    cy2 += Math.cos(time*3)*20;
   } else if (style !== 'circuit' && style !== 'arrow') {
     const distToMouse = Math.hypot(mx-mouseX, (y1+y2)/2-mouseY);
     if (distToMouse < 150) {
       const rep = (150-distToMouse)*0.3;
-      cx1 += rep*(mx>mouseX?1:-1); cy1 += rep*((y1+y2)/2>mouseY?1:-1);
+      cx1 += rep*(mx>mouseX?1:-1);
+      cy1 += rep*((y1+y2)/2>mouseY?1:-1);
       cx2=cx1; cy2=cy1;
     }
   }
-  ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=thickness; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.save();
+  ctx.strokeStyle=color; ctx.lineWidth=thickness; ctx.lineCap='round'; ctx.lineJoin='round';
   if (style === 'circuit') {
     ctx.shadowColor=color; ctx.shadowBlur=10;
-    ctx.beginPath(); ctx.moveTo(x1,y1); const midX=x1+(x2-x1)*0.5;
+    ctx.beginPath(); ctx.moveTo(x1,y1);
+    const midX = x1+(x2-x1)*0.5;
     ctx.lineTo(midX,y1); ctx.lineTo(midX,y2); ctx.lineTo(x2,y2); ctx.stroke();
     ctx.fillStyle='#fff';
     ctx.beginPath(); ctx.arc(x1,y1,thickness*1.5,0,Math.PI*2); ctx.fill();
@@ -820,14 +819,14 @@ function drawComplexLine(L, time) {
   } else if (style==='emoji'||style==='magic'||style==='nature'||style==='sparkle') {
     ctx.strokeStyle=color+'44'; ctx.lineWidth=thickness*0.5;
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.bezierCurveTo(cx1,cy1,cx2,cy2,x2,y2); ctx.stroke();
-    const e = style==='magic'?'⭐': style==='nature'?'🦋': style==='sparkle'?'✨': emoji;
+    const e     = style==='magic'?'⭐': style==='nature'?'🦋': style==='sparkle'?'✨': emoji;
     const steps = style==='sparkle'?12:8;
     for (let i=0; i<=steps; i++) {
-      const t=i/steps;
-      const bx=Math.pow(1-t,3)*x1+3*Math.pow(1-t,2)*t*cx1+3*(1-t)*t*t*cx2+Math.pow(t,3)*x2;
-      const by=Math.pow(1-t,3)*y1+3*Math.pow(1-t,2)*t*cy1+3*(1-t)*t*t*cy2+Math.pow(t,3)*y2;
+      const t  = i/steps;
+      const bx = Math.pow(1-t,3)*x1+3*Math.pow(1-t,2)*t*cx1+3*(1-t)*t*t*cx2+Math.pow(t,3)*x2;
+      const by = Math.pow(1-t,3)*y1+3*Math.pow(1-t,2)*t*cy1+3*(1-t)*t*t*cy2+Math.pow(t,3)*y2;
       if (style==='sparkle') {
-        const pulse=Math.abs(Math.sin(time*5+i));
+        const pulse = Math.abs(Math.sin(time*5+i));
         ctx.fillStyle=`rgba(255,255,255,${pulse})`; ctx.shadowColor=color; ctx.shadowBlur=15;
         ctx.beginPath(); ctx.arc(bx,by,thickness*(1+pulse),0,Math.PI*2); ctx.fill();
       } else {
@@ -895,8 +894,8 @@ function moveTT(e) {
   if (tooltipBox.style.display === 'none') return;
   const scale = window.gameScale || 1;
   const rect  = document.getElementById('game-wrapper').getBoundingClientRect();
-  tooltipBox.style.left = ((e.clientX-rect.left)/scale + 15) + 'px';
-  tooltipBox.style.top  = ((e.clientY-rect.top)/scale  + 15) + 'px';
+  tooltipBox.style.left = ((e.clientX - rect.left) / scale + 15) + 'px';
+  tooltipBox.style.top  = ((e.clientY - rect.top)  / scale + 15) + 'px';
 }
 
 function hideTT() { document.getElementById('tooltip-box').style.display = 'none'; }
@@ -905,33 +904,43 @@ function showFeedback() {
   playSound('win');
   const fb = CONFIG.feedback || {};
   if (!fb.mode || fb.mode === 'none') return;
-  const imgBox = document.getElementById('fb-img-box');
-  const txtBox = document.getElementById('fb-txt-box');
-  const imgEl  = document.getElementById('fbimg');
-  const txtEl  = document.getElementById('fbtxt');
+  const imgBox  = document.getElementById('fb-img-box');
+  const txtBox  = document.getElementById('fb-txt-box');
+  const imgEl   = document.getElementById('fbimg');
+  const txtEl   = document.getElementById('fbtxt');
   const anim    = fb.anim || 'popUp';
   const animStr = anim !== 'none' ? `${anim} 0.55s cubic-bezier(0.34,1.56,0.64,1) both` : 'none';
   if ((fb.mode==='both'||fb.mode==='image') && fb.img) {
-    imgBox.style.left=( fb.imgX||480)+'px'; imgBox.style.top=(fb.imgY||100)+'px';
-    imgBox.style.width=(fb.imgW||320)+'px'; imgBox.style.height=(fb.imgH||240)+'px';
-    imgEl.src=fb.img; imgBox.style.display='block'; imgBox.style.animation=animStr;
-    if (fb.imgGlow) imgBox.style.filter=`drop-shadow(0 0 20px ${fb.glowColor||'#00ffcc'})`;
+    imgBox.style.left   = (fb.imgX||480) + 'px';
+    imgBox.style.top    = (fb.imgY||100) + 'px';
+    imgBox.style.width  = (fb.imgW||320) + 'px';
+    imgBox.style.height = (fb.imgH||240) + 'px';
+    imgEl.src = fb.img;
+    imgBox.style.display   = 'block';
+    imgBox.style.animation = animStr;
+    if (fb.imgGlow) imgBox.style.filter = `drop-shadow(0 0 20px ${fb.glowColor||'#00ffcc'})`;
   }
   if (fb.mode==='both'||fb.mode==='text') {
-    txtBox.style.left=(fb.txtX||440)+'px'; txtBox.style.top=(fb.txtY||400)+'px';
-    txtBox.style.width=(fb.txtW||400)+'px'; txtBox.style.height=(fb.txtH||150)+'px';
+    txtBox.style.left         = (fb.txtX||440) + 'px';
+    txtBox.style.top          = (fb.txtY||400) + 'px';
+    txtBox.style.width        = (fb.txtW||400) + 'px';
+    txtBox.style.height       = (fb.txtH||150) + 'px';
     txtBox.style.background   = fb.transparentBg ? 'transparent' : (fb.bgColor||'#0a0a0f');
     txtBox.style.border       = fb.transparentBg ? 'none' : `${fb.borderWidth||0}px solid ${fb.borderColor||'#00ffcc'}`;
-    txtBox.style.borderRadius = (fb.radius||16)+'px';
+    txtBox.style.borderRadius = (fb.radius||16) + 'px';
     txtBox.style.boxShadow    = fb.transparentBg ? 'none' : `0 0 30px ${fb.glowColor||'#00ffcc'}, 10px 10px 20px ${fb.shadow||'#000000'}`;
     txtEl.style.textShadow    = fb.fbTextGlow ? `0 0 15px ${fb.glowColor||'#00ffcc'}, 0 0 30px ${fb.glowColor||'#00ffcc'}` : 'none';
     let fbTextContent = fb.text || '🎉 Отлично!';
     if (isImageUrl(fbTextContent)) {
       txtEl.innerHTML = '<img src="'+cleanUrl(fbTextContent)+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:'+(fb.radius||16)+'px;">';
     } else if (/\$|\\\(/.test(fbTextContent)) {
-      renderMath(txtEl, fbTextContent); txtEl.style.color = fb.textColor||'#fff';
-    } else { txtEl.textContent=fbTextContent; txtEl.style.color=fb.textColor||'#fff'; }
-    txtEl.style.fontSize   = (fb.fontSize||28)+'px';
+      renderMath(txtEl, fbTextContent);
+      txtEl.style.color = fb.textColor || '#fff';
+    } else {
+      txtEl.textContent = fbTextContent;
+      txtEl.style.color = fb.textColor || '#fff';
+    }
+    txtEl.style.fontSize   = (fb.fontSize||28) + 'px';
     txtEl.style.fontFamily = fb.font ? `"${fb.font}", sans-serif` : (CONFIG.font ? `"${CONFIG.font}", sans-serif` : 'sans-serif');
     txtBox.style.display   = 'flex';
     txtBox.style.animation = animStr;
@@ -944,24 +953,20 @@ function showFeedback() {
   if (fb.sparks) {
     setInterval(() => {
       [imgBox, txtBox].forEach(b => {
-        if (b.style.display==='none'||b.style.display==='') return;
-        if (Math.random()>0.5) return;
+        if (b.style.display==='none' || b.style.display==='') return;
+        if (Math.random() > 0.5) return;
         const sp = document.createElement('div');
         sp.style.cssText = 'position:absolute;width:6px;height:6px;background:#fff;border-radius:50%;box-shadow:0 0 10px #fff;animation:sparkleAnim 1.5s ease-out forwards;pointer-events:none;z-index:9999;';
-        sp.style.left = (Math.random()*100)+'%'; sp.style.top = (Math.random()*100)+'%';
-        b.appendChild(sp); setTimeout(()=>sp.remove(), 1500);
+        sp.style.left = (Math.random()*100) + '%';
+        sp.style.top  = (Math.random()*100) + '%';
+        b.appendChild(sp);
+        setTimeout(() => sp.remove(), 1500);
       });
     }, 200);
   }
 }
 
 init();
-          sp.style.left = (Math.random()*100)+'%'; sp.style.top = (Math.random()*100)+'%';
-        b.appendChild(sp); setTimeout(()=>sp.remove(), 1500);
-      });
-    }, 200);
-  }
-}
 </script>
 </body>
 </html>
