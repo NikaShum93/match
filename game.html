@@ -594,12 +594,18 @@ function onCardClick(card) {
     return;
   }
 
-  /* ← ИСПРАВЛЕНО: снимаем hover-анимации ДО добавления selected */
+  /* ← Сбрасываем ВСЕ возможные hover-анимации перед выделением */
   card.classList.remove('glitch-anim');
+  card.classList.remove('idle-float', 'idle-pulse', 'idle-heartbeat');
   card.style.animation = '';
   card.style.filter    = '';
+  card.style.boxShadow = '';
   const dot = card.querySelector('.dot-marker');
-  if (dot) { dot.style.animation = ''; dot.style.boxShadow = ''; dot.style.textShadow = ''; }
+  if (dot) {
+    dot.style.animation   = '';
+    dot.style.boxShadow   = '';
+    dot.style.textShadow  = '';
+  }
 
   card.classList.add('selected');
   card.style.setProperty('--glow', glowColor);
@@ -607,8 +613,8 @@ function onCardClick(card) {
 
   if (!selectedCard) { selectedCard = card; return; }
 
-  const first  = selectedCard;
-  const second = card;
+  const first     = selectedCard;
+  const second    = card;
   const sameIndex = first.dataset.pairIndex === second.dataset.pairIndex;
   const sameSide  = first.dataset.side      === second.dataset.side;
   if (sameIndex && !sameSide) { onMatch(first, second); } else { onMismatch(first, second); }
