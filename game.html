@@ -600,6 +600,7 @@ function onMatch(a, b) {
   createMatchFx(a, b, st.effMatch || 'fireworks');
   if (matchedOpacity > 0) {
     const lineSt = st.line || {};
+    '  if(l.enabled!==false)
     activeLines.push({
       el1: a, el2: b,
       color: lineSt.color || '#00ffcc',
