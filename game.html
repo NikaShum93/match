@@ -46,8 +46,7 @@ body, html {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---- Карточка ---- */
-.card 
-  {
+.card {
   position: absolute;
   display: flex; justify-content: center; align-items: center;
   text-align: center; cursor: pointer;
@@ -56,28 +55,19 @@ body, html {
   transition: opacity 0.5s ease, transform 0.15s ease;
   user-select: none;
 }
-  .card::after {
+.card::after {
   content: '';
   position: absolute;
   inset: -8px;
   z-index: 999;
   cursor: pointer;
 }
-  .glitch-anim::before {
-  content: attr(data-text);
-  position: absolute;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+
+/* ← ИСПРАВЛЕНО: убран position:absolute, глитч просто анимация */
+.card.glitch-anim {
   animation: glitch 0.4s steps(1) infinite;
-  pointer-events: none;
-  z-index: 1;
 }
 
-.glitch-anim {
-  position: absolute;
-}
 .card.selected { z-index: 100; }
 .card.matched { pointer-events: none; cursor: default; }
 
@@ -125,7 +115,7 @@ body, html {
   60%{transform:translate(2px,4px);filter:hue-rotate(270deg) brightness(1.2);}
   80%{transform:translate(-2px,-1px);filter:hue-rotate(45deg);}
 }
-  @keyframes distort { 0%,100%{transform:skew(0deg,0deg);} 25%{transform:skew(6deg,2deg);} 75%{transform:skew(-6deg,-2deg);} }
+@keyframes distort { 0%,100%{transform:skew(0deg,0deg);} 25%{transform:skew(6deg,2deg);} 75%{transform:skew(-6deg,-2deg);} }
 @keyframes scaleUp { 0%,100%{transform:scale(1);} 50%{transform:scale(1.18);} }
 @keyframes scaleDown { 0%,100%{transform:scale(1);} 50%{transform:scale(0.88);} }
 
@@ -529,21 +519,26 @@ function renderCards() {
       }
     }
     const animHover = st.animHover || 'none';
+    /* ← ИСПРАВЛЕНО: читаем hoverTarget — на какую сторону применять hover */
+    const hoverTarget = st.hoverTarget || 'both';
     const glowColor = st.glowColor || '#00ffcc';
     if (item.tooltip && (item.tooltip.text || item.tooltip.img)) {
       card.dataset.ttText = item.tooltip.text || '';
       card.dataset.ttImg  = item.tooltip.img  || '';
     }
-  card.addEventListener('mouseenter', e => {
-  if (card.classList.contains('matched')) return;
-  if (selectedCard !== card) applyAnim(card, animHover, glowColor); // ← добавить проверку
-  if (item.tooltip && (item.tooltip.text || item.tooltip.img)) showTT(e, card);
-});
+    card.addEventListener('mouseenter', e => {
+      if (card.classList.contains('matched')) return;
+      /* ← ИСПРАВЛЕНО: проверяем сторону перед применением hover-анимации */
+      if (selectedCard !== card && (hoverTarget === 'both' || hoverTarget === item.side)) {
+        applyAnim(card, animHover, glowColor);
+      }
+      if (item.tooltip && (item.tooltip.text || item.tooltip.img)) showTT(e, card);
+    });
     card.addEventListener('mousemove',  e => moveTT(e));
-   card.addEventListener('mouseleave', () => {
-  if (!card.classList.contains('matched') && selectedCard !== card) clearAnim(card, item.side);
-  hideTT();
-});
+    card.addEventListener('mouseleave', () => {
+      if (!card.classList.contains('matched') && selectedCard !== card) clearAnim(card, item.side);
+      hideTT();
+    });
     card.addEventListener('click', e => { e.stopPropagation(); onCardClick(card); });
     layer.appendChild(card);
   });
@@ -570,25 +565,21 @@ function applyAnim(card, anim, glowColor) {
         if (dot.classList.contains('dot-star')) dot.style.textShadow = `0 0 20px ${glowColor}, 0 0 40px ${glowColor}`;
       } else { card.style.filter = `drop-shadow(0 0 8px ${glowColor}) drop-shadow(0 0 20px ${glowColor})`; }
       break;
-    case 'scaleUp':   if (dot) dot.style.animation = 'scaleUp 0.4s ease infinite';  else card.style.animation = 'scaleUp 0.4s ease infinite';  break;
-    case 'scaleDown': if (dot) dot.style.animation = 'scaleDown 0.4s ease infinite'; else card.style.animation = 'scaleDown 0.4s ease infinite'; break;
-       case 'pulse':     if (dot) dot.style.animation = 'pulse 0.6s ease infinite';     else card.style.animation = 'pulse 0.6s ease infinite';     break;
-    case 'wobble':    if (dot) dot.style.animation = 'wobble 0.5s ease infinite';    else card.style.animation = 'wobble 0.5s ease infinite';    break;
-  // СТАЛО — анимация только на визуальном псевдоэлементе, не на самой карточке:
-case 'glitch':
-  if (dot) {
-    dot.style.animation = 'glitch 0.4s steps(1) infinite';
-  } else {
-    card.style.setProperty('--glitch-on', '1');
-    card.classList.add('glitch-anim');
-  }
-  break;
+    case 'scaleUp':   if (dot) dot.style.animation = 'scaleUp 0.4s ease infinite';   else card.style.animation = 'scaleUp 0.4s ease infinite';   break;
+    case 'scaleDown': if (dot) dot.style.animation = 'scaleDown 0.4s ease infinite';  else card.style.animation = 'scaleDown 0.4s ease infinite';  break;
+    case 'pulse':     if (dot) dot.style.animation = 'pulse 0.6s ease infinite';      else card.style.animation = 'pulse 0.6s ease infinite';      break;
+    case 'wobble':    if (dot) dot.style.animation = 'wobble 0.5s ease infinite';     else card.style.animation = 'wobble 0.5s ease infinite';     break;
+    case 'glitch':
+      if (dot) { dot.style.animation = 'glitch 0.4s steps(1) infinite'; }
+      else { card.classList.add('glitch-anim'); }
+      break;
     case 'distort':   if (dot) dot.style.animation = 'distort 0.5s ease infinite';   else card.style.animation = 'distort 0.5s ease infinite';   break;
   }
 }
 
 function clearAnim(card, side) {
   const st = CONFIG.style || {};
+  card.classList.remove('glitch-anim');
   if (st.idle && st.idle.anim && st.idle.anim !== 'none') {
     if (st.idle.target === 'both' || st.idle.target === side) {
       card.classList.add('idle-' + st.idle.anim);
@@ -596,8 +587,6 @@ function clearAnim(card, side) {
   }
   card.style.animation = '';
   card.style.filter    = '';
-   card.classList.remove('glitch-anim');        // ← добавь
-  card.style.removeProperty('--glitch-on'); 
   if (st.idle && st.idle.glowEnabled && st.idle.glow !== '#000000' && !card.querySelector('.dot-marker')) {
     if (st.idle.target === 'both' || st.idle.target === side) {
       card.style.boxShadow = `0 0 15px ${st.idle.glow}`;
@@ -606,8 +595,7 @@ function clearAnim(card, side) {
   const dot = card.querySelector('.dot-marker');
   if (dot) { dot.style.animation = ''; dot.style.boxShadow = ''; dot.style.textShadow = ''; }
 }
-
-function onCardClick(card) {
+  function onCardClick(card) {
   if (card.classList.contains('matched')) return;
   const st        = CONFIG.style || {};
   const selAnim   = st.animClick || 'none';
@@ -766,35 +754,29 @@ function renderCanvasLoop() {
     const rb = line.el2.getBoundingClientRect();
     const rx1 = (ra.left-rectW.left)/scale, ry1 = (ra.top-rectW.top)/scale, rw1 = ra.width/scale, rh1 = ra.height/scale;
     const rx2 = (rb.left-rectW.left)/scale, ry2 = (rb.top-rectW.top)/scale, rw2 = rb.width/scale, rh2 = rb.height/scale;
-   // Если карточка — точка (пустая), линия идёт прямо в центр
-const isDot1 = !!line.el1.querySelector('.dot-marker');
-const isDot2 = !!line.el2.querySelector('.dot-marker');
-
-const center1 = {x: rx1+rw1/2, y: ry1+rh1/2};
-const center2 = {x: rx2+rw2/2, y: ry2+rh2/2};
-
-let pA, pB;
-
-if (isDot1) {
-  pA = center1;
-} else {
-  const pts1 = [{x:rx1+rw1/2,y:ry1},{x:rx1+rw1/2,y:ry1+rh1},{x:rx1,y:ry1+rh1/2},{x:rx1+rw1,y:ry1+rh1/2}];
-  pA = pts1.reduce((best, p) => {
-    const target = isDot2 ? center2 : {x:rx2+rw2/2, y:ry2+rh2/2};
-    return Math.hypot(p.x-target.x, p.y-target.y) < Math.hypot(best.x-target.x, best.y-target.y) ? p : best;
-  });
-}
-
-if (isDot2) {
-  pB = center2;
-} else {
-  const pts2 = [{x:rx2+rw2/2,y:ry2},{x:rx2+rw2/2,y:ry2+rh2},{x:rx2,y:ry2+rh2/2},{x:rx2+rw2,y:ry2+rh2/2}];
-  pB = pts2.reduce((best, p) => {
-    return Math.hypot(p.x-pA.x, p.y-pA.y) < Math.hypot(best.x-pA.x, best.y-pA.y) ? p : best;
-  });
-}
-
-line.x1=pA.x; line.y1=pA.y; line.x2=pB.x; line.y2=pB.y;
+    const isDot1 = !!line.el1.querySelector('.dot-marker');
+    const isDot2 = !!line.el2.querySelector('.dot-marker');
+    const center1 = {x: rx1+rw1/2, y: ry1+rh1/2};
+    const center2 = {x: rx2+rw2/2, y: ry2+rh2/2};
+    let pA, pB;
+    if (isDot1) {
+      pA = center1;
+    } else {
+      const pts1 = [{x:rx1+rw1/2,y:ry1},{x:rx1+rw1/2,y:ry1+rh1},{x:rx1,y:ry1+rh1/2},{x:rx1+rw1,y:ry1+rh1/2}];
+      pA = pts1.reduce((best, p) => {
+        const target = isDot2 ? center2 : {x:rx2+rw2/2, y:ry2+rh2/2};
+        return Math.hypot(p.x-target.x, p.y-target.y) < Math.hypot(best.x-target.x, best.y-target.y) ? p : best;
+      });
+    }
+    if (isDot2) {
+      pB = center2;
+    } else {
+      const pts2 = [{x:rx2+rw2/2,y:ry2},{x:rx2+rw2/2,y:ry2+rh2},{x:rx2,y:ry2+rh2/2},{x:rx2+rw2,y:ry2+rh2/2}];
+      pB = pts2.reduce((best, p) => {
+        return Math.hypot(p.x-pA.x, p.y-pA.y) < Math.hypot(best.x-pA.x, best.y-pA.y) ? p : best;
+      });
+    }
+    line.x1=pA.x; line.y1=pA.y; line.x2=pB.x; line.y2=pB.y;
     drawComplexLine(line, time);
   });
   if (window.gameScale) ctx.restore();
@@ -967,6 +949,22 @@ function showFeedback() {
         const sp = document.createElement('div');
         sp.style.cssText = 'position:absolute;width:6px;height:6px;background:#fff;border-radius:50%;box-shadow:0 0 10px #fff;animation:sparkleAnim 1.5s ease-out forwards;pointer-events:none;z-index:9999;';
         sp.style.left = (Math.random()*100)+'%'; sp.style.top = (Math.random()*100)+'%';
+        b.appendChild(sp); setTimeout(()=>sp.remove(), 1500);
+      });
+    }, 200);
+  }
+}
+
+init();
+          sp.style.left = (Math.random()*100)+'%'; sp.style.top = (Math.random()*100)+'%';
+        b.appendChild(sp); setTimeout(()=>sp.remove(), 1500);
+      });
+    }, 200);
+  }
+}
+
+init();
+ sp.style.left = (Math.random()*100)+'%'; sp.style.top = (Math.random()*100)+'%';
         b.appendChild(sp); setTimeout(()=>sp.remove(), 1500);
       });
     }, 200);
