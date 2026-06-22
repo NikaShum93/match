@@ -505,16 +505,16 @@ function renderCards() {
       card.dataset.ttText = item.tooltip.text || '';
       card.dataset.ttImg  = item.tooltip.img  || '';
     }
-    card.addEventListener('mouseenter', e => {
-      if (card.classList.contains('matched')) return;
-      applyAnim(card, animHover, glowColor);
-      if (item.tooltip && (item.tooltip.text || item.tooltip.img)) showTT(e, card);
-    });
+  card.addEventListener('mouseenter', e => {
+  if (card.classList.contains('matched')) return;
+  if (selectedCard !== card) applyAnim(card, animHover, glowColor); // ← добавить проверку
+  if (item.tooltip && (item.tooltip.text || item.tooltip.img)) showTT(e, card);
+});
     card.addEventListener('mousemove',  e => moveTT(e));
-    card.addEventListener('mouseleave', () => {
-      if (!card.classList.contains('matched') && selectedCard !== card) clearAnim(card, item.side);
-      hideTT();
-    });
+   card.addEventListener('mouseleave', () => {
+  if (!card.classList.contains('matched') && selectedCard !== card) clearAnim(card, item.side);
+  hideTT();
+});
     card.addEventListener('click', e => { e.stopPropagation(); onCardClick(card); });
     layer.appendChild(card);
   });
@@ -727,11 +727,35 @@ function renderCanvasLoop() {
     const rb = line.el2.getBoundingClientRect();
     const rx1 = (ra.left-rectW.left)/scale, ry1 = (ra.top-rectW.top)/scale, rw1 = ra.width/scale, rh1 = ra.height/scale;
     const rx2 = (rb.left-rectW.left)/scale, ry2 = (rb.top-rectW.top)/scale, rw2 = rb.width/scale, rh2 = rb.height/scale;
-    const pts1 = [{x:rx1+rw1/2,y:ry1},{x:rx1+rw1/2,y:ry1+rh1},{x:rx1,y:ry1+rh1/2},{x:rx1+rw1,y:ry1+rh1/2}];
-    const pts2 = [{x:rx2+rw2/2,y:ry2},{x:rx2+rw2/2,y:ry2+rh2},{x:rx2,y:ry2+rh2/2},{x:rx2+rw2,y:ry2+rh2/2}];
-    let minDist = Infinity, pA = pts1[0], pB = pts2[0];
-    for (let p1 of pts1) for (let p2 of pts2) { const d = Math.hypot(p1.x-p2.x,p1.y-p2.y); if (d < minDist) { minDist=d; pA=p1; pB=p2; } }
-    line.x1=pA.x; line.y1=pA.y; line.x2=pB.x; line.y2=pB.y;
+   // Если карточка — точка (пустая), линия идёт прямо в центр
+const isDot1 = !!line.el1.querySelector('.dot-marker');
+const isDot2 = !!line.el2.querySelector('.dot-marker');
+
+const center1 = {x: rx1+rw1/2, y: ry1+rh1/2};
+const center2 = {x: rx2+rw2/2, y: ry2+rh2/2};
+
+let pA, pB;
+
+if (isDot1) {
+  pA = center1;
+} else {
+  const pts1 = [{x:rx1+rw1/2,y:ry1},{x:rx1+rw1/2,y:ry1+rh1},{x:rx1,y:ry1+rh1/2},{x:rx1+rw1,y:ry1+rh1/2}];
+  pA = pts1.reduce((best, p) => {
+    const target = isDot2 ? center2 : {x:rx2+rw2/2, y:ry2+rh2/2};
+    return Math.hypot(p.x-target.x, p.y-target.y) < Math.hypot(best.x-target.x, best.y-target.y) ? p : best;
+  });
+}
+
+if (isDot2) {
+  pB = center2;
+} else {
+  const pts2 = [{x:rx2+rw2/2,y:ry2},{x:rx2+rw2/2,y:ry2+rh2},{x:rx2,y:ry2+rh2/2},{x:rx2+rw2,y:ry2+rh2/2}];
+  pB = pts2.reduce((best, p) => {
+    return Math.hypot(p.x-pA.x, p.y-pA.y) < Math.hypot(best.x-pA.x, best.y-pA.y) ? p : best;
+  });
+}
+
+line.x1=pA.x; line.y1=pA.y; line.x2=pB.x; line.y2=pB.y;
     drawComplexLine(line, time);
   });
   if (window.gameScale) ctx.restore();
