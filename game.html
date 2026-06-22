@@ -598,9 +598,8 @@ function onMatch(a, b) {
   const matchedOpacity = st.matchedOpacity !== undefined ? parseFloat(st.matchedOpacity) : 0.35;
   const glowColor      = st.glowColor || '#00ffcc';
   createMatchFx(a, b, st.effMatch || 'fireworks');
-  if (matchedOpacity > 0) {
-    const lineSt = st.line || {};
-    '  if(l.enabled!==false)
+  const lineSt = st.line || {};
+  if (lineSt.enabled !== false) {
     activeLines.push({
       el1: a, el2: b,
       color: lineSt.color || '#00ffcc',
