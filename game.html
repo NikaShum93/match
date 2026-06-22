@@ -556,19 +556,26 @@ function applyAnim(card, anim, glowColor) {
 
 function clearAnim(card, side) {
   const st = CONFIG.style || {};
+
+  /* ← ИСПРАВЛЕНО: сначала снимаем ВСЕ анимации */
   card.classList.remove('glitch-anim');
+  card.style.animation = '';
+  card.style.filter    = '';
+  card.style.boxShadow = '';
+
+  /* Возвращаем idle если нужно */
   if (st.idle && st.idle.anim && st.idle.anim !== 'none') {
     if (st.idle.target === 'both' || st.idle.target === side) {
       card.classList.add('idle-' + st.idle.anim);
     }
   }
-  card.style.animation = '';
-  card.style.filter    = '';
+
   if (st.idle && st.idle.glowEnabled && st.idle.glow !== '#000000' && !card.querySelector('.dot-marker')) {
     if (st.idle.target === 'both' || st.idle.target === side) {
       card.style.boxShadow = `0 0 15px ${st.idle.glow}`;
-    } else { card.style.boxShadow = ''; }
-  } else { card.style.boxShadow = ''; }
+    }
+  }
+
   const dot = card.querySelector('.dot-marker');
   if (dot) { dot.style.animation = ''; dot.style.boxShadow = ''; dot.style.textShadow = ''; }
 }
@@ -578,6 +585,7 @@ function onCardClick(card) {
   const st        = CONFIG.style || {};
   const selAnim   = st.animClick || 'none';
   const glowColor = st.glowColor || '#00ffcc';
+
   if (selectedCard === card) {
     card.classList.remove('selected');
     card.className = card.className.replace(/anim-sel-\w+/g, '').trim();
@@ -585,10 +593,20 @@ function onCardClick(card) {
     selectedCard = null;
     return;
   }
+
+  /* ← ИСПРАВЛЕНО: снимаем hover-анимации ДО добавления selected */
+  card.classList.remove('glitch-anim');
+  card.style.animation = '';
+  card.style.filter    = '';
+  const dot = card.querySelector('.dot-marker');
+  if (dot) { dot.style.animation = ''; dot.style.boxShadow = ''; dot.style.textShadow = ''; }
+
   card.classList.add('selected');
   card.style.setProperty('--glow', glowColor);
   if (selAnim !== 'none') card.classList.add('anim-sel-' + selAnim);
+
   if (!selectedCard) { selectedCard = card; return; }
+
   const first  = selectedCard;
   const second = card;
   const sameIndex = first.dataset.pairIndex === second.dataset.pairIndex;
