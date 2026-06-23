@@ -272,11 +272,11 @@ async function init() {
   const preview = params.get('preview');
   document.getElementById('loader-screen').style.display = 'none';
 
-  if (preview) {
-    // Ждём конфиг от редактора через postMessage
+if (preview) {
     window.addEventListener('message', e => {
       if (e.data && e.data.type === 'LOAD_CONFIG') {
         CONFIG = e.data.config;
+        console.log('✅ CONFIG получен:', JSON.stringify(CONFIG).slice(0, 500)); // ← добавь это
         startGame();
       }
     });
