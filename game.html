@@ -83,7 +83,7 @@ body, html {
   box-shadow: 0 0 20px rgba(0,0,0,0.6);
 }
 /* FIX 1: фидбек поверх размытия — z-index выше оверлея размытия (45000) */
-#fb-img-box, #fb-txt-box { position: absolute; z-index: 60000; display: none; }
+#fb-img-box, #fb-txt-box { position: fixed; z-index: 60000; display: none; }
 #fbimg { display: block; width: 100%; height: 100%; object-fit: contain; }
 #fbtxt { font-weight: 900; text-align: center; line-height: 1.4; word-break: break-word; width: 100%; }
 @keyframes popUp { 0% { transform: scale(0.3); opacity: 0; } 70% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
@@ -188,10 +188,10 @@ body, html {
 <div id="game-wrapper" style="width:1280px;height:720px;position:absolute;left:50%;top:50%;transform-origin:center;transform:translate(-50%,-50%);overflow:hidden;z-index:20;">
   <div id="layer" style="position:absolute;inset:0;z-index:20;"></div>
   <div id="tooltip-box"></div>
-  <div id="fb-img-box"><img id="fbimg" src="" alt=""></div>
-  <div id="fb-txt-box" style="flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;">
-    <div id="fbtxt"></div>
-  </div>
+</div>
+<div id="fb-img-box"><img id="fbimg" src="" alt=""></div>
+<div id="fb-txt-box" style="flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;">
+  <div id="fbtxt"></div>
 </div>
 
 <canvas id="canvas-layer"></canvas>
@@ -943,10 +943,13 @@ function showFeedback() {
   const showTxt = (fb.mode === 'both' || fb.mode === 'text');
 
   if (showImg) {
-    imgBox.style.left      = (fb.imgX || 480) + 'px';
-    imgBox.style.top       = (fb.imgY || 100) + 'px';
-    imgBox.style.width     = (fb.imgW || 320) + 'px';
-    imgBox.style.height    = (fb.imgH || 240) + 'px';
+    const sc = window.gameScale || 1;
+    const ox = window.gameOffsetX || 0;
+    const oy = window.gameOffsetY || 0;
+    imgBox.style.left      = (ox + (fb.imgX || 480) * sc) + 'px';
+    imgBox.style.top       = (oy + (fb.imgY || 100) * sc) + 'px';
+    imgBox.style.width     = ((fb.imgW || 320) * sc) + 'px';
+    imgBox.style.height    = ((fb.imgH || 240) * sc) + 'px';
     imgEl.src              = fb.img;
     imgBox.style.display   = 'block';
     imgBox.style.animation = animStr;
@@ -955,11 +958,14 @@ function showFeedback() {
     imgBox.style.display = 'none';
   }
 
-  if (showTxt) {
-    txtBox.style.left         = (fb.txtX || 440) + 'px';
-    txtBox.style.top          = (fb.txtY || 400) + 'px';
-    txtBox.style.width        = (fb.txtW || 400) + 'px';
-    txtBox.style.height       = (fb.txtH || 150) + 'px';
+   if (showTxt) {
+    const sc = window.gameScale || 1;
+    const ox = window.gameOffsetX || 0;
+    const oy = window.gameOffsetY || 0;
+    txtBox.style.left         = (ox + (fb.txtX || 440) * sc) + 'px';
+    txtBox.style.top          = (oy + (fb.txtY || 400) * sc) + 'px';
+    txtBox.style.width        = ((fb.txtW || 400) * sc) + 'px';
+    txtBox.style.height       = ((fb.txtH || 150) * sc) + 'px';
     txtBox.style.background   = fb.transparentBg ? 'transparent' : (fb.bgColor || '#0a0a0f');
     txtBox.style.border       = fb.transparentBg ? 'none' : `${fb.borderWidth || 0}px solid ${fb.borderColor || '#00ffcc'}`;
     txtBox.style.borderRadius = (fb.radius || 16) + 'px';
