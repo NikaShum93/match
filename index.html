@@ -20,20 +20,33 @@ body, html { min-height: 100vh; height: auto; overflow: auto; }
 #workspace { position: relative; min-height: 100vh; overflow: visible; }
 
 /* FIX 4: копирайт наверху */
-#copyright-bar {
-  position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
-  z-index: 99999; pointer-events: none;
-  font-size: 11px; letter-spacing: 1px;
-  color: rgba(0,255,204,0.4);
-  text-shadow: 0 0 8px rgba(0,255,204,0.3);
-  white-space: nowrap;
+#header-bar {
+  position: fixed; top: 0; left: 370px; right: 0;
+  height: 60px; z-index: 9998;
+  background: rgba(10,10,15,0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0,255,204,0.15);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  pointer-events: none;
 }
-#copyright-bar a {
-  color: rgba(0,255,204,0.5); text-decoration: none;
+#header-title {
+  font-size: 16px; font-weight: 900; letter-spacing: 2px;
+  color: #fff;
+  text-shadow: 0 0 15px rgba(0,255,204,0.6);
+  text-transform: uppercase;
+}
+#header-copy {
+  font-size: 11px; letter-spacing: 1px; margin-top: 2px;
+  color: rgba(0,255,204,0.7);
+  text-shadow: 0 0 8px rgba(0,255,204,0.5);
+}
+#header-copy a {
+  color: rgba(0,255,204,0.8); text-decoration: none;
   pointer-events: auto;
   transition: color 0.2s, text-shadow 0.2s;
 }
-#copyright-bar a:hover {
+#header-copy a:hover {
   color: #00ffcc;
   text-shadow: 0 0 12px #00ffcc, 0 0 25px #00ffcc;
 }
@@ -51,13 +64,6 @@ body, html { min-height: 100vh; height: auto; overflow: auto; }
   z-index: 1;
 }
 #canvas-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-#settings-btn {
-  position: fixed; top: 15px; left: 15px; z-index: 10000;
-  background: var(--primary); color: #000; border: none;
-  padding: 10px 15px; border-radius: 8px; cursor: pointer;
-  font-weight: bold; transition: 0.2s; box-shadow: 0 0 15px rgba(0,255,204,0.3);
-}
-#settings-btn:hover { transform: scale(1.05); }
 #top-right-btns {
   position: fixed; top: 15px; right: 15px; z-index: 10000;
   display: flex; gap: 10px;
@@ -74,11 +80,10 @@ body, html { min-height: 100vh; height: auto; overflow: auto; }
 #settings-panel {
   position: fixed; top: 0; left: 0; width: 370px; height: 100%;
   background: var(--panel-bg); backdrop-filter: blur(10px); z-index: 9999;
-  padding: 50px 20px 20px;
-  transform: translateX(-100%); transition: transform 0.3s ease;
+  padding: 80px 20px 20px; box-sizing: border-box;
+  transform: translateX(0);
   overflow-y: auto; border-right: 1px solid #333;
 }
-#settings-panel.open { transform: translateX(0); }
 #settings-panel::-webkit-scrollbar { width: 6px; }
 #settings-panel::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
 .control-group { margin-bottom: 12px; }
@@ -257,12 +262,14 @@ button.action-btn:hover { background: #555; }
 <body>
 
 <!-- FIX 4: копирайт наверху -->
-<div id="copyright-bar">
-  <a href="https://vk.com/teachy_witchy" target="_blank">Вероника Шумайлова 2026 | КОТ</a>
+<div id="header-bar">
+  <div id="header-title">Конструктор игр «Поиск Пар»</div>
+  <div id="header-copy">
+    <a href="https://vk.com/teachy_witchy" target="_blank">Вероника Шумайлова 2026 | КОТ</a>
+  </div>
 </div>
 
 <div id="workspace">
-  <button id="settings-btn">⚙ Настройки</button>
   <div id="top-right-btns">
     <button class="top-btn test" id="btn-test">▶ Тест</button>
     <button class="top-btn pub"  id="btn-publish">🚀 Опубликовать</button>
@@ -759,9 +766,6 @@ function applyFont() {
 
 fillFonts('ru');
 applyFont();
-
-document.getElementById('settings-btn').addEventListener('click', () =>
-  document.getElementById('settings-panel').classList.toggle('open'));
 
 const gameArea = document.getElementById('game-area');
 
