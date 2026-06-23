@@ -1463,12 +1463,18 @@ document.getElementById('btn-reset').addEventListener('click', () => {
 });
 
 document.getElementById('btn-test').addEventListener('click', () => {
-  const modal = document.getElementById('test-modal');
+  const modal  = document.getElementById('test-modal');
   modal.classList.add('open');
-  const cfg      = buildConfig();
-  const cfgStr   = encodeURIComponent(JSON.stringify(cfg));
-  const iframe   = document.getElementById('test-iframe');
-  iframe.src     = BASE_GAME + '?cfg=' + cfgStr;
+  const iframe = document.getElementById('test-iframe');
+
+  // Сначала загружаем пустую страницу игры (без cfg в URL)
+  iframe.src = BASE_GAME;
+
+  // Когда iframe загрузился — отправляем конфиг через postMessage
+  iframe.onload = () => {
+    const cfg = buildConfig();
+    iframe.contentWindow.postMessage({ type: 'LOAD_CONFIG', config: cfg }, '*');
+  };
 });
 document.getElementById('test-modal-close').addEventListener('click', () => {
   document.getElementById('test-modal').classList.remove('open');
