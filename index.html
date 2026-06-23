@@ -1468,7 +1468,7 @@ document.getElementById('btn-test').addEventListener('click', () => {
   const iframe = document.getElementById('test-iframe');
 
   // Сначала загружаем пустую страницу игры (без cfg в URL)
-  iframe.src = BASE_GAME;
+iframe.src = BASE_GAME + '?preview=1';
 
   // Когда iframe загрузился — отправляем конфиг через postMessage
   iframe.onload = () => {
