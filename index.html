@@ -78,9 +78,9 @@ body, html { min-height: 100vh; height: auto; overflow: auto; }
 .top-btn.pub  { background: var(--primary); color: #000; }
 .top-btn.pub:hover  { background: #fff; transform: scale(1.05); }
 #settings-panel {
-  position: fixed; top: 0; left: 0; width: 370px; height: 100%;
+  position: fixed; top: 60px; left: 0; width: 370px; height: calc(100% - 60px);
   background: var(--panel-bg); backdrop-filter: blur(10px); z-index: 9999;
-  padding: 80px 20px 20px; box-sizing: border-box;
+  padding: 15px 20px 20px; box-sizing: border-box;
   transform: translateX(0);
   overflow-y: auto; border-right: 1px solid #333;
 }
