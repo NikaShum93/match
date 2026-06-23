@@ -934,8 +934,8 @@ function showFeedback() {
   // FIX 1: размытие добавляем ДО фидбека, но с меньшим z-index чем у fb-блоков (60000)
   if (fb.blur > 0) {
     const blurOv = document.createElement('div');
-    blurOv.style.cssText = `position:absolute;inset:0;backdrop-filter:blur(${fb.blur}px);z-index:55000;animation:fadeIn 0.5s forwards;`;
-    document.getElementById('game-wrapper').appendChild(blurOv);
+    blurOv.style.cssText = `position:fixed;inset:0;backdrop-filter:blur(${fb.blur}px);-webkit-backdrop-filter:blur(${fb.blur}px);z-index:55000;animation:fadeIn 0.5s forwards;`;
+    document.body.appendChild(blurOv);
   }
 
   // FIX 8: показываем только то что выбрано в режиме
