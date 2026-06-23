@@ -21,14 +21,22 @@ body, html { min-height: 100vh; height: auto; overflow: auto; }
 
 /* FIX 4: копирайт наверху */
 #copyright-bar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 99999;
-  background: rgba(10,10,15,0.92); backdrop-filter: blur(8px);
-  padding: 5px 15px; text-align: center; font-size: 11px;
-  border-bottom: 1px solid rgba(0,255,204,0.15);
-  pointer-events: none;
+  position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 99999; pointer-events: none;
+  font-size: 11px; letter-spacing: 1px;
+  color: rgba(0,255,204,0.4);
+  text-shadow: 0 0 8px rgba(0,255,204,0.3);
+  white-space: nowrap;
 }
-#copyright-bar a { color: #00ffcc; text-decoration: none; pointer-events: auto; }
-
+#copyright-bar a {
+  color: rgba(0,255,204,0.5); text-decoration: none;
+  pointer-events: auto;
+  transition: color 0.2s, text-shadow 0.2s;
+}
+#copyright-bar a:hover {
+  color: #00ffcc;
+  text-shadow: 0 0 12px #00ffcc, 0 0 25px #00ffcc;
+}
 #game-area {
   position: absolute;
   width: 1280px; height: 720px;
@@ -66,7 +74,7 @@ body, html { min-height: 100vh; height: auto; overflow: auto; }
 #settings-panel {
   position: fixed; top: 0; left: 0; width: 370px; height: 100%;
   background: var(--panel-bg); backdrop-filter: blur(10px); z-index: 9999;
-  padding: 70px 20px 20px; box-sizing: border-box;
+  padding: 60px 20px 20px; box-sizing: border-box;
   transform: translateX(-100%); transition: transform 0.3s ease;
   overflow-y: auto; border-right: 1px solid #333;
 }
