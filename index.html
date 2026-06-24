@@ -1499,34 +1499,41 @@ document.getElementById('btn-publish').addEventListener('click', async () => {
   statusEl.textContent = '⏳ Публикуем...';
   
   const cfg    = buildConfig();
-  const cfgStr = JSON.stringify(cfg);
+  
+  // 1. Генерируем уникальный ID для игры перед отправкой
+  const gameId = 'match-' + Date.now(); 
   
   try {
     const resp = await fetch(ENDPOINT, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'x-publish-key': 'nika_read_pub_2025'
+        // 2. Ставим правильный регистр заголовка
+        'X-Publish-Key': PUBLISH_KEY 
       },
-      body: JSON.stringify({ config: cfgStr })
+      // 3. Собираем тело запроса в точности как в Magic Catcher
+      body: JSON.stringify({ 
+        id: gameId, 
+        mode: 'json', 
+        folder: 'data', 
+        content: JSON.stringify(cfg) 
+      })
     });
     
-    const data = await resp.json();
-    console.log('Ответ сервера:', data); // ← смотри в консоли
+    // В Magic Catcher ты просто проверяешь res.ok
+    if (!resp.ok) throw new Error('Сервер ответил ошибкой');
     
-    if (data.id) {
-      const gameUrl    = BASE_GAME + '?id=' + data.id;
-      const iframeCode = `<iframe src="${gameUrl}" width="1280" height="720" frameborder="0" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
-      document.getElementById('code-output').value = iframeCode;
-      statusEl.innerHTML = `✅ Опубликовано! <a href="${gameUrl}" target="_blank" style="color:#00ffcc;">Открыть игру</a>`;
-    } else {
-      statusEl.textContent = '❌ Ошибка: ' + (data.error || JSON.stringify(data));
-    }
+    // Формируем ссылку и Iframe
+    const gameUrl    = BASE_GAME + '?id=' + gameId;
+    const iframeCode = `<iframe src="${gameUrl}" width="1280" height="720" frameborder="0" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+    
+    document.getElementById('code-output').value = iframeCode;
+    statusEl.innerHTML = `✅ Опубликовано! <a href="${gameUrl}" target="_blank" style="color:#00ffcc;">Открыть игру</a>`;
+    
   } catch(err) {
-    statusEl.textContent = '❌ Ошибка сети: ' + err.message;
+    statusEl.textContent = '❌ Ошибка: ' + err.message;
   }
 });
-
 document.getElementById('btn-copy-iframe').addEventListener('click', () => {
   const ta = document.getElementById('code-output');
   if (!ta.value) { document.getElementById('pub-status').textContent = '⚠️ Сначала опубликуй!'; return; }
