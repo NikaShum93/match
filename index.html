@@ -1525,7 +1525,9 @@ document.getElementById('btn-publish').addEventListener('click', async () => {
     
     // Формируем ссылку и Iframe
     const gameUrl    = BASE_GAME + '?id=' + gameId;
-    const iframeCode = `<iframe src="${gameUrl}" width="1280" height="720" frameborder="0" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+   const iframeCode = `<iframe src="${gameUrl}" width="1280" height="720" 
+frameborder="0" allowfullscreen allow="autoplay" 
+style="width:100%;height:100%;border:none;"></iframe>`;
     
     document.getElementById('code-output').value = iframeCode;
     statusEl.innerHTML = `✅ Опубликовано! <a href="${gameUrl}" target="_blank" style="color:#00ffcc;">Открыть игру</a>`;
