@@ -955,23 +955,8 @@ function showFeedback() {
 
   // ── РАЗМЫТИЕ ФОНА ──────────────────────────────────────────
 if (fb.blur > 0) {
-  const blurOv = document.createElement('div');
-  blurOv.style.cssText = `
-    position: fixed;
-    top: -5000px;
-    left: -5000px;
-    right: -5000px;
-    bottom: -5000px;
-    width: calc(100vw + 10000px);
-    height: calc(100vh + 10000px);
-    backdrop-filter: blur(${fb.blur}px);
-    -webkit-backdrop-filter: blur(${fb.blur}px);
-    background: rgba(0,0,0,0.35);
-    z-index: 59000;
-    pointer-events: none;
-    animation: fadeIn 0.5s forwards;
-  `;
-  document.body.appendChild(blurOv);
+  document.body.style.transition = 'filter 0.5s ease';
+  document.body.style.filter = `blur(${fb.blur}px)`;
 }
   // Тёмная плёнка поверх ВСЕГО (включая серые края за game-wrapper)
   const dimOv = document.createElement('div');
