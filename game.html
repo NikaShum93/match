@@ -381,10 +381,10 @@ function loadSounds() {
 function playSound(key) {
   try {
     if (sounds[key]) {
-      // Клонируем звук для независимого воспроизведения (решает проблему обрывов)
-      const snd = sounds[key].cloneNode(); 
-      snd.volume = volMuted ? 0 : globalVolume; 
-      snd.play().catch(() => {}); 
+      // Безопасно создаем новый аудио-объект на основе загруженного источника
+      const snd = new Audio(sounds[key].src);
+      snd.volume = volMuted ? 0 : globalVolume;
+      snd.play().catch(() => {});
     }
   } catch(_) {}
 }
@@ -918,8 +918,21 @@ function moveTT(e) {
   if (tooltipBox.style.display === 'none') return;
   const scale = window.gameScale || 1;
   const rect  = document.getElementById('game-wrapper').getBoundingClientRect();
-  tooltipBox.style.left = ((e.clientX - rect.left) / scale + 15) + 'px';
-  tooltipBox.style.top  = ((e.clientY - rect.top)  / scale + 15) + 'px';
+  
+  let x = ((e.clientX - rect.left) / scale + 15);
+  let y = ((e.clientY - rect.top)  / scale + 15);
+
+  // Получаем реальную ширину самой подсказки
+  const ttWidth = tooltipBox.offsetWidth;
+  const gameWidth = 1280; // Базовая ширина игрового поля из твоего кода
+
+  // Если подсказка уходит за правый край фрейма — зеркалим её влево от курсора
+  if (x + ttWidth > gameWidth) {
+    x = ((e.clientX - rect.left) / scale - ttWidth - 15);
+  }
+
+  tooltipBox.style.left = x + 'px';
+  tooltipBox.style.top  = y + 'px';
 }
 function hideTT() { document.getElementById('tooltip-box').style.display = 'none'; }
 
