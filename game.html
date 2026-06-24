@@ -955,21 +955,27 @@ function showFeedback() {
   const anim    = fb.anim || 'popUp';
   const animStr = anim !== 'none' ? `${anim} 0.55s cubic-bezier(0.34,1.56,0.64,1) both` : 'none';
 
-   const dimOv = document.createElement('div');
-  dimOv.style.cssText = `
-    position: fixed;
-    top: -200vh;
-    left: -200vw;
-    width: 500vw;
-    height: 500vh;
-    background: rgba(0,0,0,0.45);
-    backdrop-filter: blur(${fb.blur > 0 ? fb.blur : 0}px);
-    -webkit-backdrop-filter: blur(${fb.blur > 0 ? fb.blur : 0}px);
-    z-index: 54999;
-    pointer-events: none;
-    animation: fadeIn 0.5s forwards;
-  `;
-  document.body.appendChild(dimOv);
+  // Размываем саму игру
+if (fb.blur > 0) {
+  document.getElementById('bg-layer').style.filter = `blur(${fb.blur}px)`;
+  document.getElementById('game-wrapper').style.filter = `blur(${fb.blur}px)`;
+  document.getElementById('canvas-layer').style.filter = `blur(${fb.blur}px)`;
+}
+
+// Тёмный оверлей — обычный div без backdrop-filter
+const dimOv = document.createElement('div');
+dimOv.style.cssText = `
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.45);
+  z-index: 54999;
+  pointer-events: none;
+  animation: fadeIn 0.5s forwards;
+`;
+document.body.appendChild(dimOv);
 
   // ── КАРТИНКА ───────────────────────────────────────────────
   const showImg = (fb.mode === 'both' || fb.mode === 'image') && fb.img;
