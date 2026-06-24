@@ -1497,25 +1497,30 @@ document.getElementById('btn-publish').addEventListener('click', async () => {
   const statusEl = document.getElementById('pub-status');
   document.getElementById('output-modal').style.display = 'flex';
   statusEl.textContent = '⏳ Публикуем...';
+  
   const cfg    = buildConfig();
   const cfgStr = JSON.stringify(cfg);
+  
   try {
     const resp = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: { 
+      method: 'POST',
+      headers: { 
         'Content-Type': 'application/json',
-        'x-publish-key': PUBLISH_KEY   // ← добавь эту строку
-    },
-    body: JSON.stringify({ config: cfgStr })  // key из body убери
-});
+        'x-publish-key': 'nika_read_pub_2025'
+      },
+      body: JSON.stringify({ config: cfgStr })
+    });
+    
     const data = await resp.json();
+    console.log('Ответ сервера:', data); // ← смотри в консоли
+    
     if (data.id) {
-      const gameUrl   = BASE_GAME + '?id=' + data.id;
+      const gameUrl    = BASE_GAME + '?id=' + data.id;
       const iframeCode = `<iframe src="${gameUrl}" width="1280" height="720" frameborder="0" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
       document.getElementById('code-output').value = iframeCode;
       statusEl.innerHTML = `✅ Опубликовано! <a href="${gameUrl}" target="_blank" style="color:#00ffcc;">Открыть игру</a>`;
     } else {
-      statusEl.textContent = '❌ Ошибка: ' + (data.error || 'неизвестная ошибка');
+      statusEl.textContent = '❌ Ошибка: ' + (data.error || JSON.stringify(data));
     }
   } catch(err) {
     statusEl.textContent = '❌ Ошибка сети: ' + err.message;
