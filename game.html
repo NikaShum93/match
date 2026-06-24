@@ -31,11 +31,10 @@ body, html {
 #loader-screen {
   position: fixed; inset: 0; background: rgba(20,20,25,0.4); backdrop-filter: blur(4px);
   z-index: 999999; display: none; flex-direction: column; justify-content: center; align-items: center;
-  transition: opacity 0.5s ease;
 }
 .loader-box {
   background: rgba(10,10,15,0.85); padding: 30px; border-radius: 16px; border: 1px solid rgba(0,255,204,0.3);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.8); text-align: center; color: #fff; font-family: 'Segoe UI', sans-serif;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8); text-align: center; color: #fff;
 }
 .spinner {
   width: 40px; height: 40px; border: 4px solid rgba(0,255,204,0.2); border-top-color: #00ffcc;
@@ -52,14 +51,9 @@ body, html {
   user-select: none;
 }
 .card::after {
-  content: '';
-  position: absolute;
-  inset: -8px;
-  z-index: 999;
-  cursor: pointer;
+  content: ''; position: absolute; inset: -8px; z-index: 999; cursor: pointer;
 }
 .card.glitch-anim { animation: glitch 0.4s steps(1) infinite; }
-.card.glitch-anim::after { position: fixed; animation: none; transform: none !important; }
 .card.selected { z-index: 100; }
 .card.matched { pointer-events: none; cursor: default; }
 .anim-sel-float { animation: selFloat 2s ease-in-out infinite; }
@@ -82,7 +76,6 @@ body, html {
   max-width: 260px; text-align: center;
   box-shadow: 0 0 20px rgba(0,0,0,0.6);
 }
-/* FIX 1: фидбек поверх размытия — z-index выше оверлея размытия (45000) */
 #fb-img-box, #fb-txt-box { position: fixed; z-index: 60000; display: none; }
 #fbimg { display: block; width: 100%; height: 100%; object-fit: contain; }
 #fbtxt { font-weight: 900; text-align: center; line-height: 1.4; word-break: break-word; width: 100%; }
@@ -141,7 +134,6 @@ body, html {
 .anim-sel-shake .dot-marker, .anim-sel-shake .dot-star { animation: selShake 0.5s ease infinite; }
 .anim-sel-glow .dot-marker { box-shadow: 0 0 0 3px var(--glow,#00ffcc), 0 0 25px var(--glow,#00ffcc), inset 0 0 10px rgba(255,255,255,0.3); }
 .anim-sel-glow .dot-star { text-shadow: 0 0 20px var(--glow,#00ffcc), 0 0 40px var(--glow,#00ffcc), 0 0 60px var(--glow,#00ffcc); }
-/* FIX 7: свечение по непрозрачному контуру картинки */
 .card-has-img { filter: none; }
 .card-has-img.glow-idle { filter: drop-shadow(0 0 8px var(--idle-glow, #00ffcc)) drop-shadow(0 0 15px var(--idle-glow, #00ffcc)); }
 #vol-btn {
@@ -168,7 +160,7 @@ body, html {
   accent-color: #00ffcc; cursor: pointer;
   -webkit-appearance: slider-vertical; appearance: auto;
 }
-#vol-label { font-size: 10px; color: rgba(255,255,255,0.45); font-family: 'Segoe UI', sans-serif; letter-spacing: 0.5px; }
+#vol-label { font-size: 10px; color: rgba(255,255,255,0.45); letter-spacing: 0.5px; }
 </style>
 </head>
 <body>
@@ -189,6 +181,7 @@ body, html {
   <div id="layer" style="position:absolute;inset:0;z-index:20;"></div>
   <div id="tooltip-box"></div>
 </div>
+
 <div id="fb-img-box"><img id="fbimg" src="" alt=""></div>
 <div id="fb-txt-box" style="flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;">
   <div id="fbtxt"></div>
@@ -213,7 +206,7 @@ body, html {
 <script>
 const JSON_BASE = "https://nikashum93.github.io/texts/data/";
 
-let CONFIG = null;
+let CONFIG       = null;
 let selectedCard = null;
 let matchedPairs = 0;
 let totalPairs   = 0;
@@ -221,46 +214,50 @@ let sounds       = {};
 let activeLines  = [];
 let globalVolume = 1;
 let volMuted     = false;
+let audioUnlocked = false;
 
+// ─── ГРОМКОСТЬ ───────────────────────────────────────────────
 function updateVolIcon() {
   const w1 = document.getElementById('vol-wave1');
   const w2 = document.getElementById('vol-wave2');
-  const v = volMuted ? 0 : globalVolume;
-  if (v === 0) { w1.style.display = 'none'; w2.style.display = 'none'; }
-  else if (v < 0.5) { w1.style.display = ''; w2.style.display = 'none'; }
-  else { w1.style.display = ''; w2.style.display = ''; }
+  const v  = volMuted ? 0 : globalVolume;
+  if (v === 0)       { w1.style.display = 'none'; w2.style.display = 'none'; }
+  else if (v < 0.5)  { w1.style.display = '';     w2.style.display = 'none'; }
+  else               { w1.style.display = '';     w2.style.display = '';     }
 }
 function applyVolume() {
   const v = volMuted ? 0 : globalVolume;
-  Object.values(sounds).forEach(arr => { 
-    if (Array.isArray(arr)) {
-      arr.forEach(a => { try { a.volume = v; } catch(_){} });
-    }
-  });
+  Object.values(sounds).forEach(a => { try { a.volume = v; } catch(_){} });
   document.getElementById('vol-label').textContent = Math.round(v * 100) + '%';
   document.getElementById('vol-slider').value = v;
   updateVolIcon();
 }
+document.getElementById('vol-btn').addEventListener('click', () => {
+  document.getElementById('vol-slider-wrap').classList.toggle('open');
+});
+document.getElementById('vol-slider').addEventListener('input', e => {
+  globalVolume = parseFloat(e.target.value);
+  volMuted = globalVolume === 0;
+  applyVolume();
+});
 
-let audioUnlocked = false;
-
+// ─── РАЗБЛОКИРОВКА ЗВУКА ─────────────────────────────────────
 function unlockAudio() {
   if (audioUnlocked) return;
   audioUnlocked = true;
-  // Создаём и сразу воспроизводим тихий звук — это разблокирует контекст
-  const silent = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAA' +
-    'EAAQARAAIAAgAIABAAAgACAAgQAAAIAAgAIAAAA');
+  const silent = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
   silent.volume = 0;
   silent.play().catch(() => {});
 }
 
+// ─── ЗВУКИ ───────────────────────────────────────────────────
 function loadSounds() {
   const s = CONFIG.sounds || {};
-  ['correct','wrong','win'].forEach(key => {
+  ['correct', 'wrong', 'win'].forEach(key => {
     if (s[key]) {
       const a = new Audio(s[key]);
       a.preload = 'auto';
-      a.volume = volMuted ? 0 : globalVolume;
+      a.volume  = volMuted ? 0 : globalVolume;
       sounds[key] = a;
     }
   });
@@ -277,10 +274,11 @@ function playSound(key) {
   } catch(_) {}
 }
 
+// ─── УТИЛИТЫ ─────────────────────────────────────────────────
 function cleanUrl(val) { return val.trim().replace(/\s+/g, ''); }
 function isImageUrl(val) {
   if (!val) return false;
-  let s = cleanUrl(val);
+  const s = cleanUrl(val);
   if (/^https?:\/\//i.test(s) || /^data:image\//i.test(s)) return true;
   if (/\.(jpeg|jpg|gif|png|webp|svg)(\?.*)?$/i.test(s) && !/\s/.test(s)) return true;
   return false;
@@ -288,20 +286,25 @@ function isImageUrl(val) {
 function renderMath(el, txt) {
   el.innerHTML = txt;
   if (window.MathJax && window.MathJax.typesetPromise)
-    window.MathJax.typesetPromise([el]).catch(function(){});
+    window.MathJax.typesetPromise([el]).catch(() => {});
+}
+function hexToRgba(hex, alpha) {
+  if (!hex) return `rgba(0,0,0,${alpha})`;
+  const h = hex.replace('#', '');
+  return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${alpha})`;
 }
 
+// ─── ЗАГРУЗКА ─────────────────────────────────────────────────
 async function init() {
   const params  = new URLSearchParams(location.search);
   const id      = params.get('id');
   const preview = params.get('preview');
   document.getElementById('loader-screen').style.display = 'none';
 
-if (preview) {
+  if (preview) {
     window.addEventListener('message', e => {
       if (e.data && e.data.type === 'LOAD_CONFIG') {
         CONFIG = e.data.config;
-        console.log('✅ CONFIG получен:', JSON.stringify(CONFIG).slice(0, 500)); // ← добавь это
         startGame();
       }
     });
@@ -343,25 +346,28 @@ async function fetchWithRetry(url, retries = 20, delay = 2000) {
   throw new Error('Файл не найден');
 }
 
+// ─── СТАРТ ИГРЫ ───────────────────────────────────────────────
 function startGame() {
   if (!CONFIG) return;
   applyBackground();
   if (CONFIG.font) {
-    const gfLink = document.createElement('link');
-    gfLink.rel  = 'stylesheet';
-    gfLink.href = `https://fonts.googleapis.com/css2?family=${CONFIG.font.replace(/ /g,'+')}:wght@400;700&display=swap`;
-    document.head.appendChild(gfLink);
+    const lnk = document.createElement('link');
+    lnk.rel  = 'stylesheet';
+    lnk.href = `https://fonts.googleapis.com/css2?family=${CONFIG.font.replace(/ /g,'+')}:wght@400;700&display=swap`;
+    document.head.appendChild(lnk);
   }
   loadSounds();
   renderCards();
-  // Разблокируем аудио при первом клике на игровое поле
-document.getElementById('layer').addEventListener('click', unlockAudio, { once: true });
-document.getElementById('game-wrapper').addEventListener('click', unlockAudio, { once: true });
+
+  // Разблокировка звука при первом касании
+  document.getElementById('game-wrapper').addEventListener('click', unlockAudio, { once: true });
+
   initCanvas();
   renderCanvasLoop();
   const pairSet = new Set(CONFIG.items.map(i => i.pairIndex));
   totalPairs = pairSet.size;
   autoScale();
+
   if (CONFIG.style && CONFIG.style.idle && CONFIG.style.idle.sparksEnabled && CONFIG.style.idle.sparks !== '#000000') {
     setInterval(() => {
       document.querySelectorAll('.card:not(.matched)').forEach(c => {
@@ -397,32 +403,7 @@ function applyBackground() {
   if (CONFIG.bg) bg.style.backgroundImage = `url(${CONFIG.bg})`;
 }
 
-function loadSounds() {
-  const s = CONFIG.sounds || {};
-  ['correct','wrong','win'].forEach(key => {
-    if (s[key]) {
-      const a = new Audio(s[key]); a.preload = 'auto'; a.volume = volMuted ? 0 : globalVolume;
-      sounds[key] = a;
-    }
-  });
-}
-function playSound(key) {
-  try {
-    if (sounds[key]) {
-      // Безопасно создаем новый аудио-объект на основе загруженного источника
-      const snd = new Audio(sounds[key].src);
-      snd.volume = volMuted ? 0 : globalVolume;
-      snd.play().catch(() => {});
-    }
-  } catch(_) {}
-}
-
-function hexToRgba(hex, alpha) {
-  if (!hex) return `rgba(0,0,0,${alpha})`;
-  const h = hex.replace('#','');
-  return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${alpha})`;
-}
-
+// ─── КАРТОЧКИ ─────────────────────────────────────────────────
 function renderCards() {
   const layer = document.getElementById('layer');
   layer.innerHTML = '';
@@ -472,7 +453,6 @@ function renderCards() {
       card.style.fontFamily = `"${font}", sans-serif`;
       card.style.fontWeight = '700';
 
-      // FIX 7: для картинок — свечение через filter по контуру, не boxShadow
       if (st.idle && st.idle.glowEnabled && st.idle.glow !== '#000000') {
         if (st.idle.target === 'both' || st.idle.target === item.side) {
           if (hasImg) {
@@ -501,9 +481,8 @@ function renderCards() {
       }
     }
 
-    const animHover   = st.animHover  || 'none';
-    const hoverTarget = st.hoverTarget || 'both';
-    const glowColor   = st.glowColor  || '#00ffcc';
+    const animHover = st.animHover || 'none';
+    const glowColor = st.glowColor || '#00ffcc';
 
     if (item.tooltip && (item.tooltip.text || item.tooltip.img)) {
       card.dataset.ttText = item.tooltip.text || '';
@@ -512,8 +491,7 @@ function renderCards() {
 
     card.addEventListener('mouseenter', e => {
       if (card.classList.contains('matched')) return;
-      if (selectedCard !== card && (hoverTarget === 'both' || hoverTarget === item.side))
-        applyAnim(card, animHover, glowColor);
+      if (selectedCard !== card) applyAnim(card, animHover, glowColor);
       if (item.tooltip && (item.tooltip.text || item.tooltip.img)) showTT(e, card);
     });
     card.addEventListener('mousemove',  e => moveTT(e));
@@ -540,50 +518,38 @@ function applyAnim(card, anim, glowColor) {
   card.classList.remove('glow-idle');
   card.style.removeProperty('animation');
   void card.offsetWidth;
-  const dot = card.querySelector('.dot-marker');
+    const dot = card.querySelector('.dot-marker');
   switch (anim) {
     case 'glow':
       if (dot) {
         dot.style.boxShadow = `0 0 8px ${glowColor}, 0 0 20px ${glowColor}`;
         if (dot.classList.contains('dot-star')) dot.style.textShadow = `0 0 20px ${glowColor}, 0 0 40px ${glowColor}`;
       } else {
-        // FIX 7: для картинок используем filter для свечения по контуру
-        const hasImg = card.querySelector('img');
-        if (hasImg) {
-          card.style.filter = `drop-shadow(0 0 8px ${glowColor}) drop-shadow(0 0 20px ${glowColor})`;
-        } else {
-          card.style.filter = `drop-shadow(0 0 8px ${glowColor}) drop-shadow(0 0 20px ${glowColor})`;
-        }
+        card.style.filter = `drop-shadow(0 0 8px ${glowColor}) drop-shadow(0 0 20px ${glowColor})`;
       }
       break;
     case 'scaleUp':   if (dot) dot.style.animation = 'scaleUp 0.4s ease infinite';   else card.style.animation = 'scaleUp 0.4s ease infinite';   break;
     case 'scaleDown': if (dot) dot.style.animation = 'scaleDown 0.4s ease infinite';  else card.style.animation = 'scaleDown 0.4s ease infinite';  break;
     case 'pulse':     if (dot) dot.style.animation = 'pulse 0.6s ease infinite';      else card.style.animation = 'pulse 0.6s ease infinite';      break;
     case 'wobble':    if (dot) dot.style.animation = 'wobble 0.5s ease infinite';     else card.style.animation = 'wobble 0.5s ease infinite';     break;
-    case 'glitch':
-      if (dot) { dot.style.animation = 'glitch 0.4s steps(1) infinite'; }
-      else { card.classList.add('glitch-anim'); }
-      break;
+    case 'glitch':    if (dot) dot.style.animation = 'glitch 0.4s steps(1) infinite'; else card.classList.add('glitch-anim'); break;
     case 'distort':   if (dot) dot.style.animation = 'distort 0.5s ease infinite';   else card.style.animation = 'distort 0.5s ease infinite';   break;
   }
 }
 
 function clearAnim(card, side) {
   const st = CONFIG.style || {};
-  // Снимаем ВСЕ анимации и эффекты
   card.classList.remove('glitch-anim');
   card.style.animation = '';
   card.style.filter    = '';
   card.style.boxShadow = '';
 
-  // FIX 2: возвращаем idle-анимацию
   if (st.idle && st.idle.anim && st.idle.anim !== 'none') {
     if (st.idle.target === 'both' || st.idle.target === side) {
       card.classList.add('idle-' + st.idle.anim);
     }
   }
 
-  // FIX 7: возвращаем idle-свечение (по контуру для картинок)
   if (st.idle && st.idle.glowEnabled && st.idle.glow !== '#000000') {
     if (st.idle.target === 'both' || st.idle.target === side) {
       const hasImg = card.querySelector('img');
@@ -600,14 +566,12 @@ function clearAnim(card, side) {
   if (dot) { dot.style.animation = ''; dot.style.boxShadow = ''; dot.style.textShadow = ''; }
 }
 
-// FIX 2 + FIX 3: анимация покоя отменяется при клике, две карточки одной группы — просто переключают выбор
 function onCardClick(card) {
   if (card.classList.contains('matched')) return;
   const st        = CONFIG.style || {};
   const selAnim   = st.animClick || 'none';
   const glowColor = st.glowColor || '#00ffcc';
 
-  // Клик по уже выбранной — снимаем выбор
   if (selectedCard === card) {
     card.classList.remove('selected');
     card.className = card.className.replace(/anim-sel-\w+/g, '').trim();
@@ -616,7 +580,6 @@ function onCardClick(card) {
     return;
   }
 
-  // FIX 2: сбрасываем idle и hover анимации ПЕРЕД добавлением selected
   card.classList.remove('glitch-anim', 'idle-float', 'idle-pulse', 'idle-heartbeat', 'glow-idle');
   card.style.animation = '';
   card.style.filter    = '';
@@ -624,18 +587,14 @@ function onCardClick(card) {
   const dot = card.querySelector('.dot-marker');
   if (dot) { dot.style.animation = ''; dot.style.boxShadow = ''; dot.style.textShadow = ''; }
 
-  // Если уже есть выбранная карточка
   if (selectedCard) {
     const first  = selectedCard;
     const second = card;
 
-    // FIX 3: обе карточки одной стороны — просто переключаем выбор на новую
     if (first.dataset.side === second.dataset.side) {
-      // Снимаем выделение с первой
       first.classList.remove('selected');
       first.className = first.className.replace(/anim-sel-\w+/g, '').trim();
       clearAnim(first, first.dataset.side);
-      // Выделяем новую
       card.classList.add('selected');
       card.style.setProperty('--glow', glowColor);
       if (selAnim !== 'none') card.classList.add('anim-sel-' + selAnim);
@@ -643,18 +602,15 @@ function onCardClick(card) {
       return;
     }
 
-    // Разные стороны — проверяем пару
     card.classList.add('selected');
     card.style.setProperty('--glow', glowColor);
     if (selAnim !== 'none') card.classList.add('anim-sel-' + selAnim);
-
     selectedCard = null;
     const sameIndex = first.dataset.pairIndex === second.dataset.pairIndex;
     if (sameIndex) { onMatch(first, second); } else { onMismatch(first, second); }
     return;
   }
 
-  // Первый выбор
   card.classList.add('selected');
   card.style.setProperty('--glow', glowColor);
   if (selAnim !== 'none') card.classList.add('anim-sel-' + selAnim);
@@ -682,16 +638,12 @@ function onMatch(a, b) {
     card.className = card.className.replace(/anim-sel-\w+/g, '').trim();
     card.classList.add('matched');
     clearAnim(card, card.dataset.side);
-
-    // FIX 5: matchedOpacity — разные значения дают реально разный вид
     const op = parseFloat(matchedOpacity);
     if (op === 0) {
       card.style.opacity       = '0';
       card.style.pointerEvents = 'none';
     } else {
       card.style.opacity = op;
-      // При полупрозрачности — только opacity, без доп.затемнения
-      // При затемнении (0.6) — добавляем тёмный overlay через filter
       if (op >= 0.55 && op < 0.9) {
         card.style.filter = `brightness(0.5) drop-shadow(0 0 10px ${glowColor})`;
       } else {
@@ -786,6 +738,7 @@ function createMismatchFx(fxType, emojiVal) {
   }
 }
 
+// ─── CANVAS / ЛИНИИ ───────────────────────────────────────────
 let canvas, ctx;
 let mouseX = -1000, mouseY = -1000;
 window.addEventListener('mousemove', e => {
@@ -913,6 +866,7 @@ function drawComplexLine(L, time) {
   ctx.restore();
 }
 
+// ─── ТУЛТИП ───────────────────────────────────────────────────
 function showTT(e, card) {
   const st = CONFIG.style || {};
   const tt = st.tooltip || {};
@@ -946,45 +900,34 @@ function moveTT(e) {
   if (tooltipBox.style.display === 'none') return;
   const scale = window.gameScale || 1;
   const rect  = document.getElementById('game-wrapper').getBoundingClientRect();
-  
   let x = ((e.clientX - rect.left) / scale + 15);
   let y = ((e.clientY - rect.top)  / scale + 15);
-
-  // Получаем реальную ширину самой подсказки
   const ttWidth = tooltipBox.offsetWidth;
-  const gameWidth = 1280; // Базовая ширина игрового поля из твоего кода
-
-  // Если подсказка уходит за правый край фрейма — зеркалим её влево от курсора
-  if (x + ttWidth > gameWidth) {
-    x = ((e.clientX - rect.left) / scale - ttWidth - 15);
-  }
-
+  if (x + ttWidth > 1280) x = ((e.clientX - rect.left) / scale - ttWidth - 15);
   tooltipBox.style.left = x + 'px';
   tooltipBox.style.top  = y + 'px';
 }
 function hideTT() { document.getElementById('tooltip-box').style.display = 'none'; }
 
-// FIX 1 + FIX 8: фидбек поверх размытия + показываем только нужные блоки по режиму
+// ─── ФИНАЛЬНЫЙ ФИДБЕК ─────────────────────────────────────────
 function showFeedback() {
   playSound('win');
   const fb = CONFIG.feedback || {};
   if (!fb.mode || fb.mode === 'none') return;
 
-  const imgBox = document.getElementById('fb-img-box');
-  const txtBox = document.getElementById('fb-txt-box');
-  const imgEl  = document.getElementById('fbimg');
-  const txtEl  = document.getElementById('fbtxt');
-  const anim   = fb.anim || 'popUp';
+  const imgBox  = document.getElementById('fb-img-box');
+  const txtBox  = document.getElementById('fb-txt-box');
+  const imgEl   = document.getElementById('fbimg');
+  const txtEl   = document.getElementById('fbtxt');
+  const anim    = fb.anim || 'popUp';
   const animStr = anim !== 'none' ? `${anim} 0.55s cubic-bezier(0.34,1.56,0.64,1) both` : 'none';
 
-  // FIX 1: размытие добавляем ДО фидбека, но с меньшим z-index чем у fb-блоков (60000)
   if (fb.blur > 0) {
     const blurOv = document.createElement('div');
-   blurOv.style.cssText = `position:fixed;top:0;left:0;width:100vw;height:100vh;backdrop-filter:blur(${fb.blur}px);-webkit-backdrop-filter:blur(${fb.blur}px);z-index:55000;animation:fadeIn 0.5s forwards;`;
+    blurOv.style.cssText = `position:fixed;top:0;left:0;width:100vw;height:100vh;backdrop-filter:blur(${fb.blur}px);-webkit-backdrop-filter:blur(${fb.blur}px);z-index:55000;animation:fadeIn 0.5s forwards;`;
     document.body.appendChild(blurOv);
   }
 
-  // FIX 8: показываем только то что выбрано в режиме
   const showImg = (fb.mode === 'both' || fb.mode === 'image') && fb.img;
   const showTxt = (fb.mode === 'both' || fb.mode === 'text');
 
@@ -1017,12 +960,8 @@ function showFeedback() {
     txtBox.style.borderRadius = (fb.radius || 16) + 'px';
     txtBox.style.boxShadow    = fb.transparentBg ? 'none' : `0 0 30px ${fb.glowColor || '#00ffcc'}, 10px 10px 20px ${fb.shadow || '#000000'}`;
     txtEl.style.textShadow    = fb.fbTextGlow ? `0 0 15px ${fb.glowColor || '#00ffcc'}, 0 0 30px ${fb.glowColor || '#00ffcc'}` : 'none';
-
-    // FIX 6: шрифт фидбека
-    txtEl.style.fontSize   = (fb.fontSize || 28) + 'px';
-    txtEl.style.fontFamily = fb.font
-      ? `"${fb.font}", sans-serif`
-      : (CONFIG.font ? `"${CONFIG.font}", sans-serif` : 'sans-serif');
+    txtEl.style.fontSize      = (fb.fontSize || 28) + 'px';
+    txtEl.style.fontFamily    = fb.font ? `"${fb.font}", sans-serif` : (CONFIG.font ? `"${CONFIG.font}", sans-serif` : 'sans-serif');
 
     let fbTextContent = fb.text || '🎉 Отлично!';
     if (isImageUrl(fbTextContent)) {
