@@ -245,11 +245,9 @@ document.getElementById('vol-slider').addEventListener('input', e => {
 function unlockAudio() {
   if (audioUnlocked) return;
   audioUnlocked = true;
-  const silent = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==');
-  silent.volume = 0;
-  silent.play().catch(() => {});
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
 }
-
 // ─── ЗВУКИ ───────────────────────────────────────────────────
 function loadSounds() {
   const s = CONFIG.sounds || {};
@@ -263,17 +261,50 @@ function loadSounds() {
   });
 }
 
-function playSound(key) {
-  try {
-    unlockAudio();
-    if (sounds[key]) {
-      const snd = new Audio(sounds[key].src);
-      snd.volume = volMuted ? 0 : globalVolume;
-      snd.play().catch(() => {});
-    }
-  } catch(_) {}
+let _audioCtx = null;
+const _audioBuffers = {};
+
+function getAudioCtx() {
+  if (!_audioCtx) {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (_audioCtx.state === 'suspended') {
+    _audioCtx.resume();
+  }
+  return _audioCtx;
 }
 
+function playSound(key) {
+  try {
+    if (!sounds[key]) return;
+    const ctx = getAudioCtx();
+    const src = sounds[key].src;
+
+    function play(buffer) {
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      const gain = ctx.createGain();
+      gain.gain.value = volMuted ? 0 : globalVolume;
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      source.start(0);
+    }
+
+    if (_audioBuffers[key]) {
+      play(_audioBuffers[key]);
+      return;
+    }
+
+    fetch(src)
+      .then(r => r.arrayBuffer())
+      .then(buf => ctx.decodeAudioData(buf))
+      .then(decoded => {
+        _audioBuffers[key] = decoded;
+        play(decoded);
+      })
+      .catch(() => {});
+  } catch(_) {}
+}
 // ─── УТИЛИТЫ ─────────────────────────────────────────────────
 function cleanUrl(val) { return val.trim().replace(/\s+/g, ''); }
 function isImageUrl(val) {
