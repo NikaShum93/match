@@ -232,25 +232,47 @@ function updateVolIcon() {
 }
 function applyVolume() {
   const v = volMuted ? 0 : globalVolume;
-  Object.values(sounds).forEach(a => { try { a.volume = v; } catch(_){} });
+  Object.values(sounds).forEach(arr => { 
+    if (Array.isArray(arr)) {
+      arr.forEach(a => { try { a.volume = v; } catch(_){} });
+    }
+  });
   document.getElementById('vol-label').textContent = Math.round(v * 100) + '%';
   document.getElementById('vol-slider').value = v;
   updateVolIcon();
 }
-document.getElementById('vol-btn').addEventListener('click', e => {
-  e.stopPropagation();
-  document.getElementById('vol-slider-wrap').classList.toggle('open');
-});
-document.getElementById('vol-btn').addEventListener('dblclick', e => {
-  e.stopPropagation(); volMuted = !volMuted; applyVolume();
-});
-document.getElementById('vol-slider').addEventListener('input', e => {
-  globalVolume = parseFloat(e.target.value); volMuted = globalVolume === 0; applyVolume();
-});
-document.addEventListener('click', e => {
-  if (!e.target.closest('#vol-btn') && !e.target.closest('#vol-slider-wrap'))
-    document.getElementById('vol-slider-wrap').classList.remove('open');
-});
+
+function loadSounds() {
+  const s = CONFIG.sounds || {};
+  ['correct','wrong','win'].forEach(key => {
+    if (s[key]) {
+      // Создаем пул из 3-х звуков. preload="auto" заставит браузер скачать их заранее
+      sounds[key] = [
+        new Audio(s[key]),
+        new Audio(s[key]),
+        new Audio(s[key])
+      ];
+      sounds[key].forEach(a => {
+        a.preload = 'auto';
+        a.volume = volMuted ? 0 : globalVolume;
+      });
+    }
+  });
+}
+
+function playSound(key) {
+  try {
+    if (sounds[key]) {
+      // Ищем свободный аудио-поток, который сейчас не играет
+      let snd = sounds[key].find(a => a.paused || a.ended);
+      if (!snd) snd = sounds[key][0]; // Если все заняты, перебиваем первый
+      
+      snd.currentTime = 0;
+      snd.volume = volMuted ? 0 : globalVolume;
+      snd.play().catch(() => {});
+    }
+  } catch(_) {}
+}
 
 function cleanUrl(val) { return val.trim().replace(/\s+/g, ''); }
 function isImageUrl(val) {
