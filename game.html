@@ -354,6 +354,9 @@ function startGame() {
   }
   loadSounds();
   renderCards();
+  // Разблокируем аудио при первом клике на игровое поле
+document.getElementById('layer').addEventListener('click', unlockAudio, { once: true });
+document.getElementById('game-wrapper').addEventListener('click', unlockAudio, { once: true });
   initCanvas();
   renderCanvasLoop();
   const pairSet = new Set(CONFIG.items.map(i => i.pairIndex));
