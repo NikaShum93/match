@@ -14,7 +14,7 @@ window.MathJax = {
 <style>
 *, *::before, *::after { box-sizing: border-box; }
 body, html {
-  margin: 0; padding: 0; width: 100%; height: 100%;
+  margin: 0; padding: 0; width: 100vw; height: 100vh;
   overflow: hidden; background: transparent;
   font-family: sans-serif;
 }
@@ -380,7 +380,12 @@ function loadSounds() {
 }
 function playSound(key) {
   try {
-    if (sounds[key]) { sounds[key].currentTime = 0; sounds[key].volume = volMuted ? 0 : globalVolume; sounds[key].play().catch(() => {}); }
+    if (sounds[key]) {
+      // Клонируем звук для независимого воспроизведения (решает проблему обрывов)
+      const snd = sounds[key].cloneNode(); 
+      snd.volume = volMuted ? 0 : globalVolume; 
+      snd.play().catch(() => {}); 
+    }
   } catch(_) {}
 }
 
@@ -934,7 +939,7 @@ function showFeedback() {
   // FIX 1: размытие добавляем ДО фидбека, но с меньшим z-index чем у fb-блоков (60000)
   if (fb.blur > 0) {
     const blurOv = document.createElement('div');
-    blurOv.style.cssText = `position:fixed;inset:0;backdrop-filter:blur(${fb.blur}px);-webkit-backdrop-filter:blur(${fb.blur}px);z-index:55000;animation:fadeIn 0.5s forwards;`;
+   blurOv.style.cssText = `position:fixed;top:0;left:0;width:100vw;height:100vh;backdrop-filter:blur(${fb.blur}px);-webkit-backdrop-filter:blur(${fb.blur}px);z-index:55000;animation:fadeIn 0.5s forwards;`;
     document.body.appendChild(blurOv);
   }
 
