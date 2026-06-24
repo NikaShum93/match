@@ -1501,9 +1501,13 @@ document.getElementById('btn-publish').addEventListener('click', async () => {
   const cfgStr = JSON.stringify(cfg);
   try {
     const resp = await fetch(ENDPOINT, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: PUBLISH_KEY, config: cfgStr })
-    });
+    method: 'POST',
+    headers: { 
+        'Content-Type': 'application/json',
+        'x-publish-key': PUBLISH_KEY   // ← добавь эту строку
+    },
+    body: JSON.stringify({ config: cfgStr })  // key из body убери
+});
     const data = await resp.json();
     if (data.id) {
       const gameUrl   = BASE_GAME + '?id=' + data.id;
