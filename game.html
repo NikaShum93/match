@@ -953,11 +953,9 @@ function showFeedback() {
   const anim    = fb.anim || 'popUp';
   const animStr = anim !== 'none' ? `${anim} 0.55s cubic-bezier(0.34,1.56,0.64,1) both` : 'none';
 
- // РЕШЕНИЕ БАГА GENIALLY: Применяем размытие напрямую к слоям игры
+  // ── РАЗМЫТИЕ ФОНА ──────────────────────────────────────────
   if (fb.blur > 0) {
     const blurVal = `blur(${fb.blur}px)`;
-    
-    // Плавно размываем фон, карточки и линии
     ['bg-layer', 'game-wrapper', 'canvas-layer'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
@@ -965,12 +963,21 @@ function showFeedback() {
         el.style.filter = blurVal;
       }
     });
-
-    // Добавляем прозрачную темную пленку, чтобы текст фидбека читался контрастнее
-    const dimOv = document.createElement('div');
-    dimOv.style.cssText = `position:fixed;inset:-200px;background:rgba(0,0,0,0.3);z-index:55000;animation:fadeIn 0.5s forwards;pointer-events:none;`;
-    document.body.appendChild(dimOv);
   }
+
+  // Тёмная плёнка поверх ВСЕГО (включая серые края за game-wrapper)
+  const dimOv = document.createElement('div');
+  dimOv.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 54999;
+    pointer-events: none;
+    animation: fadeIn 0.5s forwards;
+  `;
+  document.body.appendChild(dimOv);
+
+  // ── КАРТИНКА ───────────────────────────────────────────────
   const showImg = (fb.mode === 'both' || fb.mode === 'image') && fb.img;
   const showTxt = (fb.mode === 'both' || fb.mode === 'text');
 
@@ -990,7 +997,8 @@ function showFeedback() {
     imgBox.style.display = 'none';
   }
 
-   if (showTxt) {
+  // ── ТЕКСТ ──────────────────────────────────────────────────
+  if (showTxt) {
     const sc = window.gameScale || 1;
     const ox = window.gameOffsetX || 0;
     const oy = window.gameOffsetY || 0;
@@ -1023,6 +1031,7 @@ function showFeedback() {
     txtBox.style.display = 'none';
   }
 
+  // ── ИСКРЫ ──────────────────────────────────────────────────
   if (fb.sparks) {
     setInterval(() => {
       [imgBox, txtBox].forEach(b => {
@@ -1038,7 +1047,6 @@ function showFeedback() {
     }, 200);
   }
 }
-
 init();
 </script>
 </body>
