@@ -242,32 +242,35 @@ function applyVolume() {
   updateVolIcon();
 }
 
+let audioUnlocked = false;
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  // Создаём и сразу воспроизводим тихий звук — это разблокирует контекст
+  const silent = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAA' +
+    'EAAQARAAIAAgAIABAAAgACAAgQAAAIAAgAIAAAA');
+  silent.volume = 0;
+  silent.play().catch(() => {});
+}
+
 function loadSounds() {
   const s = CONFIG.sounds || {};
   ['correct','wrong','win'].forEach(key => {
     if (s[key]) {
-      // Создаем пул из 3-х звуков. preload="auto" заставит браузер скачать их заранее
-      sounds[key] = [
-        new Audio(s[key]),
-        new Audio(s[key]),
-        new Audio(s[key])
-      ];
-      sounds[key].forEach(a => {
-        a.preload = 'auto';
-        a.volume = volMuted ? 0 : globalVolume;
-      });
+      const a = new Audio(s[key]);
+      a.preload = 'auto';
+      a.volume = volMuted ? 0 : globalVolume;
+      sounds[key] = a;
     }
   });
 }
 
 function playSound(key) {
   try {
+    unlockAudio();
     if (sounds[key]) {
-      // Ищем свободный аудио-поток, который сейчас не играет
-      let snd = sounds[key].find(a => a.paused || a.ended);
-      if (!snd) snd = sounds[key][0]; // Если все заняты, перебиваем первый
-      
-      snd.currentTime = 0;
+      const snd = new Audio(sounds[key].src);
       snd.volume = volMuted ? 0 : globalVolume;
       snd.play().catch(() => {});
     }
